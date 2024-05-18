@@ -1,0 +1,37 @@
+use tgdscad::D2;
+
+// CONST PI = 3.1414926;
+/*
+fn racetrack(r:f32) -> D2 {
+    D2::Circle(r)
+        .translate(r*PI, 0)
+        .add(D2::Circle(r)
+}
+*/
+fn main() {
+
+    let r = 25.;
+    // let pie
+    
+    let e = D2::Circle(4.);
+    let f = D2::Circle(10.)
+        .add(e)
+        .translate(4.,5.)
+        .scale_xy(3.,2.)
+        .add(D2::Square(9.))
+        .scale(4.)
+        .minkowski(D2::Rectangle(0.5,1.5))
+        ;
+
+}
+
+/*
+if __name__ == '__main__':
+    fn = 256
+    r = 25
+    piece = sd.circle(r=r)
+    piece = sd.hull()(piece, sd.translate([r*np.pi,0])(piece))
+    piece = sd.linear_extrude(10)(piece)
+    final = sd.scad_render(piece, file_header=f'$fn={fn};')
+    print(final)
+*/
