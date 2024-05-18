@@ -3,6 +3,7 @@ extern crate itertools;
 use std::fmt;
 use itertools::Itertools;
 // use std::ops::Add;
+use std::cell::RefCell;
 
 
 #[derive(Clone, Debug)]
@@ -11,7 +12,8 @@ pub enum D2 {
     Square(f32),
     Rectangle(f32, f32),
     // Union(Box<D2>, Box<D2>),
-    Union(Box<Vec<D2>>),
+    // Union(Box<Vec<D2>>),
+    Union(RefCell<Vec<D2>>),
     Minkowski(Box<D2>, Box<D2>),
     Scale(f32, Box<D2>),
     ScaleXY((f32, f32), Box<D2>),
@@ -25,7 +27,8 @@ pub fn indent(shape: &D2) -> String {
 impl D2 {
     pub fn add(self, other: D2) -> D2 {
         // D2::Union(Box::new(self), Box::new(other))
-        D2::Union(Box::new(vec![self, other]))
+        // D2::Union(Box::new(vec![self, other]))
+        D2::Union(RefCell::new(vec![self, other]))
     }
     pub fn minkowski(self, other: D2) -> D2 {
         D2::Minkowski(Box::new(self), Box::new(other))
@@ -58,7 +61,7 @@ impl fmt::Display for D2 {
             // D2::Union(v) => write!(f,
                 // "union() {{\n  {}\n  {}\n}}", indent(&v[0]), indent(&v[1])),
             D2::Union(v) => write!(f,
-                "union() {{\n  {}\n}}", v.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join("\n")),
+                "union() {{\n  {}\n}}", v.borrow().iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join("\n")),
             D2::Minkowski(a,b) => write!(f,
                 "minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
         }
@@ -71,6 +74,16 @@ mod test {
 
     #[test]
     fn test_circle() {
-        assert_eq!(format!("{}", D2::Circle(5.)), "circle(r = 5)");
+        assert_eq!(format!("{}", D2::Circle(5.)), "circle(r = 5);");
+    }
+
+    #[test]
+    fn test_square() {
+        assert_eq!(format!("{}", D2::Square(5.)), "square(size = 5);");
+    }
+
+    #[test]
+    fn test_union() {
+        assert_eq!(format!("{}", D2::Circle(5.).add(D2::Square(10.))), "circle(r = 5);");
     }
 }
