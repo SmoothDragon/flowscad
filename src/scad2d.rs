@@ -12,14 +12,17 @@ pub struct D2Vec(Box<Vec<D2>>);
 pub struct X(pub f32);
 
 #[derive(Clone, Debug)]
+pub struct XY(pub f32, pub f32);
+
+#[derive(Clone, Debug)]
 pub enum D2 {
     Circle(X),
     Square(X),
-    Rectangle(f32, f32),
+    Rectangle(XY),
     Minkowski(Box<D2>, Box<D2>),
     Scale(f32, Box<D2>),
-    ScaleXY((f32, f32), Box<D2>),
-    Translate((f32, f32), Box<D2>),
+    ScaleXY(XY, Box<D2>),
+    Translate(XY, Box<D2>),
     Rotate(f32, Box<D2>),
     Hull(Box<Vec<D2>>),
     Intersection(Box<Vec<D2>>),
@@ -39,12 +42,12 @@ impl D2 {
         D2::Minkowski(Box::new(self), Box::new(other))
     }
 
-    pub fn translate(&self, x: f32, y: f32) -> D2 {
-        D2::Translate((x,y), Box::new(self.clone()))
+    pub fn translate(&self, xy: XY) -> D2 {
+        D2::Translate(xy, Box::new(self.clone()))
     }
 
-    pub fn translate_iter<'a>(&'a self, x: f32, y: f32, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.translate(x * ii as f32, y * ii as f32))
+    pub fn translate_iter<'a>(&'a self, xy: XY, n: u32) -> impl Iterator<Item = D2> + 'a {
+        (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
 
     pub fn rotate(&self, theta: f32) -> D2 {
@@ -59,16 +62,16 @@ impl D2 {
         (0..n).map(move |ii| self.rotate(theta * ii as f32)).collect::<Vec<_>>()
     }
 
-    pub fn translate_vec(&self, x: f32, y: f32, n: u32) -> Vec<D2> {
-        (0..n).map(move |ii| self.translate(x * ii as f32, y * ii as f32)).collect::<Vec<_>>()
+    pub fn translate_vec(&self, xy: XY, n: u32) -> Vec<D2> {
+        (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
     }
 
     pub fn scale(self, s: f32) -> D2 {
         D2::Scale(s, Box::new(self))
     }
 
-    pub fn scale_xy(self, x: f32, y: f32) -> D2 {
-        D2::ScaleXY((x,y), Box::new(self))
+    pub fn scale_xy(self, xy: XY) -> D2 {
+        D2::ScaleXY(xy, Box::new(self))
     }
 }
 
@@ -165,15 +168,15 @@ impl fmt::Display for D2 {
         match &self {
             D2::Circle(r) => write!(f, "circle(r = {});", r.0),
             D2::Square(size) => write!(f, "square(size = {});", size.0),
-            D2::Rectangle(x, y) => write!(f, "square(size = [{}, {}]);", x, y),
-            D2::Translate((x,y), shape) => write!(f, 
-                "translate(v = [{}, {}]) {{\n  {}\n}}", x,y, indent(shape)),
+            D2::Rectangle(xy) => write!(f, "square(size = [{}, {}]);", xy.0, xy.1),
+            D2::Translate(xy, shape) => write!(f, 
+                "translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Rotate(theta, shape) => write!(f, 
                 "rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => write!(f,
                 "scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::ScaleXY((x,y), shape) => write!(f,
-                "scale(v = [{}, {}]) {{\n  {}\n}}", x,y, indent(shape)),
+            D2::ScaleXY(xy, shape) => write!(f,
+                "scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => write!(f,
                 "union() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => write!(f,
@@ -195,11 +198,11 @@ impl SCAD for D2 {
         match &self {
             D2::Circle(r) => format!("circle(r = {});", r.0),
             D2::Square(size) => format!("square(size = {});", size.0),
-            D2::Rectangle(x, y) => format!("square(size = [{}, {}]);", x, y),
-            D2::Translate((x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x,y, indent(shape)),
+            D2::Rectangle(xy) => format!("square(size = [{}, {}]);", xy.0, xy.1),
+            D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Rotate(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::ScaleXY((x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x,y, indent(shape)),
+            D2::ScaleXY(xy, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -237,7 +240,7 @@ mod test {
 
     #[test]
     fn test_translate_iter() {
-        assert_eq!(C5.translate_iter(1.,2.,4).sum::<D2>().scad(),
+        assert_eq!(C5.translate_iter(XY(1.,2.),4).sum::<D2>().scad(),
             "union() {\n  translate(v = [0, 0]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(r = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(r = 5);\n  }\n}"
         );
     }
