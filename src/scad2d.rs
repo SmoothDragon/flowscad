@@ -8,11 +8,13 @@ use std::iter::{Iterator, Sum, Product};
 // use std::cell::RefCell;
 
 pub struct D2Vec(Box<Vec<D2>>);
+#[derive(Clone, Debug)]
+pub struct X(pub f32);
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(f32),
-    Square(f32),
+    Circle(X),
+    Square(X),
     Rectangle(f32, f32),
     Minkowski(Box<D2>, Box<D2>),
     Scale(f32, Box<D2>),
@@ -154,11 +156,15 @@ impl<T: Iterator<Item = D2>> Union for T {
 // }
 */
 
+// impl fmt::Display for X {
+    // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        
+    // }
 impl fmt::Display for D2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match &self {
-            D2::Circle(r) => write!(f, "circle(r = {});", r),
-            D2::Square(size) => write!(f, "square(size = {});", size),
+            D2::Circle(r) => write!(f, "circle(r = {});", r.0),
+            D2::Square(size) => write!(f, "square(size = {});", size.0),
             D2::Rectangle(x, y) => write!(f, "square(size = [{}, {}]);", x, y),
             D2::Translate((x,y), shape) => write!(f, 
                 "translate(v = [{}, {}]) {{\n  {}\n}}", x,y, indent(shape)),
@@ -187,8 +193,8 @@ trait SCAD {
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
-            D2::Circle(r) => format!("circle(r = {});", r),
-            D2::Square(size) => format!("square(size = {});", size),
+            D2::Circle(r) => format!("circle(r = {});", r.0),
+            D2::Square(size) => format!("square(size = {});", size.0),
             D2::Rectangle(x, y) => format!("square(size = [{}, {}]);", x, y),
             D2::Translate((x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x,y, indent(shape)),
             D2::Rotate(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
@@ -210,8 +216,8 @@ impl SCAD for D2 {
 mod test {
     use super::*;
 
-    const C5: D2 = D2::Circle(5.);
-    const S9: D2 = D2::Square(9.);
+    const C5: D2 = D2::Circle(X(5.));
+    const S9: D2 = D2::Square(X(9.));
 
     #[test]
     fn test_circle() {

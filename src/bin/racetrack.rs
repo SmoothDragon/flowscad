@@ -1,4 +1,4 @@
-use tgdscad::D2;
+use tgdscad::*;
 
 // CONST PI = 3.1414926;
 /*
@@ -9,16 +9,12 @@ fn racetrack(r:f32) -> D2 {
 }
 */
 fn main() {
-
-    let r = 25.;
-    // let pie
-    
-    let e = D2::Circle(4.);
-    let f = D2::Circle(10.)
+    let e = D2::Circle(X(4.));
+    let f = D2::Circle(X(10.))
         .add(e)
         .translate(4.,5.)
         .scale_xy(3.,2.)
-        .add(D2::Square(9.))
+        .add(D2::Square(X(9.)))
         .scale(4.)
         .minkowski(D2::Rectangle(0.5,1.5))
         ;
