@@ -19,22 +19,30 @@ pub enum D2 {
     Circle(X),
     Square(X),
     Rectangle(XY),
-    Minkowski(Box<D2>, Box<D2>),
-    Scale(f32, Box<D2>),
+    Scale(X, Box<D2>),
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
-    Rotate(f32, Box<D2>),
+    Rotate(X, Box<D2>),
     Hull(Box<Vec<D2>>),
     Intersection(Box<Vec<D2>>),
     Union(Box<Vec<D2>>),
+    Minkowski(Box<D2>, Box<D2>),
 }
 
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
+/*
+impl D2Vec {
+    fn new() -> D2 {
+        D2::Union(Box::new(self))
+    }
+}
+*/
 
 impl D2 {
     pub fn add(self, other: D2) -> D2 {
+        // D2::Union(Box::new(vec![self, other]))
         D2::Union(Box::new(vec![self, other]))
     }
 
@@ -50,23 +58,23 @@ impl D2 {
         (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
 
-    pub fn rotate(&self, theta: f32) -> D2 {
+    pub fn rotate(&self, theta: X) -> D2 {
         D2::Rotate(theta, Box::new(self.clone()))
     }
 
-    pub fn rotate_iter<'a>(&'a self, theta: f32, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.rotate(theta * ii as f32))
+    pub fn rotate_iter<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
+        (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32)))
     }
 
-    pub fn rotate_vec(&self, theta: f32, n: u32) -> Vec<D2> {
-        (0..n).map(move |ii| self.rotate(theta * ii as f32)).collect::<Vec<_>>()
+    pub fn rotate_vec(&self, theta: X, n: u32) -> Vec<D2> {
+        (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()
     }
 
     pub fn translate_vec(&self, xy: XY, n: u32) -> Vec<D2> {
         (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
     }
 
-    pub fn scale(self, s: f32) -> D2 {
+    pub fn scale(self, s: X) -> D2 {
         D2::Scale(s, Box::new(self))
     }
 
@@ -118,14 +126,6 @@ impl Combinable for Vec<D2> {
 }
 
 /*
-impl Vec<D2> {
-    fn union(self) -> D2 {
-        D2::Union(Box::new(self))
-    }
-}
-
-*/
-/*
 pub trait Union {
     fn union<I: Iterator<Item=D2> + ?Sized>(self) -> D2;
     // fn union<I>(iter: I) -> Self
@@ -172,9 +172,9 @@ impl fmt::Display for D2 {
             D2::Translate(xy, shape) => write!(f, 
                 "translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Rotate(theta, shape) => write!(f, 
-                "rotate({}) {{\n  {}\n}}", theta, indent(shape)),
+                "rotate({}) {{\n  {}\n}}", theta.0, indent(shape)),
             D2::Scale(s, shape) => write!(f,
-                "scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
+                "scale(v = {}) {{\n  {}\n}}", s.0, indent(shape)),
             D2::ScaleXY(xy, shape) => write!(f,
                 "scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => write!(f,
@@ -200,8 +200,8 @@ impl SCAD for D2 {
             D2::Square(size) => format!("square(size = {});", size.0),
             D2::Rectangle(xy) => format!("square(size = [{}, {}]);", xy.0, xy.1),
             D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Rotate(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
-            D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
+            D2::Rotate(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta.0, indent(shape)),
+            D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s.0, indent(shape)),
             D2::ScaleXY(xy, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
@@ -247,28 +247,28 @@ mod test {
 
     #[test]
     fn test_rotate_iter() {
-        assert_eq!(S9.rotate_iter(20., 4).sum::<D2>().scad(),
+        assert_eq!(S9.rotate_iter(X(20.), 4).sum::<D2>().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_intersection() {
-        assert_eq!(S9.rotate_iter(20., 4).product::<D2>().scad(),
+        assert_eq!(S9.rotate_iter(X(20.), 4).product::<D2>().scad(),
             "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_union() {
-        assert_eq!(S9.rotate_iter(20., 4).collect::<Vec<D2>>().union().scad(),
+        assert_eq!(S9.rotate_iter(X(20.), 4).collect::<Vec<D2>>().union().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_unionvec() {
-        assert_eq!(S9.rotate_vec(20., 4).union().scad(),
+        assert_eq!(S9.rotate_vec(X(20.), 4).union().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }

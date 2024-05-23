@@ -15,7 +15,7 @@ fn main() {
         .translate(XY(4.,5.))
         .scale_xy(XY(3., 2.))
         .add(D2::Square(X(9.)))
-        .scale(4.)
+        .scale(X(4.))
         .minkowski(D2::Rectangle(XY(0.5,1.5)))
         ;
 
