@@ -7,7 +7,9 @@ use std::iter::{Iterator, Sum, Product};
 // use std::ops::Add;
 // use std::cell::RefCell;
 
+#[derive(Clone, Debug)]
 pub struct D2Vec(Box<Vec<D2>>);
+
 #[derive(Clone, Debug)]
 pub struct X(pub f32);
 
@@ -23,7 +25,7 @@ pub enum D2 {
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Rotate(X, Box<D2>),
-    Hull(Box<Vec<D2>>),
+    Hull(D2Vec),
     Intersection(Box<Vec<D2>>),
     Union(Box<Vec<D2>>),
     Minkowski(Box<D2>, Box<D2>),
@@ -32,13 +34,12 @@ pub enum D2 {
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
-/*
+
 impl D2Vec {
-    fn new() -> D2 {
-        D2::Union(Box::new(self))
+    pub fn hull(self: Self) -> D2 {
+        D2::Hull(self)
     }
 }
-*/
 
 impl D2 {
     pub fn add(self, other: D2) -> D2 {
@@ -68,6 +69,10 @@ impl D2 {
 
     pub fn rotate_vec(&self, theta: X, n: u32) -> Vec<D2> {
         (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()
+    }
+
+    pub fn rotate_vec2(&self, theta: X, n: u32) -> D2Vec {
+        D2Vec(Box::new((0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()))
     }
 
     pub fn translate_vec(&self, xy: XY, n: u32) -> Vec<D2> {
@@ -100,7 +105,6 @@ impl Product for D2 {
         D2::Intersection(Box::new(iter.collect::<Vec<Self>>()))
     }
 }
-/*
 trait Union {
     fn union(self) -> D2;
 }
@@ -108,20 +112,6 @@ trait Union {
 impl Union for Vec<D2> {
     fn union(self) -> D2 {
         D2::Union(Box::new(self))
-    }
-}
-*/
-trait Combinable {
-    fn union(self) -> D2;
-    fn hull(self) -> D2;
-}
-
-impl Combinable for Vec<D2> {
-    fn union(self) -> D2 {
-        D2::Union(Box::new(self))
-    }
-    fn hull(self) -> D2 {
-        D2::Hull(Box::new(self))
     }
 }
 
@@ -180,7 +170,7 @@ impl fmt::Display for D2 {
             D2::Union(v) => write!(f,
                 "union() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => write!(f,
-                "hull() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+                "hull() {{\n  {}\n}}", v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Intersection(v) => write!(f,
                 "intersection() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Minkowski(a,b) => write!(f,
@@ -206,7 +196,7 @@ impl SCAD for D2 {
             D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => format!("hull() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+                v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Minkowski(a,b) => format!("minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
@@ -272,12 +262,11 @@ mod test {
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
-/*
+
     #[test]
     fn test_hullvec() {
-        assert_eq!(format!("{}", S9.rotate_vec(20., 4).hull()),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(format!("{}", S9.rotate_vec2(X(20.), 4).hull()),
+            "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
-    */
 }
