@@ -24,7 +24,7 @@ fn main() {
     println!("{}", u);
 
     let v = vec!["circle(1)", "square(2)"];
-    let result = format!("union() {{\n  {}\n}}", v.join("\n  "));
+    let _result = format!("union() {{\n  {}\n}}", v.join("\n  "));
     // println!("JOIN: {}", result);
 }
 

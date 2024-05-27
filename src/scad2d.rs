@@ -2,13 +2,66 @@ extern crate itertools;
 
 use std::fmt;
 use std::iter::{Iterator, Sum, Product};
-// use itertools::Itertools;
+use itertools::Itertools;
 // use num_complex::Complex;
 // use std::ops::Add;
 // use std::cell::RefCell;
 
-#[derive(Clone, Debug)]
-pub struct D2Vec(Box<Vec<D2>>);
+// #[derive(Clone, Debug)]
+// pub struct D2Vec(Box<Vec<D2>>);
+
+// pub struct D2Iter<D2I: Iterator<Item = D2>>(D2I);
+// #[derive(Deref)]
+// pub struct D2Iter(Box<dyn Iterator<Item = D2>>);
+
+// impl Iterator for D2Iter {
+    // type Item = D2;
+
+    // fn next(&mut self) -> Option<Self::Item> {
+        // self.0.next()
+    // }
+
+    // fn size_hint(&self) -> (usize, Option<usize>) {
+        // self.0.size_hint()
+    // }
+// }
+
+pub trait D2Iterator : Iterator {
+    fn hull(self: Self) -> D2 where Self: Iterator<Item = D2>;
+    fn union(self: Self) -> D2 where Self: Iterator<Item = D2>;
+    fn intersection(self: Self) -> D2 where Self: Iterator<Item = D2>;
+    // fn hull2(self: Self) -> D2 where Self: Iterator<Item = D2>;
+    // fn hull2(self: Self) where Self: Iterator<Item = D2>;
+}
+
+// impl<T: Iterator<Item=D2>> D2Iterator for Iterator<Item = D2> {
+// impl D2Iterator for Iterator<Item=D2> {
+impl<T: Iterator<Item=D2>> D2Iterator for T {
+    // fn hull2(self: Self) -> D2 {
+    fn hull(self: Self) -> D2 {
+        // D2::Hull(D2Vec(Box::new(self.collect::<Vec<D2>>())))
+        // D2::Hull2(Box::new(self.collect::<Vec<D2>>()))
+        D2::Hull(Box::new(self.collect::<Vec<D2>>()))
+    }
+
+    fn union(self: Self) -> D2 {
+        D2::Union(Box::new(self.collect::<Vec<D2>>()))
+    }
+
+    fn intersection(self: Self) -> D2 {
+        D2::Intersection(Box::new(self.collect::<Vec<D2>>()))
+    }
+}
+
+// impl dyn D2Iterator<Item=D2> {
+    // fn hull2(self: Self) -> D2 where Self: Into_Iter<Item = D2> {
+        // D2::Hull(D2Vec(Box::new(self.collect::<Vec<D2>>())))
+    // }
+// }
+
+
+// impl<T> Iterator for D2Iterator<T> where T: Iterator<D2> {
+// }
 
 #[derive(Clone, Debug)]
 pub struct X(pub f32);
@@ -25,7 +78,9 @@ pub enum D2 {
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Rotate(X, Box<D2>),
-    Hull(D2Vec),
+    // Hull(D2Vec),
+    // Hull2(D2Vec),
+    Hull(Box<Vec<D2>>),
     Intersection(Box<Vec<D2>>),
     Union(Box<Vec<D2>>),
     Minkowski(Box<D2>, Box<D2>),
@@ -35,11 +90,34 @@ pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
 
-impl D2Vec {
-    pub fn hull(self: Self) -> D2 {
-        D2::Hull(self)
-    }
-}
+// impl D2Vec {
+    // pub fn hull(self: Self) -> D2 {
+        // D2::Hull(self)
+    // }
+// }
+
+// impl D2Iter {
+    // pub fn hull(self: Self) -> D2 {
+        // D2::Hull(D2Vec(Box::new(self.0.collect::<Vec<D2>>())))
+    // }
+// }
+
+
+
+// impl<Iter> Iterator for D2
+
+// impl dyn D2Iterator<Item=D2> {
+    // pub fn hull(self: Self) -> D2 {
+        // D2::Hull2(D2Vec(Box::new(self.collect::<Vec<D2>>())))
+    // }
+// }
+
+// impl dyn Iterator<Item = D2> {
+    // pub fn hull(self: Self) -> D2 {
+        // D2::Hull(Box::new(self.collect::<Vec<D2>>()))
+    // }
+
+// }
 
 impl D2 {
     pub fn add(self, other: D2) -> D2 {
@@ -63,17 +141,22 @@ impl D2 {
         D2::Rotate(theta, Box::new(self.clone()))
     }
 
+    // pub fn iter_rotate(self, theta: X, n: u32) -> D2Iter {
+        // D2Iter(Box::new((0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32)))))
+    // }
+
     pub fn rotate_iter<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
         (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32)))
     }
 
-    pub fn rotate_vec(&self, theta: X, n: u32) -> Vec<D2> {
-        (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()
-    }
 
-    pub fn rotate_vec2(&self, theta: X, n: u32) -> D2Vec {
-        D2Vec(Box::new((0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()))
-    }
+    // pub fn rotate_vec(&self, theta: X, n: u32) -> Vec<D2> {
+        // (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()
+    // }
+
+    // pub fn rotate_vec2(&self, theta: X, n: u32) -> D2Vec {
+        // D2Vec(Box::new((0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32))).collect::<Vec<_>>()))
+    // }
 
     pub fn translate_vec(&self, xy: XY, n: u32) -> Vec<D2> {
         (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
@@ -169,8 +252,12 @@ impl fmt::Display for D2 {
                 "scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => write!(f,
                 "union() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Hull(v) => write!(f,
+                // "hull() {{\n  {}\n}}", v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Hull2(v) => write!(f,
+                // "hull() {{\n  {}\n}}", v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => write!(f,
-                "hull() {{\n  {}\n}}", v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+                "hull() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Intersection(v) => write!(f,
                 "intersection() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Minkowski(a,b) => write!(f,
@@ -195,8 +282,10 @@ impl SCAD for D2 {
             D2::ScaleXY(xy, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Hull(v) => format!("hull() {{\n  {}\n}}",
+                // v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => format!("hull() {{\n  {}\n}}",
-                v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Minkowski(a,b) => format!("minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
@@ -230,7 +319,7 @@ mod test {
 
     #[test]
     fn test_translate_iter() {
-        assert_eq!(C5.translate_iter(XY(1.,2.),4).sum::<D2>().scad(),
+        assert_eq!(C5.translate_iter(XY(1.,2.),4).union().scad(),
             "union() {\n  translate(v = [0, 0]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(r = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(r = 5);\n  }\n}"
         );
     }
@@ -251,22 +340,50 @@ mod test {
 
     #[test]
     fn test_union() {
-        assert_eq!(S9.rotate_iter(X(20.), 4).collect::<Vec<D2>>().union().scad(),
+        assert_eq!(S9.rotate_iter(X(20.), 4).union().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
-    #[test]
-    fn test_unionvec() {
-        assert_eq!(S9.rotate_vec(X(20.), 4).union().scad(),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
-        );
-    }
+    // #[test]
+    // fn test_unionvec() {
+        // assert_eq!(S9.rotate_vec(X(20.), 4).union().scad(),
+            // "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        // );
+    // }
+
+    // #[test]
+    // fn test_hullvec() {
+        // assert_eq!(format!("{}", S9.rotate_vec2(X(20.), 4).hull()),
+            // "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        // );
+    // }
 
     #[test]
-    fn test_hullvec() {
-        assert_eq!(format!("{}", S9.rotate_vec2(X(20.), 4).hull()),
+    fn test_iter_hull() {
+        assert_eq!(format!("{}", S9.rotate_iter(X(20.), 4).hull()),
             "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
+
+    #[test]
+    fn test_iter_union() {
+        assert_eq!(format!("{}", S9.rotate_iter(X(20.), 4).union()),
+            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_iter_intersection() {
+        assert_eq!(format!("{}", S9.rotate_iter(X(20.), 4).intersection()),
+            "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    // #[test]
+    // fn test_iter_rotate_hull() {
+        // assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).map(move |x| x.rotate(X(10.))).hull()),
+            // "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        // );
+    // }
 }
