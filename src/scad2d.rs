@@ -68,8 +68,10 @@ impl D2 {
     }
 
     pub fn rotate(&self, theta: X) -> D2 {
-        // TODO: use match to combine rotate of rotate
-        D2::Rotate(theta, Box::new(self.clone()))
+        match self {
+            D2::Rotate(X(phi), d2) => D2::Rotate(X(phi + theta.0), d2.clone()),
+            _ => D2::Rotate(theta, Box::new(self.clone())),
+        }
     }
 
     pub fn rotate_iter<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
@@ -234,10 +236,10 @@ mod test {
         );
     }
 
-    // #[test]
-    // fn test_iter_rotate_hull() {
-        // assert_eq!(format!("{}", S9.rotate_iter(X(20.), 4).map(move |x| x.rotate(X(10.))).hull()),
-            // "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
-        // );
-    // }
+    #[test]
+    fn test_iter_rotate_rotate() {
+        assert_eq!(format!("{}", S9.rotate_iter(X(20.), 4).map(move |x| x.rotate(X(10.))).hull()),
+            "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
+        );
+    }
 }
