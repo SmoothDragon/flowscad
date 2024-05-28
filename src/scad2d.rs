@@ -27,7 +27,7 @@ impl<T: Iterator<Item=D2>> D2Iterator for T {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct X(pub f32);
 
 #[derive(Clone, Debug)]
@@ -36,7 +36,7 @@ pub struct XY(pub f32, pub f32);
 #[derive(Clone, Debug)]
 pub enum Aim {
     N, S, E, W,
-    // 'N', 'S', 'E', 'W'
+    Angle(X),
 }
 
 #[derive(Clone, Debug)]
@@ -89,6 +89,10 @@ impl D2 {
         }
     }
 
+    pub fn mirror(&self, xy: XY) -> D2 {
+        D2::Mirror(xy, Box::new(self.clone()))
+    }
+
     pub fn iter_translate<'a>(&'a self, xy: XY, n: u32) -> impl Iterator<Item = D2> + 'a {
         (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
@@ -102,6 +106,10 @@ impl D2 {
 
     pub fn iter_rotate<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
         (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32)))
+    }
+
+    pub fn iter_rotate_equal<'a>(&'a self, n: u32) -> impl Iterator<Item = D2> + 'a {
+        (0..n).map(move |ii| self.rotate(X(360./(n as f32) * ii as f32)))
     }
 
     pub fn translate_vec(&self, xy: XY, n: u32) -> Vec<D2> {
@@ -137,40 +145,7 @@ impl Product for D2 {
 
 impl fmt::Display for D2 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match &self {
-            D2::Circle(r) => write!(f, "circle(r = {});", r.0),
-            D2::Square(size) => write!(f, "square(size = {});", size.0),
-            D2::Rectangle(xy) => write!(f, "square(size = [{}, {}]);", xy.0, xy.1),
-            D2::HalfPlane(aim) => write!(f, "{}",
-                match aim {
-                    Aim::N => D2::Square(X(MAX)).translate(XY(0., MAX/2.)),
-                    Aim::S => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
-                    Aim::E => D2::Square(X(MAX)).translate(XY(MAX/2., 0.)),
-                    Aim::W => D2::Square(X(MAX)).translate(XY(-MAX, -MAX/2.)),
-                }),
-            D2::Translate(xy, shape) => write!(f, 
-                "translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Mirror(xy, shape) => write!(f, 
-                "mirror(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Rotate(theta, shape) => write!(f, 
-                "rotate({}) {{\n  {}\n}}", theta.0, indent(shape)),
-            D2::Scale(s, shape) => write!(f,
-                "scale(v = {}) {{\n  {}\n}}", s.0, indent(shape)),
-            D2::ScaleXY(xy, shape) => write!(f,
-                "scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Union(v) => write!(f,
-                "union() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            // D2::Hull(v) => write!(f,
-                // "hull() {{\n  {}\n}}", v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            // D2::Hull2(v) => write!(f,
-                // "hull() {{\n  {}\n}}", v.0.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            D2::Hull(v) => write!(f,
-                "hull() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            D2::Intersection(v) => write!(f,
-                "intersection() {{\n  {}\n}}", v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            D2::Minkowski(a,b) => write!(f,
-                "minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
-        }
+        write!(f, "{}", &self.scad())
     }
 }
 
@@ -186,10 +161,11 @@ impl SCAD for D2 {
             D2::Rectangle(xy) => format!("square(size = [{}, {}]);", xy.0, xy.1),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
-                    Aim::N => D2::Square(X(MAX)).translate(XY(0., MAX/2.)),
-                    Aim::S => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
-                    Aim::E => D2::Square(X(MAX)).translate(XY(MAX/2., 0.)),
-                    Aim::W => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
+                    Aim::N => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
+                    Aim::S => D2::Square(X(MAX)).translate(XY(-MAX/2., -MAX)),
+                    Aim::E => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
+                    Aim::W => D2::Square(X(MAX)).translate(XY(-MAX, -MAX/2.)),
+                    Aim::Angle(theta) => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                 }),
             D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Mirror(xy, shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
