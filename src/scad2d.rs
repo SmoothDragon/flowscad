@@ -4,8 +4,8 @@ use std::fmt;
 use std::iter::{Iterator, Sum, Product};
 pub use std::f32::consts::PI;
 // use itertools::Itertools;
-// const MAX: f32 = f32::MAX / 100.;
-const MAX: f32 = 1000.;
+const MAX: f32 = f32::MAX / 100.;
+// const MAX: f32 = 1000.;
 
 pub trait D2Iterator : Iterator {
     fn hull(self: Self) -> D2 where Self: Iterator<Item = D2>;
@@ -36,6 +36,7 @@ pub struct XY(pub f32, pub f32);
 #[derive(Clone, Debug)]
 pub enum Aim {
     N, S, E, W,
+    U, D, L, R,
     Angle(X),
 }
 
@@ -44,6 +45,11 @@ pub enum Color {
     Blue,
     Green,
     Red,
+}
+
+#[derive(Clone, Debug)]
+pub enum D3 {
+    LinearExtrude(X, Box<D2>),
 }
 
 #[derive(Clone, Debug)]
@@ -144,6 +150,10 @@ impl D2 {
     pub fn scale_xy(self, xy: XY) -> D2 {
         D2::ScaleXY(xy, Box::new(self))
     }
+
+    pub fn linear_extrude(&self, x: X) -> D3 {
+        D3::LinearExtrude(x, Box::new(self.clone()))
+    }
 }
 
 impl Sum for D2 {
@@ -170,8 +180,25 @@ impl fmt::Display for D2 {
     }
 }
 
+impl fmt::Display for D3 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.scad())
+    }
+}
+
 trait SCAD {
     fn scad(&self) -> String;
+}
+
+impl SCAD for D3 {
+    fn scad(&self) -> String {
+        match &self {
+            D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
+        }
+    }
+}
+
+impl D3 {
 }
 
 impl SCAD for D2 {
@@ -190,10 +217,15 @@ impl SCAD for D2 {
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
                     Aim::N => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
+                    Aim::U => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
                     Aim::S => D2::Square(X(MAX)).translate(XY(-MAX/2., -MAX)),
+                    Aim::D => D2::Square(X(MAX)).translate(XY(-MAX/2., -MAX)),
                     Aim::E => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
+                    Aim::R => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
                     Aim::W => D2::Square(X(MAX)).translate(XY(-MAX, -MAX/2.)),
-                    Aim::Angle(theta) => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+                    Aim::L => D2::Square(X(MAX)).translate(XY(-MAX, -MAX/2.)),
+                    // Aim::Angle(theta) => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+                    Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
             D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Mirror(xy, shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
@@ -301,6 +333,13 @@ mod test {
     fn test_iter_intersection() {
         assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection()),
             "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_linear_extrude() {
+        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().linear_extrude(X(10.))),
+            "linear_extrude(height = 10) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
