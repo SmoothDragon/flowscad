@@ -40,16 +40,24 @@ pub enum Aim {
 }
 
 #[derive(Clone, Debug)]
+pub enum Color {
+    Blue,
+    Green,
+    Red,
+}
+
+#[derive(Clone, Debug)]
 pub enum D2 {
     Circle(X),
     Square(X),
     Rectangle(XY),
     HalfPlane(Aim),
+    Color(Color, Box<D2>),
+    Rotate(X, Box<D2>),
     Scale(X, Box<D2>),
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
-    Rotate(X, Box<D2>),
     Hull(Box<Vec<D2>>),
     Intersection(Box<Vec<D2>>),
     Union(Box<Vec<D2>>),
@@ -62,11 +70,19 @@ pub fn indent(shape: &D2) -> String {
 
 impl D2 {
     pub fn add(self, other: D2) -> D2 {
-        D2::Union(Box::new(vec![self, other]))
+        match self { // Combine Unions if possible
+            D2::Union(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Union(vec)
+                },
+            _ => D2::Union(Box::new(vec![self, other])),
+        }
     }
 
     pub fn add_map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
-        D2::Union(Box::new(vec![self.clone(), f(self)]))
+        self.clone().add(f(self))
+        // D2::Union(Box::new(vec![self.clone(), f(self)]))
     }
 
     pub fn hull(self, other: D2) -> D2 {
@@ -116,6 +132,11 @@ impl D2 {
         (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
     }
 
+    pub fn color(self, color_name: Color) -> D2 {
+        D2::Color(color_name, Box::new(self))
+    }
+
+
     pub fn scale(self, s: X) -> D2 {
         D2::Scale(s, Box::new(self))
     }
@@ -159,6 +180,13 @@ impl SCAD for D2 {
             D2::Circle(r) => format!("circle(r = {});", r.0),
             D2::Square(size) => format!("square(size = {});", size.0),
             D2::Rectangle(xy) => format!("square(size = [{}, {}]);", xy.0, xy.1),
+            D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
+                match color {
+                    Color::Blue => "\"blue\"",
+                    Color::Green => "\"green\"",
+                    Color::Red => "\"red\"",
+                }
+                , indent(shape)),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
                     Aim::N => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
@@ -207,6 +235,13 @@ mod test {
     }
 
     #[test]
+    fn test_color() {
+        assert_eq!(C5.add(S9).color(Color::Red).scad(),
+        "color(\"red\") {\n  union() {\n    circle(r = 5);\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    #[test]
     fn test_iter_translate() {
         assert_eq!(C5.iter_translate(XY(1.,2.),4).union().scad(),
             "union() {\n  translate(v = [0, 0]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(r = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(r = 5);\n  }\n}"
@@ -231,6 +266,20 @@ mod test {
     fn test_union() {
         assert_eq!(S9.iter_rotate(X(20.), 4).union().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_add_map() {
+        assert_eq!(S9.iter_rotate(X(20.), 4).union().add_map(|x| x.mirror(XY(1., 0.))).scad(),
+            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  mirror(v = [1, 0]) {\n    union() {\n      rotate(0) {\n        square(size = 9);\n      }\n      rotate(20) {\n        square(size = 9);\n      }\n      rotate(40) {\n        square(size = 9);\n      }\n      rotate(60) {\n        square(size = 9);\n      }\n    }\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_union_union() {
+        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(C5).scad(),
+            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
         );
     }
 
