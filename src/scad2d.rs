@@ -11,6 +11,7 @@ pub trait D2Iterator : Iterator {
     fn hull(self: Self) -> D2 where Self: Iterator<Item = D2>;
     fn union(self: Self) -> D2 where Self: Iterator<Item = D2>;
     fn intersection(self: Self) -> D2 where Self: Iterator<Item = D2>;
+    fn minkowski(self: Self) -> D2 where Self: Iterator<Item = D2>;
 }
 
 impl<T: Iterator<Item=D2>> D2Iterator for T {
@@ -25,6 +26,10 @@ impl<T: Iterator<Item=D2>> D2Iterator for T {
     fn intersection(self: Self) -> D2 {
         D2::Intersection(Box::new(self.collect::<Vec<D2>>()))
     }
+
+    fn minkowski(self: Self) -> D2 {
+        D2::Minkowski(Box::new(self.collect::<Vec<D2>>()))
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -38,6 +43,15 @@ pub enum Aim {
     N, S, E, W,
     U, D, L, R,
     Angle(X),
+}
+
+#[derive(Clone, Debug)]
+pub enum Pos {
+    N, S, E, W,
+    NE, NW, SE, SW,
+    U, D, L, R,
+    Angle(X),
+    Center,
 }
 
 #[derive(Clone, Debug)]
@@ -67,7 +81,8 @@ pub enum D2 {
     Hull(Box<Vec<D2>>),
     Intersection(Box<Vec<D2>>),
     Union(Box<Vec<D2>>),
-    Minkowski(Box<D2>, Box<D2>),
+    Minkowski(Box<Vec<D2>>),
+    // Minkowski(Box<D2>, Box<D2>),
 }
 
 pub fn indent(shape: &D2) -> String {
@@ -92,15 +107,40 @@ impl D2 {
     }
 
     pub fn hull(self, other: D2) -> D2 {
-        D2::Hull(Box::new(vec![self, other]))
+        match self { // Combine D2 hulls if possible
+            D2::Hull(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Hull(vec)
+                },
+            _ => D2::Hull(Box::new(vec![self, other])),
+        }
+        // D2::Hull(Box::new(vec![self, other]))
     }
 
     pub fn intersection(self, other: D2) -> D2 {
-        D2::Intersection(Box::new(vec![self, other]))
+        match self { // Combine intersections if possible
+            D2::Intersection(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Intersection(vec)
+                },
+            _ => D2::Intersection(Box::new(vec![self, other])),
+        }
+        // D2::Intersection(Box::new(vec![self, other]))
     }
 
     pub fn minkowski(self, other: D2) -> D2 {
-        D2::Minkowski(Box::new(self), Box::new(other))
+        match self { // Combine Minkowski sums if possible
+            D2::Minkowski(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Minkowski(vec)
+                },
+            _ => D2::Minkowski(Box::new(vec![self, other])),
+        }
+        // D2::Minkowski(Box::new(vec![self, other]))
+        // D2::Minkowski(Box::new(self), Box::new(other))
     }
 
     pub fn translate(&self, xy: XY) -> D2 {
@@ -238,7 +278,9 @@ impl SCAD for D2 {
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            D2::Minkowski(a,b) => format!("minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
+            D2::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
+                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Minkowski(a,b) => format!("minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
         }
     }
 }
@@ -319,6 +361,13 @@ mod test {
     fn test_iter_hull() {
         assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).hull()),
             "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_iter_minkowski() {
+        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).minkowski()),
+            "minkowski() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
