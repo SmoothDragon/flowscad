@@ -13,6 +13,12 @@ pub trait D2Iterator : Iterator {
     fn intersection(self: Self) -> D2 where Self: Iterator<Item = D2>;
 }
 
+pub trait D3Iterator : Iterator {
+    fn hull(self: Self) -> D3 where Self: Iterator<Item = D3>;
+    fn union(self: Self) -> D3 where Self: Iterator<Item = D3>;
+    fn intersection(self: Self) -> D3 where Self: Iterator<Item = D3>;
+}
+
 impl<T: Iterator<Item=D2>> D2Iterator for T {
     fn hull(self: Self) -> D2 {
         D2::Hull(Box::new(self.collect::<Vec<D2>>()))
@@ -27,11 +33,28 @@ impl<T: Iterator<Item=D2>> D2Iterator for T {
     }
 }
 
+impl<T: Iterator<Item=D3>> D3Iterator for T {
+    fn hull(self: Self) -> D3 {
+        D3::Hull(Box::new(self.collect::<Vec<D3>>()))
+    }
+
+    fn union(self: Self) -> D3 {
+        D3::Union(Box::new(self.collect::<Vec<D3>>()))
+    }
+
+    fn intersection(self: Self) -> D3 {
+        D3::Intersection(Box::new(self.collect::<Vec<D3>>()))
+    }
+}
+
 #[derive(Clone, Copy, Debug)]
 pub struct X(pub f32);
 
 #[derive(Clone, Debug)]
 pub struct XY(pub f32, pub f32);
+
+#[derive(Clone, Debug)]
+pub struct XYZ(pub f32, pub f32, pub f32);
 
 #[derive(Clone, Debug)]
 pub enum Aim {
@@ -49,7 +72,14 @@ pub enum Color {
 
 #[derive(Clone, Debug)]
 pub enum D3 {
+    Cube(X),
+    Box(XYZ),
+    BeveledBox(XYZ,X),
+    Translate(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
+    Hull(Box<Vec<D3>>),
+    Intersection(Box<Vec<D3>>),
+    Union(Box<Vec<D3>>),
 }
 
 #[derive(Clone, Debug)]
@@ -71,6 +101,10 @@ pub enum D2 {
 }
 
 pub fn indent(shape: &D2) -> String {
+    format!("{}", shape).replace("\n", "\n  ")
+}
+
+pub fn indent_d3(shape: &D3) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
 
@@ -194,11 +228,31 @@ impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
+            D3::Cube(size) => format!("cube(size = {});", size.0),
+            D3::Box(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
+            D3::Union(v) => format!( "union() {{\n  {}\n}}",
+                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+            D3::Hull(v) => format!("hull() {{\n  {}\n}}",
+                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+            D3::Intersection(v) => format!("intersection() {{\n  {}\n}}",
+                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+            D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
+            D3::BeveledBox(XYZ(x,y,z), X(bevel)) => format!("hull() {{\n  {}\n}}",
+                D3::Union(Box::new(vec![
+                    D3::Box(XYZ(*x,*y-*bevel*2.,*z-*bevel*2.)).translate(XYZ(0.,*bevel,*bevel)),
+                    D3::Box(XYZ(*x-*bevel*2.,*y-*bevel*2.,*z)).translate(XYZ(*bevel,*bevel,0.)),
+                    D3::Box(XYZ(*x-*bevel*2.,*y,*z-*bevel*2.)).translate(XYZ(*bevel,0.,*bevel)),
+                    ]))), 
         }
     }
 }
 
 impl D3 {
+
+    pub fn translate(&self, xyz: XYZ) -> D3 {
+        D3::Translate(xyz, Box::new(self.clone()))
+    }
+
 }
 
 impl SCAD for D2 {
