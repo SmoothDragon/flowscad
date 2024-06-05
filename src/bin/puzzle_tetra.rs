@@ -14,9 +14,10 @@ fn main() {
         .iter_rotate(XYZ(90.,0.,0.), 2)
         .union()
         ;
-    let t_edge = (s-2.*e)*1.414;
+    let sqrt2 = f32::powf(2.,0.5);
+    let t_edge = (s-2.*e)*sqrt2;
     let t = D3::Box(XYZ(t_edge, 0.01, 0.01))
-        .translate(XYZ(-t_edge/2., 0., t_edge/2.828))
+        .translate(XYZ(-t_edge/2., 0., t_edge/2./sqrt2))
         .add_map(|x| x.rotate(XYZ(180., 0., 90.)))
         .hull()
         ;
