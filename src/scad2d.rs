@@ -88,7 +88,7 @@ pub enum Color {
 pub enum D3 {
     Cube(X),
     Box(XYZ),
-    BeveledBox(XYZ,X),
+    // BeveledBox(XYZ,X),
     Translate(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
@@ -279,17 +279,43 @@ impl SCAD for D3 {
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
             D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
-            D3::BeveledBox(XYZ(x,y,z), X(bevel)) => format!("hull() {{\n  {}\n}}",
-                D3::Union(Box::new(vec![
-                    D3::Box(XYZ(*x,*y-*bevel*2.,*z-*bevel*2.)).translate(XYZ(0.,*bevel,*bevel)),
-                    D3::Box(XYZ(*x-*bevel*2.,*y-*bevel*2.,*z)).translate(XYZ(*bevel,*bevel,0.)),
-                    D3::Box(XYZ(*x-*bevel*2.,*y,*z-*bevel*2.)).translate(XYZ(*bevel,0.,*bevel)),
-                    ]))), 
+            // D3::BeveledBox(XYZ(x,y,z), X(bevel)) => format!("hull() {{\n  {}\n}}",
+                // D3::Union(Box::new(vec![
+                    // D3::Box(XYZ(*x,*y-*bevel*2.,*z-*bevel*2.)).translate(XYZ(0.,*bevel,*bevel)),
+                    // D3::Box(XYZ(*x-*bevel*2.,*y-*bevel*2.,*z)).translate(XYZ(*bevel,*bevel,0.)),
+                    // D3::Box(XYZ(*x-*bevel*2.,*y,*z-*bevel*2.)).translate(XYZ(*bevel,0.,*bevel)),
+                    // ]))), 
         }
     }
 }
 
+pub fn beveled_box(xyz: XYZ, bevel: f32) -> D3 {
+    let x = xyz.0; 
+    let y = xyz.1;
+    let z = xyz.2;
+    D3::Hull(Box::new(vec![
+        D3::Box(XYZ(x,y-bevel*2.,z-bevel*2.)).translate(XYZ(0.,bevel,bevel)),
+        D3::Box(XYZ(x-bevel*2.,y-bevel*2.,z)).translate(XYZ(bevel,bevel,0.)),
+        D3::Box(XYZ(x-bevel*2.,y,z-bevel*2.)).translate(XYZ(bevel,0.,bevel)),
+        ]))
+}
+
 impl D3 {
+    pub fn add(self, other: D3) -> D3 {
+        match self { // Combine Unions if possible
+            D3::Union(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D3::Union(vec)
+                },
+            _ => D3::Union(Box::new(vec![self, other])),
+        }
+    }
+
+    pub fn add_map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
+        self.clone().add(f(self))
+    }
+
 
     pub fn translate(&self, xyz: XYZ) -> D3 {
         D3::Translate(xyz, Box::new(self.clone()))
@@ -301,6 +327,19 @@ impl D3 {
 
     pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
         (0..n).map(move |ii| self.rotate(XYZ(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
+    }
+
+    pub fn hull(self) -> D3 {
+        D3::Hull(Box::new(vec![self]))
+    // pub fn hull(self, other: D3) -> D3 {
+        // match self { // Combine D3 hulls if possible
+            // D3::Hull(vec) => {
+                // let mut vec = vec;
+                // vec.push(other);
+                // D3::Hull(vec)
+                // },
+            // _ => D3::Hull(Box::new(vec![self, other])),
+        // }
     }
 
 
