@@ -90,6 +90,7 @@ pub enum D3 {
     Box(XYZ),
     BeveledBox(XYZ,X),
     Translate(XYZ, Box<D3>),
+    Rotate(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
@@ -277,6 +278,7 @@ impl SCAD for D3 {
             D3::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
+            D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
             D3::BeveledBox(XYZ(x,y,z), X(bevel)) => format!("hull() {{\n  {}\n}}",
                 D3::Union(Box::new(vec![
                     D3::Box(XYZ(*x,*y-*bevel*2.,*z-*bevel*2.)).translate(XYZ(0.,*bevel,*bevel)),
@@ -292,6 +294,15 @@ impl D3 {
     pub fn translate(&self, xyz: XYZ) -> D3 {
         D3::Translate(xyz, Box::new(self.clone()))
     }
+
+    pub fn rotate(&self, theta: XYZ) -> D3 {
+        D3::Rotate(theta, Box::new(self.clone()))
+    }
+
+    pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+        (0..n).map(move |ii| self.rotate(XYZ(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
+    }
+
 
 }
 
