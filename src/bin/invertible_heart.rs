@@ -1,6 +1,6 @@
 use tgdscad::*;
 
-fn invertible_heart(r:f32) -> D2 {
+fn invertible_heart(r:f64) -> D2 {
     let theta = (2.0/PI).atan()*180./PI;
     D2::Circle(X(0.5*r))
         .translate(XY(0., r*PI/4.))

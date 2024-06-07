@@ -2,25 +2,24 @@ extern crate itertools;
 
 use std::fmt;
 use std::iter::{Iterator, Sum, Product};
-pub use std::f32::consts::PI;
+pub use std::f64::consts::PI;
+use num_traits::Num;
+use lazy_static::lazy_static;
+
 // use itertools::Itertools;
-const MAX: f32 = f32::MAX / 100.;
-// const MAX: f32 = 1000.;
+const MAX: f64 = f64::MAX / 100.;
+// const MAX: f64 = 1000.;
 
-pub trait D2Iterator : Iterator {
-    fn hull(self: Self) -> D2 where Self: Iterator<Item = D2>;
-    fn union(self: Self) -> D2 where Self: Iterator<Item = D2>;
-    fn intersection(self: Self) -> D2 where Self: Iterator<Item = D2>;
-    fn minkowski(self: Self) -> D2 where Self: Iterator<Item = D2>;
+
+pub trait DIterator<T> : Iterator<Item=T> {
+    fn hull(self: Self) -> T where Self: Iterator<Item = T>;
+    fn union(self: Self) -> T where Self: Iterator<Item = T>;
+    fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
+    fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
 }
 
-pub trait D3Iterator : Iterator {
-    fn hull(self: Self) -> D3 where Self: Iterator<Item = D3>;
-    fn union(self: Self) -> D3 where Self: Iterator<Item = D3>;
-    fn intersection(self: Self) -> D3 where Self: Iterator<Item = D3>;
-}
 
-impl<T: Iterator<Item=D2>> D2Iterator for T {
+impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     fn hull(self: Self) -> D2 {
         D2::Hull(Box::new(self.collect::<Vec<D2>>()))
     }
@@ -38,7 +37,7 @@ impl<T: Iterator<Item=D2>> D2Iterator for T {
     }
 }
 
-impl<T: Iterator<Item=D3>> D3Iterator for T {
+impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self: Self) -> D3 {
         D3::Hull(Box::new(self.collect::<Vec<D3>>()))
     }
@@ -50,16 +49,32 @@ impl<T: Iterator<Item=D3>> D3Iterator for T {
     fn intersection(self: Self) -> D3 {
         D3::Intersection(Box::new(self.collect::<Vec<D3>>()))
     }
+
+    fn minkowski(self: Self) -> D3 {
+        D3::Minkowski(Box::new(self.collect::<Vec<D3>>()))
+    }
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct X(pub f32);
+pub struct X(pub f64);
+
+impl From<i32> for X {
+    fn from(i: i32) -> X {
+        X(i as f64)
+    }
+}
+
+impl From<f64> for X {
+    fn from(f: f64) -> X {
+        X(f)
+    }
+}
 
 #[derive(Clone, Debug)]
-pub struct XY(pub f32, pub f32);
+pub struct XY(pub f64, pub f64);
 
 #[derive(Clone, Debug)]
-pub struct XYZ(pub f32, pub f32, pub f32);
+pub struct XYZ(pub f64, pub f64, pub f64);
 
 #[derive(Clone, Debug)]
 pub enum Aim {
@@ -88,13 +103,13 @@ pub enum Color {
 pub enum D3 {
     Cube(X),
     Box(XYZ),
-    // BeveledBox(XYZ,X),
     Translate(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
     Union(Box<Vec<D3>>),
+    Minkowski(Box<Vec<D3>>),
 }
 
 #[derive(Clone, Debug)]
@@ -125,6 +140,14 @@ pub fn indent_d3(shape: &D3) -> String {
 }
 
 impl D2 {
+    pub fn circle<T: Copy + Into<f64>>(r: T) -> D2 {
+        D2::Circle(X(r.into()))
+    }
+
+    pub fn square<T: Copy + Into<f64>>(s: T) -> D2 {
+        D2::Square(X(s.into()))
+    }
+
     pub fn add(self, other: D2) -> D2 {
         match self { // Combine Unions if possible
             D2::Union(vec) => {
@@ -140,7 +163,7 @@ impl D2 {
         self.clone().add(f(self))
         // D2::Union(Box::new(vec![self.clone(), f(self)]))
     }
-
+    /*
     pub fn hull(self, other: D2) -> D2 {
         match self { // Combine D2 hulls if possible
             D2::Hull(vec) => {
@@ -151,6 +174,14 @@ impl D2 {
             _ => D2::Hull(Box::new(vec![self, other])),
         }
         // D2::Hull(Box::new(vec![self, other]))
+    }
+    */
+    pub fn hull(self) -> D2 {
+        // D3::Hull(Box::new(vec![self]))
+        match self { // Combine Unions if possible
+            D2::Union(vec) => D2::Hull(vec),
+            _ => D2::Hull(Box::new(vec![self])),
+        }
     }
 
     pub fn intersection(self, other: D2) -> D2 {
@@ -191,7 +222,7 @@ impl D2 {
     }
 
     pub fn iter_translate<'a>(&'a self, xy: XY, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32)))
+        (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f64, xy.1 * ii as f64)))
     }
 
     pub fn rotate(&self, theta: X) -> D2 {
@@ -202,15 +233,21 @@ impl D2 {
     }
 
     pub fn iter_rotate<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f32)))
+        (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f64)))
     }
 
     pub fn iter_rotate_equal<'a>(&'a self, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.rotate(X(360./(n as f32) * ii as f32)))
+        (0..n).map(move |ii| self.rotate(X(360./(n as f64) * ii as f64)))
+    }
+
+    pub fn iter_square_edge<'a>(&'a self, d: X) -> impl Iterator<Item = D2> + 'a {
+        vec![XY(d.0, 0.), XY(0., d.0), XY(-d.0, 0.), XY(0., -d.0)]
+            .into_iter()
+            .map(move |xy| self.translate(xy))
     }
 
     pub fn translate_vec(&self, xy: XY, n: u32) -> Vec<D2> {
-        (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
+        (0..n).map(move |ii| self.translate(XY(xy.0 * ii as f64, xy.1 * ii as f64))).collect::<Vec<_>>()
     }
 
     pub fn color(self, color_name: Color) -> D2 {
@@ -263,6 +300,7 @@ impl fmt::Display for D3 {
 
 trait SCAD {
     fn scad(&self) -> String;
+    fn indent(&self) -> String;
 }
 
 impl SCAD for D3 {
@@ -277,27 +315,17 @@ impl SCAD for D3 {
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
-            D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
+            D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
+                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+            // D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
+            D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
             D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
-            // D3::BeveledBox(XYZ(x,y,z), X(bevel)) => format!("hull() {{\n  {}\n}}",
-                // D3::Union(Box::new(vec![
-                    // D3::Box(XYZ(*x,*y-*bevel*2.,*z-*bevel*2.)).translate(XYZ(0.,*bevel,*bevel)),
-                    // D3::Box(XYZ(*x-*bevel*2.,*y-*bevel*2.,*z)).translate(XYZ(*bevel,*bevel,0.)),
-                    // D3::Box(XYZ(*x-*bevel*2.,*y,*z-*bevel*2.)).translate(XYZ(*bevel,0.,*bevel)),
-                    // ]))), 
         }
     }
-}
+    fn indent(&self) -> String {
+        self.scad().replace("\n", "\n  ")
+    }
 
-pub fn beveled_box(xyz: XYZ, bevel: f32) -> D3 {
-    let x = xyz.0; 
-    let y = xyz.1;
-    let z = xyz.2;
-    D3::Hull(Box::new(vec![
-        D3::Box(XYZ(x,y-bevel*2.,z-bevel*2.)).translate(XYZ(0.,bevel,bevel)),
-        D3::Box(XYZ(x-bevel*2.,y-bevel*2.,z)).translate(XYZ(bevel,bevel,0.)),
-        D3::Box(XYZ(x-bevel*2.,y,z-bevel*2.)).translate(XYZ(bevel,0.,bevel)),
-        ]))
 }
 
 impl D3 {
@@ -326,11 +354,15 @@ impl D3 {
     }
 
     pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.rotate(XYZ(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
+        (0..n).map(move |ii| self.rotate(XYZ(theta.0 * ii as f64, theta.1 * ii as f64, theta.2 * ii as f64)))
     }
 
     pub fn hull(self) -> D3 {
-        D3::Hull(Box::new(vec![self]))
+        // D3::Hull(Box::new(vec![self]))
+        match self { // Combine Unions if possible
+            D3::Union(vec) => D3::Hull(vec),
+            _ => D3::Hull(Box::new(vec![self])),
+        }
     // pub fn hull(self, other: D3) -> D3 {
         // match self { // Combine D3 hulls if possible
             // D3::Hull(vec) => {
@@ -342,15 +374,26 @@ impl D3 {
         // }
     }
 
+    pub fn beveled_box(xyz: XYZ, bevel: f64) -> D3 {
+        let x = xyz.0; 
+        let y = xyz.1;
+        let z = xyz.2;
+        D3::Hull(Box::new(vec![
+            D3::Box(XYZ(x,y-bevel*2.,z-bevel*2.)).translate(XYZ(0.,bevel,bevel)),
+            D3::Box(XYZ(x-bevel*2.,y-bevel*2.,z)).translate(XYZ(bevel,bevel,0.)),
+            D3::Box(XYZ(x-bevel*2.,y,z-bevel*2.)).translate(XYZ(bevel,0.,bevel)),
+            ]))
+    }
+
 
 }
 
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
-            D2::Circle(r) => format!("circle(r = {});", r.0),
-            D2::Square(size) => format!("square(size = {});", size.0),
-            D2::Rectangle(xy) => format!("square(size = [{}, {}]);", xy.0, xy.1),
+            D2::Circle(X(radius)) => format!("circle(r = {});", radius),
+            D2::Square(X(size)) => format!("square(size = {});", size),
+            D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
                     Color::Blue => "\"blue\"",
@@ -371,22 +414,25 @@ impl SCAD for D2 {
                     // Aim::Angle(theta) => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
-            D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Mirror(xy, shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Rotate(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta.0, indent(shape)),
+            D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s.0, indent(shape)),
             D2::ScaleXY(xy, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             D2::Union(v) => format!( "union() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
             D2::Hull(v) => format!("hull() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            // D2::Minkowski(a,b) => format!("minkowski() {{\n  {}\n  {}\n}}", indent(a), indent(b)),
         }
     }
+    fn indent(&self) -> String {
+        self.scad().replace("\n", "\n  ")
+    }
+
 }
 
 #[cfg(test)]
@@ -395,6 +441,7 @@ mod test {
 
     const C5: D2 = D2::Circle(X(5.));
     const S9: D2 = D2::Square(X(9.));
+    lazy_static!{ static ref C7: D2 = D2::circle(7); }
 
     #[test]
     fn test_circle() {
@@ -414,8 +461,8 @@ mod test {
 
     #[test]
     fn test_color() {
-        assert_eq!(C5.add(S9).color(Color::Red).scad(),
-        "color(\"red\") {\n  union() {\n    circle(r = 5);\n    square(size = 9);\n  }\n}"
+        assert_eq!(D2::circle(7).add(D2::square(9)).color(Color::Red).scad(),
+        "color(\"red\") {\n  union() {\n    circle(r = 7);\n    square(size = 9);\n  }\n}"
         );
     }
 
