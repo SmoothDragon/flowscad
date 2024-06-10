@@ -1,3 +1,4 @@
+//! Create OpenSCAD files using Rust.
 extern crate itertools;
 
 use std::fmt;
@@ -11,6 +12,7 @@ const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
 
 
+/// Methods for creating an SCAD object from an iterator of SCAD objects.
 pub trait DIterator<T> : Iterator<Item=T> {
     fn hull(self: Self) -> T where Self: Iterator<Item = T>;
     fn union(self: Self) -> T where Self: Iterator<Item = T>;
@@ -102,6 +104,7 @@ pub enum Color {
 #[derive(Clone, Debug)]
 pub enum D3 {
     Cube(X),
+    Cylinder(X, X),
     Box(XYZ),
     Translate(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
@@ -110,6 +113,7 @@ pub enum D3 {
     Intersection(Box<Vec<D3>>),
     Union(Box<Vec<D3>>),
     Minkowski(Box<Vec<D3>>),
+    Difference(Box<D3>, Box<D3>),
 }
 
 #[derive(Clone, Debug)]
@@ -131,6 +135,11 @@ pub enum D2 {
     // Minkowski(Box<D2>, Box<D2>),
 }
 
+// #[derive(Clone, Debug)]
+// pub enum Geo<T> where T: D2 + D3 {
+// }
+
+
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
@@ -140,6 +149,7 @@ pub fn indent_d3(shape: &D3) -> String {
 }
 
 impl D2 {
+    /// Create a circle of radius `r` centered at the origin.
     pub fn circle<T: Copy + Into<f64>>(r: T) -> D2 {
         D2::Circle(X(r.into()))
     }
@@ -309,6 +319,7 @@ impl SCAD for D3 {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size.0),
             D3::Box(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
+            D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h.0, r.0),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -320,6 +331,7 @@ impl SCAD for D3 {
             // D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
             D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
             D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
+            D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
         }
     }
     fn indent(&self) -> String {
@@ -329,6 +341,14 @@ impl SCAD for D3 {
 }
 
 impl D3 {
+    /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
+    // pub fn cylinder<T: Copy + Into<f64>>(h: T, r: T) -> D3 {
+        // D3::Cylinder(X(h.into()), X(r.into()))
+    // }
+    pub fn cylinder(h: f64, r: f64) -> D3 {
+        D3::Cylinder(X(h), X(r))
+    }
+
     pub fn add(self, other: D3) -> D3 {
         match self { // Combine Unions if possible
             D3::Union(vec) => {
@@ -338,6 +358,10 @@ impl D3 {
                 },
             _ => D3::Union(Box::new(vec![self, other])),
         }
+    }
+
+    pub fn difference(self, other: D3) -> D3 {
+        D3::Difference(Box::new(self), Box::new(other))
     }
 
     pub fn add_map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
@@ -372,6 +396,17 @@ impl D3 {
                 // },
             // _ => D3::Hull(Box::new(vec![self, other])),
         // }
+    }
+
+    pub fn intersection(self, other: D3) -> D3 {
+        match self { // Combine intersections if possible
+            D3::Intersection(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D3::Intersection(vec)
+                },
+            _ => D3::Intersection(Box::new(vec![self, other])),
+        }
     }
 
     pub fn beveled_box(xyz: XYZ, bevel: f64) -> D3 {
@@ -442,10 +477,16 @@ mod test {
     const C5: D2 = D2::Circle(X(5.));
     const S9: D2 = D2::Square(X(9.));
     lazy_static!{ static ref C7: D2 = D2::circle(7); }
+    lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
 
     #[test]
     fn test_circle() {
         assert_eq!(C5.scad(), "circle(r = 5);");
+    }
+
+    #[test]
+    fn test_cylinder() {
+        assert_eq!(D3::cylinder(10.0, 5.0).scad(), "cylinder(h = 10, r = 5);");
     }
 
     #[test]
