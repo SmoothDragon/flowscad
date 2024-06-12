@@ -27,7 +27,8 @@ impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     }
 
     fn union(self: Self) -> D2 {
-        D2::Union(Box::new(self.collect::<Vec<D2>>()))
+        // D2::Union(Box::new(self.collect::<Vec<D2>>()))
+        D2::Join("union", Box::new(self.collect::<Vec<D2>>()))
     }
 
     fn intersection(self: Self) -> D2 {
@@ -116,6 +117,16 @@ pub enum D3 {
     Difference(Box<D3>, Box<D3>),
 }
 
+
+#[derive(Clone, Debug)]
+pub enum Join {
+    Intersection,
+    Union,
+    Hull,
+    Minkowski,
+}
+
+
 #[derive(Clone, Debug)]
 pub enum D2 {
     Circle(X),
@@ -132,6 +143,7 @@ pub enum D2 {
     Intersection(Box<Vec<D2>>),
     Union(Box<Vec<D2>>),
     Minkowski(Box<Vec<D2>>),
+    Join(&'static str, Box<Vec<D2>>),
     // Minkowski(Box<D2>, Box<D2>),
 }
 
@@ -159,13 +171,21 @@ impl D2 {
     }
 
     pub fn add(self, other: D2) -> D2 {
+        // match self { // Combine Unions if possible
+            // D2::Union(vec) => {
+                // let mut vec = vec;
+                // vec.push(other);
+                // D2::Union(vec)
+                // },
+            // _ => D2::Union(Box::new(vec![self, other])),
+        // }
         match self { // Combine Unions if possible
-            D2::Union(vec) => {
+            D2::Join("union", vec) => {
                 let mut vec = vec;
                 vec.push(other);
-                D2::Union(vec)
+                D2::Join("union", vec)
                 },
-            _ => D2::Union(Box::new(vec![self, other])),
+            _ => D2::Join("union", Box::new(vec![self, other])),
         }
     }
 
@@ -461,6 +481,8 @@ impl SCAD for D2 {
             D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
+                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            D2::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
         }
     }
