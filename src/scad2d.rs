@@ -23,7 +23,8 @@ pub trait DIterator<T> : Iterator<Item=T> {
 
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     fn hull(self: Self) -> D2 {
-        D2::Hull(Box::new(self.collect::<Vec<D2>>()))
+        // D2::Hull(Box::new(self.collect::<Vec<D2>>()))
+        D2::Join("hull", Box::new(self.collect::<Vec<D2>>()))
     }
 
     fn union(self: Self) -> D2 {
@@ -32,11 +33,13 @@ impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     }
 
     fn intersection(self: Self) -> D2 {
-        D2::Intersection(Box::new(self.collect::<Vec<D2>>()))
+        // D2::Intersection(Box::new(self.collect::<Vec<D2>>()))
+        D2::Join("intersection", Box::new(self.collect::<Vec<D2>>()))
     }
 
     fn minkowski(self: Self) -> D2 {
-        D2::Minkowski(Box::new(self.collect::<Vec<D2>>()))
+        // D2::Minkowski(Box::new(self.collect::<Vec<D2>>()))
+        D2::Join("minkowski", Box::new(self.collect::<Vec<D2>>()))
     }
 }
 
@@ -139,10 +142,10 @@ pub enum D2 {
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
-    Hull(Box<Vec<D2>>),
-    Intersection(Box<Vec<D2>>),
-    Union(Box<Vec<D2>>),
-    Minkowski(Box<Vec<D2>>),
+    // Hull(Box<Vec<D2>>),
+    // Intersection(Box<Vec<D2>>),
+    // Union(Box<Vec<D2>>),
+    // Minkowski(Box<Vec<D2>>),
     Join(&'static str, Box<Vec<D2>>),
     // Minkowski(Box<D2>, Box<D2>),
 }
@@ -209,31 +212,33 @@ impl D2 {
     pub fn hull(self) -> D2 {
         // D3::Hull(Box::new(vec![self]))
         match self { // Combine Unions if possible
-            D2::Union(vec) => D2::Hull(vec),
-            _ => D2::Hull(Box::new(vec![self])),
+            D2::Join("union", vec) => D2::Join("hull", vec),
+            // D2::Union(vec) => D2::Hull(vec),
+            // _ => D2::Hull(Box::new(vec![self])),
+            _ => D2::Join("hull", Box::new(vec![self])),
         }
     }
 
     pub fn intersection(self, other: D2) -> D2 {
         match self { // Combine intersections if possible
-            D2::Intersection(vec) => {
+            D2::Join("intersection", vec) => {
                 let mut vec = vec;
                 vec.push(other);
-                D2::Intersection(vec)
+                D2::Join("intersection", vec)
                 },
-            _ => D2::Intersection(Box::new(vec![self, other])),
+            _ => D2::Join("intersection", Box::new(vec![self, other])),
         }
         // D2::Intersection(Box::new(vec![self, other]))
     }
 
     pub fn minkowski(self, other: D2) -> D2 {
         match self { // Combine Minkowski sums if possible
-            D2::Minkowski(vec) => {
+            D2::Join("minkowski", vec) => {
                 let mut vec = vec;
                 vec.push(other);
-                D2::Minkowski(vec)
+                D2::Join("minkowski", vec)
                 },
-            _ => D2::Minkowski(Box::new(vec![self, other])),
+            _ => D2::Join("minkowski", Box::new(vec![self, other])),
         }
         // D2::Minkowski(Box::new(vec![self, other]))
         // D2::Minkowski(Box::new(self), Box::new(other))
@@ -303,7 +308,8 @@ impl Sum for D2 {
       where 
         I: Iterator<Item = Self>
     {
-        D2::Union(Box::new(iter.collect::<Vec<Self>>()))
+        D2::Join("union", Box::new(iter.collect::<Vec<Self>>()))
+        // D2::Union(Box::new(iter.collect::<Vec<Self>>()))
     }
 }
 
@@ -312,7 +318,7 @@ impl Product for D2 {
       where 
         I: Iterator<Item = Self>
     {
-        D2::Intersection(Box::new(iter.collect::<Vec<Self>>()))
+        D2::Join("intersection", Box::new(iter.collect::<Vec<Self>>()))
     }
 }
 
@@ -474,14 +480,14 @@ impl SCAD for D2 {
             D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s.0, indent(shape)),
             D2::ScaleXY(xy, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
-            D2::Union(v) => format!( "union() {{\n  {}\n}}",
-                v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
-            D2::Hull(v) => format!("hull() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
-            D2::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Union(v) => format!( "union() {{\n  {}\n}}",
+                // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
+            // D2::Hull(v) => format!("hull() {{\n  {}\n}}",
+                // v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Intersection(v) => format!("intersection() {{\n  {}\n}}",
+                // v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            // D2::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
+                // v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
         }
