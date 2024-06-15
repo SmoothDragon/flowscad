@@ -7,18 +7,18 @@
 use tgdscad::*;
 
 fn main() {
-    let e = D2::Circle(X(4.));
-    let f = D2::Circle(X(10.))
+    let e = D2::circle(4.);
+    let f = D2::circle(10.)
         .add(e)
         .translate(XY(4.,5.))
         .scale_xy(XY(3.,2.))
-        .add(D2::Square(X(9.)))
+        .add(D2::square(9))
         .scale(X(4.))
         .minkowski(D2::Rectangle(XY(0.5,1.5)))
         ;
     // println!("{:?}", &f);
     println!("{}", &f);
-    let _g = vec![D2::Circle(X(5.)), D2::Square(X(6.))];
+    let _g = vec![D2::circle(5), D2::square(6)];
     // let u: Vec<_> = _g.iter().map(|x| format!("{}", x)).collect();
     let u = _g.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join("\n");
     println!("{}", u);

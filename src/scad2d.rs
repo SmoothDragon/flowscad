@@ -6,6 +6,9 @@ use std::iter::{Iterator, Sum, Product};
 pub use std::f64::consts::PI;
 use num_traits::Num;
 use lazy_static::lazy_static;
+use nalgebra::*;
+
+use crate::positive_real::*;
 
 // use itertools::Itertools;
 const MAX: f64 = f64::MAX / 100.;
@@ -19,6 +22,9 @@ pub trait DIterator<T> : Iterator<Item=T> {
     fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
     fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
 }
+
+pub struct V3(Vector3<f64>);
+
 
 
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
@@ -57,6 +63,7 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
         D3::Minkowski(Box::new(self.collect::<Vec<D3>>()))
     }
 }
+
 
 #[derive(Clone, Copy, Debug)]
 pub struct X(pub f64);
@@ -129,8 +136,8 @@ pub enum Join {
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(X),
-    Square(X),
+    Circle(PositiveReal),
+    Square(PositiveReal),
     Rectangle(XY),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
@@ -162,12 +169,13 @@ pub fn indent_d3(shape: &D3) -> String {
 
 impl D2 {
     /// Create a circle of radius `r` centered at the origin.
-    pub fn circle<T: Copy + Into<f64>>(r: T) -> D2 {
-        D2::Circle(X(r.into()))
+    pub fn circle<T: TryInto<PositiveReal>>(r: T) -> D2 {
+        D2::Circle(r.try_into().ok().unwrap())
     }
 
-    pub fn square<T: Copy + Into<f64>>(s: T) -> D2 {
-        D2::Square(X(s.into()))
+    /// Create a square with side length `s` with lower left corner at the origin.
+    pub fn square<T: TryInto<PositiveReal>>(s: T) -> D2 {
+        D2::Square(s.try_into().ok().unwrap())
     }
 
     pub fn add(self, other: D2) -> D2 {
@@ -446,8 +454,8 @@ impl D3 {
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
-            D2::Circle(X(radius)) => format!("circle(r = {});", radius),
-            D2::Square(X(size)) => format!("square(size = {});", size),
+            D2::Circle(PositiveReal(radius)) => format!("circle(r = {});", radius),
+            D2::Square(PositiveReal(size)) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
@@ -458,15 +466,15 @@ impl SCAD for D2 {
                 , indent(shape)),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
-                    Aim::N => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
-                    Aim::U => D2::Square(X(MAX)).translate(XY(-MAX/2., 0.)),
-                    Aim::S => D2::Square(X(MAX)).translate(XY(-MAX/2., -MAX)),
-                    Aim::D => D2::Square(X(MAX)).translate(XY(-MAX/2., -MAX)),
-                    Aim::E => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
-                    Aim::R => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)),
-                    Aim::W => D2::Square(X(MAX)).translate(XY(-MAX, -MAX/2.)),
-                    Aim::L => D2::Square(X(MAX)).translate(XY(-MAX, -MAX/2.)),
-                    // Aim::Angle(theta) => D2::Square(X(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+                    Aim::N => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., 0.)),
+                    Aim::U => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., 0.)),
+                    Aim::S => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., -MAX)),
+                    Aim::D => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., -MAX)),
+                    Aim::E => D2::Square(PositiveReal::MAX).translate(XY(0., -MAX/2.)),
+                    Aim::R => D2::Square(PositiveReal::MAX).translate(XY(0., -MAX/2.)),
+                    Aim::W => D2::Square(PositiveReal::MAX).translate(XY(-MAX, -MAX/2.)),
+                    Aim::L => D2::Square(PositiveReal::MAX).translate(XY(-MAX, -MAX/2.)),
+                    // Aim::Angle(theta) => D2::Square(PositiveReal(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
@@ -496,8 +504,8 @@ impl SCAD for D2 {
 mod test {
     use super::*;
 
-    const C5: D2 = D2::Circle(X(5.));
-    const S9: D2 = D2::Square(X(9.));
+    const C5: D2 = D2::Circle(PositiveReal(5.));
+    const S9: D2 = D2::Square(PositiveReal(9.));
     lazy_static!{ static ref C7: D2 = D2::circle(7); }
     lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
 
@@ -524,7 +532,7 @@ mod test {
 
     #[test]
     fn test_color() {
-        assert_eq!(D2::circle(7).add(D2::square(9)).color(Color::Red).scad(),
+        assert_eq!(D2::circle(7_i32).add(D2::square(9)).color(Color::Red).scad(),
         "color(\"red\") {\n  union() {\n    circle(r = 7);\n    square(size = 9);\n  }\n}"
         );
     }
