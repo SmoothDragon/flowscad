@@ -8,7 +8,7 @@ use num_traits::Num;
 use lazy_static::lazy_static;
 use nalgebra::*;
 
-use crate::positive_real::*;
+use crate::finite_number::*;
 
 // use itertools::Itertools;
 const MAX: f64 = f64::MAX / 100.;
@@ -114,8 +114,8 @@ pub enum Color {
 
 #[derive(Clone, Debug)]
 pub enum D3 {
-    Cube(X),
-    Cylinder(X, X),
+    Cube(FinitePositive),
+    Cylinder(FinitePositive, FinitePositive),
     Box(XYZ),
     Translate(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
@@ -139,13 +139,13 @@ pub enum Join {
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(PositiveReal),
-    Square(PositiveReal),
+    Circle(FinitePositive),
+    Square(FinitePositive),
     Rectangle(XY),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(X, Box<D2>),
-    Scale(X, Box<D2>),
+    Scale(FinitePositive, Box<D2>),
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
@@ -172,13 +172,18 @@ pub fn indent_d3(shape: &D3) -> String {
 
 impl D2 {
     /// Create a circle of radius `r` centered at the origin.
-    pub fn circle<T: TryInto<PositiveReal>>(r: T) -> D2 {
+    pub fn circle<T: TryInto<FinitePositive>>(r: T) -> D2 {
         D2::Circle(r.try_into().ok().unwrap())
     }
 
     /// Create a square with side length `s` with lower left corner at the origin.
-    pub fn square<T: TryInto<PositiveReal>>(s: T) -> D2 {
+    pub fn square<T: TryInto<FinitePositive>>(s: T) -> D2 {
         D2::Square(s.try_into().ok().unwrap())
+    }
+
+    /// Scale size by the factor `s`.
+    pub fn scale<T: TryInto<FinitePositive>>(self, s: T) -> D2 {
+        D2::Scale(s.try_into().ok().unwrap(), Box::new(self))
     }
 
     pub fn add(self, other: D2) -> D2 {
@@ -297,11 +302,6 @@ impl D2 {
         D2::Color(color_name, Box::new(self))
     }
 
-
-    pub fn scale(self, s: X) -> D2 {
-        D2::Scale(s, Box::new(self))
-    }
-
     pub fn scale_xy(self, xy: XY) -> D2 {
         D2::ScaleXY(xy, Box::new(self))
     }
@@ -351,7 +351,7 @@ impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
-            D3::Cube(size) => format!("cube(size = {});", size.0),
+            D3::Cube(FinitePositive(size)) => format!("cube(size = {});", size),
             D3::Box(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h.0, r.0),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
@@ -375,12 +375,14 @@ impl SCAD for D3 {
 }
 
 impl D3 {
+    /// Create a cube with side length `s` with lower left corner at the origin.
+    pub fn cube<T: TryInto<FinitePositive>>(s: T) -> D3 {
+        D3::Cube(s.try_into().ok().unwrap())
+    }
+
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    // pub fn cylinder<T: Copy + Into<f64>>(h: T, r: T) -> D3 {
-        // D3::Cylinder(X(h.into()), X(r.into()))
-    // }
-    pub fn cylinder(h: f64, r: f64) -> D3 {
-        D3::Cylinder(X(h), X(r))
+    pub fn cylinder<T: TryInto<FinitePositive>>(h: T, r:T) -> D3 {
+        D3::Cylinder(h.try_into().ok().unwrap(), r.try_into().ok().unwrap())
     }
 
     pub fn add(self, other: D3) -> D3 {
@@ -460,8 +462,8 @@ impl D3 {
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
-            D2::Circle(PositiveReal(radius)) => format!("circle(r = {});", radius),
-            D2::Square(PositiveReal(size)) => format!("square(size = {});", size),
+            D2::Circle(FinitePositive(radius)) => format!("circle(r = {});", radius),
+            D2::Square(FinitePositive(size)) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
@@ -472,15 +474,15 @@ impl SCAD for D2 {
                 , indent(shape)),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
-                    Aim::N => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., 0.)),
-                    Aim::U => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., 0.)),
-                    Aim::S => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., -MAX)),
-                    Aim::D => D2::Square(PositiveReal::MAX).translate(XY(-MAX/2., -MAX)),
-                    Aim::E => D2::Square(PositiveReal::MAX).translate(XY(0., -MAX/2.)),
-                    Aim::R => D2::Square(PositiveReal::MAX).translate(XY(0., -MAX/2.)),
-                    Aim::W => D2::Square(PositiveReal::MAX).translate(XY(-MAX, -MAX/2.)),
-                    Aim::L => D2::Square(PositiveReal::MAX).translate(XY(-MAX, -MAX/2.)),
-                    // Aim::Angle(theta) => D2::Square(PositiveReal(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+                    Aim::N => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., 0.)),
+                    Aim::U => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., 0.)),
+                    Aim::S => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., -MAX)),
+                    Aim::D => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., -MAX)),
+                    Aim::E => D2::Square(FinitePositive::MAX).translate(XY(0., -MAX/2.)),
+                    Aim::R => D2::Square(FinitePositive::MAX).translate(XY(0., -MAX/2.)),
+                    Aim::W => D2::Square(FinitePositive::MAX).translate(XY(-MAX, -MAX/2.)),
+                    Aim::L => D2::Square(FinitePositive::MAX).translate(XY(-MAX, -MAX/2.)),
+                    // Aim::Angle(theta) => D2::Square(FinitePositive(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
@@ -510,8 +512,8 @@ impl SCAD for D2 {
 mod test {
     use super::*;
 
-    const C5: D2 = D2::Circle(PositiveReal(5.));
-    const S9: D2 = D2::Square(PositiveReal(9.));
+    const C5: D2 = D2::Circle(FinitePositive(5.));
+    const S9: D2 = D2::Square(FinitePositive(9.));
     lazy_static!{ static ref C7: D2 = D2::circle(7); }
     lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
 

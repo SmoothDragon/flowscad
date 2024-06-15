@@ -1,5 +1,7 @@
 pub mod scad2d;
-pub mod positive_real;
+pub mod scad3d;
+pub mod finite_number;
 
 pub use crate::scad2d::*;
-pub use crate::positive_real::*;
+pub use crate::scad3d::*;
+pub use crate::finite_number::*;
