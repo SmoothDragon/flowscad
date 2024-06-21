@@ -409,6 +409,10 @@ impl D3 {
         D3::Translate(xyz, Box::new(self.clone()))
     }
 
+    pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+        (0..n).map(move |ii| self.translate(XYZ(xyz.0 * ii as f64, xyz.1 * ii as f64, xyz.2 * ii as f64)))
+    }
+
     pub fn rotate(&self, theta: XYZ) -> D3 {
         D3::Rotate(theta, Box::new(self.clone()))
     }
@@ -453,6 +457,22 @@ impl D3 {
             D3::Box(XYZ(x,y-bevel*2.,z-bevel*2.)).translate(XYZ(0.,bevel,bevel)),
             D3::Box(XYZ(x-bevel*2.,y-bevel*2.,z)).translate(XYZ(bevel,bevel,0.)),
             D3::Box(XYZ(x-bevel*2.,y,z-bevel*2.)).translate(XYZ(bevel,0.,bevel)),
+            ]))
+    }
+
+    pub fn truncated_octahedron(l_edge: f64) -> D3 {
+        //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
+        let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
+        D3::Hull(Box::new(vec![
+            D3::Box(XYZ(l_edge, l_edge, 2.0*r_square))
+                .translate(XYZ(-l_edge/2.0, -l_edge/2.0, -r_square))
+                .rotate(XYZ(0., 0., 45.)),
+            D3::Box(XYZ(l_edge, 2.*r_square, l_edge))
+                .translate(XYZ(-l_edge/2.0, -r_square, -l_edge/2.0))
+                .rotate(XYZ(0., 45., 0.)),
+            D3::Box(XYZ(2.*r_square, l_edge, l_edge))
+                .translate(XYZ(-r_square, -l_edge/2.0, -l_edge/2.0))
+                .rotate(XYZ(45., 0., 0.)),
             ]))
     }
 
