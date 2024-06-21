@@ -2,6 +2,7 @@
 extern crate itertools;
 
 use std::fmt;
+use std::ops;
 use std::iter::{Iterator, Sum, Product};
 pub use std::f64::consts::PI;
 use num_traits::Num;
@@ -449,6 +450,10 @@ impl D3 {
         }
     }
 
+    pub fn cuboid(xyz: XYZ) -> D3 {
+        D3::Box(xyz)
+    }
+
     pub fn beveled_box(xyz: XYZ, bevel: f64) -> D3 {
         let x = xyz.0; 
         let y = xyz.1;
@@ -477,6 +482,22 @@ impl D3 {
     }
 
 
+}
+
+impl ops::Add<D3> for D3 {
+    type Output = D3;
+
+    fn add(self, other: D3) -> D3 {
+        self.add(other)
+    }
+}
+
+impl ops::Sub<D3> for D3 {
+    type Output = D3;
+
+    fn sub(self, other: D3) -> D3 {
+        self.difference(other)
+    }
 }
 
 impl SCAD for D2 {
