@@ -15,7 +15,7 @@ fn main() {
         ;
     let sqrt2 = f64::powf(2.,0.5);
     let t_edge = (s-2.*e)*sqrt2;
-    let t = D3::Box(XYZ(t_edge, 0.01, 0.01))
+    let t = D3::cuboid(t_edge, 0.01, 0.01)
         .translate(XYZ(-t_edge/2., 0., t_edge/2./sqrt2))
         .add_map(|x| x.rotate(XYZ(180., 0., 90.)))
         .hull()

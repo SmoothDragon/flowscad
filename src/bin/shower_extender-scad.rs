@@ -18,9 +18,9 @@ fn main() {
     let center_column = D3::cylinder(h_center, d_center/2.)
         .add(D3::cylinder(h_outer, d_outer/2.))
         .add(D3::cylinder(h_rim, d_rim/2.))
-        .add(D3::Box(XYZ(h_notch, w_notch, h_outer)).translate(XYZ(d_outer/2.-0.5, -w_notch/2., 0.)))
+        .add(D3::cuboid(h_notch, w_notch, h_outer).translate(XYZ(d_outer/2.-0.5, -w_notch/2., 0.)))
         .difference(D3::cylinder(h_center+2., d_center/2.-2.).translate(XYZ(0.,0.,-1.)))
-        .difference(D3::Box(XYZ(2.*d_center, 14., 3.7*2.)).translate(XYZ(-d_center, -7., h_center-3.7)))
+        .difference(D3::cuboid(2.*d_center, 14., 3.7*2.).translate(XYZ(-d_center, -7., h_center-3.7)))
         ;
 
     println!("{}", &center_column);

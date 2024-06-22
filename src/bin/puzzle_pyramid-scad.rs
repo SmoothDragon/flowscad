@@ -4,9 +4,9 @@ use tgdscad::*;
 fn main() {
     let s = 80.;  // base edge length of pyramid
     // Full Pyramid 2x2 ratio base
-    let pyramid = D3::Box(XYZ(s, s, 0.01))
+    let pyramid = D3::cuboid(s, s, 0.01)
         .translate(XYZ(-s/2., -s/2., 0.))
-        .add(D3::Box(XYZ(0.01, 0.01, 0.01))
+        .add(D3::cuboid(0.01, 0.01, 0.01)
              .translate(XYZ(0., 0., s/2.))
              )
         .hull()
@@ -29,7 +29,7 @@ fn main() {
         .rotate(XYZ(90.,0.,0.))
         ;
     // Square base to hold puzzle in
-    let base = D3::Box(XYZ(s+4., s+4., 4.)).difference(D3::cube(s).translate(XYZ(2.,2.,2.)));
+    let base = D3::cuboid(s+4., s+4., 4.).difference(D3::cube(s).translate(XYZ(2.,2.,2.)));
     // Lay all the pieces out for printing
     let puzzle = piece1
         .add(base.translate(XYZ(-s*1.2+5., -s/2., 0.))) 

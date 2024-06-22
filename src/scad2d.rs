@@ -50,6 +50,22 @@ impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     }
 }
 
+impl ops::Add<D2> for D2 {
+    type Output = D2;
+
+    fn add(self, other: D2) -> D2 {
+        self.add(other)
+    }
+}
+
+impl ops::Sub<D2> for D2 {
+    type Output = D2;
+
+    fn sub(self, other: D2) -> D2 {
+        self.difference(other)
+    }
+}
+
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self: Self) -> D3 {
         D3::Hull(Box::new(self.collect::<Vec<D3>>()))
@@ -117,7 +133,7 @@ pub enum Color {
 pub enum D3 {
     Cube(FinitePositive),
     Cylinder(FinitePositive, FinitePositive),
-    Box(XYZ),
+    Cuboid(FinitePositive, FinitePositive, FinitePositive),
     Translate(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
@@ -155,6 +171,7 @@ pub enum D2 {
     // Union(Box<Vec<D2>>),
     // Minkowski(Box<Vec<D2>>),
     Join(&'static str, Box<Vec<D2>>),
+    Difference(Box<D2>, Box<D2>),
     // Minkowski(Box<D2>, Box<D2>),
 }
 
@@ -205,6 +222,11 @@ impl D2 {
             _ => D2::Join("union", Box::new(vec![self, other])),
         }
     }
+
+    pub fn difference(self, other: D2) -> D2 {
+        D2::Difference(Box::new(self), Box::new(other))
+    }
+
 
     pub fn add_map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
         self.clone().add(f(self))
@@ -353,7 +375,7 @@ impl SCAD for D3 {
         match &self {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::Cube(FinitePositive(size)) => format!("cube(size = {});", size),
-            D3::Box(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
+            D3::Cuboid(x, y, z) => format!("cube(size = [{}, {}, {}]);", x.0, y.0, z.0),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h.0, r.0),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
@@ -379,6 +401,15 @@ impl D3 {
     /// Create a cube with side length `s` with lower left corner at the origin.
     pub fn cube<T: TryInto<FinitePositive>>(s: T) -> D3 {
         D3::Cube(s.try_into().ok().unwrap())
+    }
+
+    /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
+    pub fn cuboid<T: TryInto<FinitePositive>>(x: T, y: T, z: T) -> D3 {
+        D3::Cuboid(
+                x.try_into().ok().unwrap(),
+                y.try_into().ok().unwrap(),
+                z.try_into().ok().unwrap()
+                )
     }
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
@@ -450,18 +481,14 @@ impl D3 {
         }
     }
 
-    pub fn cuboid(xyz: XYZ) -> D3 {
-        D3::Box(xyz)
-    }
-
     pub fn beveled_box(xyz: XYZ, bevel: f64) -> D3 {
         let x = xyz.0; 
         let y = xyz.1;
         let z = xyz.2;
         D3::Hull(Box::new(vec![
-            D3::Box(XYZ(x,y-bevel*2.,z-bevel*2.)).translate(XYZ(0.,bevel,bevel)),
-            D3::Box(XYZ(x-bevel*2.,y-bevel*2.,z)).translate(XYZ(bevel,bevel,0.)),
-            D3::Box(XYZ(x-bevel*2.,y,z-bevel*2.)).translate(XYZ(bevel,0.,bevel)),
+            D3::cuboid(x,y-bevel*2.,z-bevel*2.).translate(XYZ(0.,bevel,bevel)),
+            D3::cuboid(x-bevel*2.,y-bevel*2.,z).translate(XYZ(bevel,bevel,0.)),
+            D3::cuboid(x-bevel*2.,y,z-bevel*2.).translate(XYZ(bevel,0.,bevel)),
             ]))
     }
 
@@ -469,13 +496,13 @@ impl D3 {
         //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
         let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
-            D3::Box(XYZ(l_edge, l_edge, 2.0*r_square))
+            D3::cuboid(l_edge, l_edge, 2.0*r_square)
                 .translate(XYZ(-l_edge/2.0, -l_edge/2.0, -r_square))
                 .rotate(XYZ(0., 0., 45.)),
-            D3::Box(XYZ(l_edge, 2.*r_square, l_edge))
+            D3::cuboid(l_edge, 2.*r_square, l_edge)
                 .translate(XYZ(-l_edge/2.0, -r_square, -l_edge/2.0))
                 .rotate(XYZ(0., 45., 0.)),
-            D3::Box(XYZ(2.*r_square, l_edge, l_edge))
+            D3::cuboid(2.*r_square, l_edge, l_edge)
                 .translate(XYZ(-r_square, -l_edge/2.0, -l_edge/2.0))
                 .rotate(XYZ(45., 0., 0.)),
             ]))
@@ -541,6 +568,7 @@ impl SCAD for D2 {
                 // v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+            D2::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent(shape1), indent(shape2)),
         }
     }
     fn indent(&self) -> String {

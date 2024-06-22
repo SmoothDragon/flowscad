@@ -7,7 +7,7 @@ pub fn circle_beveled_box(xyz: XYZ, bevel: f64) -> D3 {
     let y = xyz.1;
     let z = xyz.2;
     let rod = D3::cylinder(x.max(y).max(z), bevel);
-    D3::cuboid(xyz) - rod
+    D3::cuboid(x,y,z) - rod
 }
 
 pub fn beveled_truncated_octahedron(l_edge: f64) -> D3 {
