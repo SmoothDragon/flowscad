@@ -11,8 +11,20 @@ impl Real {
     pub const MAX: Real = Real(f32::MAX/1000.0);
 }
 
+impl From<u32> for Real {
+    fn from(i: u32) -> Real {
+        Real(i as f32)
+    }
+}
+
 impl From<i32> for Real {
     fn from(i: i32) -> Real {
+        Real(i as f32)
+    }
+}
+
+impl From<u64> for Real {
+    fn from(i: u64) -> Real {
         Real(i as f32)
     }
 }

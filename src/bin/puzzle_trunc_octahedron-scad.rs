@@ -17,13 +17,13 @@ pub fn beveled_truncated_octahedron(l_edge: f64) -> D3 {
     D3::Hull(Box::new(vec![
         D3::beveled_box(XYZ(l_edge, l_edge, 2.0*r_square), bevel)
             .translate(-l_edge/2.0, -l_edge/2.0, -r_square)
-            .rotate(XYZ(0., 0., 45.)),
+            .rotate(0., 0., 45.),
         D3::beveled_box(XYZ(l_edge, 2.*r_square, l_edge), bevel)
             .translate(-l_edge/2.0, -r_square, -l_edge/2.0)
-            .rotate(XYZ(0., 45., 0.)),
+            .rotate(0., 45., 0.),
         D3::beveled_box(XYZ(2.*r_square, l_edge, l_edge), bevel)
             .translate(-r_square, -l_edge/2.0, -l_edge/2.0)
-            .rotate(XYZ(45., 0., 0.)),
+            .rotate(45., 0., 0.),
         ]))
 }
 
@@ -41,8 +41,8 @@ fn main() {
     let column = t.clone()
         .iter_translate(XYZ(r_square, r_square, r_square), 5)
         .union()
-        .rotate(XYZ(0., 0., 45.))
-        .rotate(XYZ((-1.0_f64/3.).acos()*180.0/PI/2., 0., 0.))
+        .rotate(0., 0., 45.)
+        .rotate((-1.0_f64/3.).acos()*180.0/PI/2., 0., 0.)
         .translate(-3.*r_square,0.,0.)
         ;
 

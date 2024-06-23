@@ -26,7 +26,7 @@ fn main() {
         .difference(piece1.clone())
         .difference(piece1.clone().translate(-s/2.,0.,0.))
         .intersection(D3::cube(s).translate(-s/2.,0.,0.))
-        .rotate(XYZ(90.,0.,0.))
+        .rotate(90.,0.,0.)
         ;
     // Square base to hold puzzle in
     let base = D3::cuboid(s+4., s+4., 4.).difference(D3::cube(s).translate(2.,2.,2.));
