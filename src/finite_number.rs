@@ -4,34 +4,34 @@ pub enum PositiveRealError {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Finite(pub f32);
+pub struct Real(pub f32);
 
-impl Finite {
+impl Real {
     /// Positive Real MAX is lower since it is used for super large objects that could be shifted or rotated.
-    pub const MAX: Finite = Finite(f32::MAX/1000.0);
+    pub const MAX: Real = Real(f32::MAX/1000.0);
 }
 
-impl From<i32> for Finite {
-    fn from(i: i32) -> Finite {
-        Finite(i as f32)
+impl From<i32> for Real {
+    fn from(i: i32) -> Real {
+        Real(i as f32)
     }
 }
 
-impl From<i64> for Finite {
-    fn from(i: i64) -> Finite {
-        Finite(i as f32)
+impl From<i64> for Real {
+    fn from(i: i64) -> Real {
+        Real(i as f32)
     }
 }
 
-impl From<f32> for Finite {
-    fn from(f: f32) -> Finite {
-        Finite(f)
+impl From<f32> for Real {
+    fn from(f: f32) -> Real {
+        Real(f)
     }
 }
 
-impl From<f64> for Finite {
-    fn from(f: f64) -> Finite {
-        Finite(f as f32)
+impl From<f64> for Real {
+    fn from(f: f64) -> Real {
+        Real(f as f32)
     }
 }
 

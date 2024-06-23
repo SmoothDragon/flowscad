@@ -24,7 +24,6 @@ pub trait DIterator<T> : Iterator<Item=T> {
     fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
 }
 
-pub struct V3(Vector3<f64>);
 
 
 
@@ -134,7 +133,7 @@ pub enum D3 {
     Cube(FinitePositive),
     Cylinder(FinitePositive, FinitePositive),
     Cuboid(FinitePositive, FinitePositive, FinitePositive),
-    Translate(XYZ, Box<D3>),
+    Translate(Real, Real, Real, Box<D3>),
     Rotate(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
@@ -386,7 +385,7 @@ impl SCAD for D3 {
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             // D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
-            D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
+            D3::Translate(x, y, z, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", x.0, y.0, z.0, shape.indent()),
             D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
         }
@@ -411,6 +410,16 @@ impl D3 {
                 z.try_into().ok().unwrap()
                 )
     }
+
+    pub fn translate<T: TryInto<Real>>(self, x: T, y: T, z: T) -> D3 {
+        D3::Translate(
+                x.try_into().ok().unwrap(),
+                y.try_into().ok().unwrap(),
+                z.try_into().ok().unwrap(),
+                Box::new(self.clone())
+                )
+    }
+
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
     pub fn cylinder<T: TryInto<FinitePositive>>(h: T, r:T) -> D3 {
@@ -437,12 +446,8 @@ impl D3 {
     }
 
 
-    pub fn translate(&self, xyz: XYZ) -> D3 {
-        D3::Translate(xyz, Box::new(self.clone()))
-    }
-
     pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.translate(XYZ(xyz.0 * ii as f64, xyz.1 * ii as f64, xyz.2 * ii as f64)))
+        (0..n).map(move |ii| self.clone().translate(xyz.0 * ii as f64, xyz.1 * ii as f64, xyz.2 * ii as f64))
     }
 
     pub fn rotate(&self, theta: XYZ) -> D3 {
@@ -486,9 +491,9 @@ impl D3 {
         let y = xyz.1;
         let z = xyz.2;
         D3::Hull(Box::new(vec![
-            D3::cuboid(x,y-bevel*2.,z-bevel*2.).translate(XYZ(0.,bevel,bevel)),
-            D3::cuboid(x-bevel*2.,y-bevel*2.,z).translate(XYZ(bevel,bevel,0.)),
-            D3::cuboid(x-bevel*2.,y,z-bevel*2.).translate(XYZ(bevel,0.,bevel)),
+            D3::cuboid(x,y-bevel*2.,z-bevel*2.).translate(0.,bevel,bevel),
+            D3::cuboid(x-bevel*2.,y-bevel*2.,z).translate(bevel,bevel,0.),
+            D3::cuboid(x-bevel*2.,y,z-bevel*2.).translate(bevel,0.,bevel),
             ]))
     }
 
@@ -497,13 +502,13 @@ impl D3 {
         let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
             D3::cuboid(l_edge, l_edge, 2.0*r_square)
-                .translate(XYZ(-l_edge/2.0, -l_edge/2.0, -r_square))
+                .translate(-l_edge/2.0, -l_edge/2.0, -r_square)
                 .rotate(XYZ(0., 0., 45.)),
             D3::cuboid(l_edge, 2.*r_square, l_edge)
-                .translate(XYZ(-l_edge/2.0, -r_square, -l_edge/2.0))
+                .translate(-l_edge/2.0, -r_square, -l_edge/2.0)
                 .rotate(XYZ(0., 45., 0.)),
             D3::cuboid(2.*r_square, l_edge, l_edge)
-                .translate(XYZ(-r_square, -l_edge/2.0, -l_edge/2.0))
+                .translate(-r_square, -l_edge/2.0, -l_edge/2.0)
                 .rotate(XYZ(45., 0., 0.)),
             ]))
     }
