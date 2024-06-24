@@ -190,17 +190,25 @@ pub fn indent_d3(shape: &D3) -> String {
 
 impl D2 {
     /// Create a circle of radius `r` centered at the origin.
-    pub fn circle<T: TryInto<typed_floats::StrictlyPositive>>(r: T) -> Result<D2>
+    pub fn circle<T>(r: T) -> Result<D2>
         where
+            T: TryInto<typed_floats::StrictlyPositive>,
             anyhow::Error: From<T::Error>,
         {
         Ok(D2::Circle(r.try_into()?))
     }
 
     /// Create a square with side length `s` with lower left corner at the origin.
-    pub fn square<T: TryInto<StrictlyPositive>>(s: T) -> D2 {
-        D2::Square(s.try_into().ok().unwrap())
+    pub fn square<T>(s: T) -> Result<D2>
+        where
+            T: TryInto<typed_floats::StrictlyPositive>,
+            anyhow::Error: From<T::Error>,
+        {
+        Ok(D2::Square(s.try_into()?))
     }
+    // pub fn square<T: TryInto<StrictlyPositive>>(s: T) -> D2 {
+        // D2::Square(s.try_into().ok().unwrap())
+    // }
 
     /// Scale size by the factor `s`.
     pub fn scale<T: TryInto<StrictlyPositive>>(self, s: T) -> D2 {
@@ -572,14 +580,14 @@ impl SCAD for D2 {
                 , indent(shape)),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
-                    Aim::N => D2::square(MAX).translate(XY(-MAX/2., 0.)),
-                    Aim::U => D2::square(MAX).translate(XY(-MAX/2., 0.)),
-                    Aim::S => D2::square(MAX).translate(XY(-MAX/2., -MAX)),
-                    Aim::D => D2::square(MAX).translate(XY(-MAX/2., -MAX)),
-                    Aim::E => D2::square(MAX).translate(XY(0., -MAX/2.)),
-                    Aim::R => D2::square(MAX).translate(XY(0., -MAX/2.)),
-                    Aim::W => D2::square(MAX).translate(XY(-MAX, -MAX/2.)),
-                    Aim::L => D2::square(MAX).translate(XY(-MAX, -MAX/2.)),
+                    Aim::N => D2::square(MAX).unwrap().translate(XY(-MAX/2., 0.)),
+                    Aim::U => D2::square(MAX).unwrap().translate(XY(-MAX/2., 0.)),
+                    Aim::S => D2::square(MAX).unwrap().translate(XY(-MAX/2., -MAX)),
+                    Aim::D => D2::square(MAX).unwrap().translate(XY(-MAX/2., -MAX)),
+                    Aim::E => D2::square(MAX).unwrap().translate(XY(0., -MAX/2.)),
+                    Aim::R => D2::square(MAX).unwrap().translate(XY(0., -MAX/2.)),
+                    Aim::W => D2::square(MAX).unwrap().translate(XY(-MAX, -MAX/2.)),
+                    Aim::L => D2::square(MAX).unwrap().translate(XY(-MAX, -MAX/2.)),
                     // Aim::Angle(theta) => D2::Square(StrictlyPositive(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
@@ -617,7 +625,7 @@ mod test {
     lazy_static!{ static ref C5: D2 = D2::circle(5).unwrap(); }
     lazy_static!{ static ref C7: D2 = D2::circle(7).unwrap(); }
     lazy_static!{ static ref C8: D2 = D2::circle(8.0).unwrap(); }
-    lazy_static!{ static ref S9: D2 = D2::square(9.0); }
+    lazy_static!{ static ref S9: D2 = D2::square(9.0).unwrap(); }
 
     #[test]
     fn test_circle() {
@@ -636,13 +644,13 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(D2::circle(5).unwrap().add(D2::square(9)).scad(),
+        assert_eq!(D2::circle(5).unwrap().add(D2::square(9).unwrap()).scad(),
         "union() {\n  circle(r = 5);\n  square(size = 9);\n}");
     }
 
     #[test]
     fn test_color() {
-        assert_eq!(D2::circle(7_i32).unwrap().add(D2::square(9)).color(Color::Red).scad(),
+        assert_eq!(D2::circle(7_i32).unwrap().add(D2::square(9).unwrap()).color(Color::Red).scad(),
         "color(\"red\") {\n  union() {\n    circle(r = 7);\n    square(size = 9);\n  }\n}"
         );
     }
