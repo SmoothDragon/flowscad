@@ -1,5 +1,6 @@
 //! Create OpenSCAD files using Rust.
 extern crate itertools;
+extern crate typed_floats;
 
 use std::fmt;
 use std::ops;
@@ -12,6 +13,7 @@ use nalgebra::*;
 use crate::finite_number::*;
 
 // use itertools::Itertools;
+use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
 
@@ -23,9 +25,6 @@ pub trait DIterator<T> : Iterator<Item=T> {
     fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
     fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
 }
-
-
-
 
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     fn hull(self: Self) -> D2 {
@@ -130,9 +129,9 @@ pub enum Color {
 
 #[derive(Clone, Debug)]
 pub enum D3 {
-    Cube(FinitePositive),
-    Cylinder(FinitePositive, FinitePositive),
-    Cuboid(FinitePositive, FinitePositive, FinitePositive),
+    Cube(StrictlyPositive),
+    Cylinder(StrictlyPositive, StrictlyPositive),
+    Cuboid(StrictlyPositive, StrictlyPositive, StrictlyPositive),
     Translate(Real, Real, Real, Box<D3>),
     Rotate(Real, Real, Real, Box<D3>),
     LinearExtrude(X, Box<D2>),
@@ -155,13 +154,14 @@ pub enum Join {
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(FinitePositive),
-    Square(FinitePositive),
+    Circle(StrictlyPositive),
+    Square(StrictlyPositive),
     Rectangle(XY),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(X, Box<D2>),
-    Scale(FinitePositive, Box<D2>),
+    Rotate2(StrictlyPositive, Box<D2>),
+    Scale(StrictlyPositive, Box<D2>),
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
@@ -189,17 +189,17 @@ pub fn indent_d3(shape: &D3) -> String {
 
 impl D2 {
     /// Create a circle of radius `r` centered at the origin.
-    pub fn circle<T: TryInto<FinitePositive>>(r: T) -> D2 {
+    pub fn circle<T: TryInto<StrictlyPositive>>(r: T) -> D2 {
         D2::Circle(r.try_into().ok().unwrap())
     }
 
     /// Create a square with side length `s` with lower left corner at the origin.
-    pub fn square<T: TryInto<FinitePositive>>(s: T) -> D2 {
+    pub fn square<T: TryInto<StrictlyPositive>>(s: T) -> D2 {
         D2::Square(s.try_into().ok().unwrap())
     }
 
     /// Scale size by the factor `s`.
-    pub fn scale<T: TryInto<FinitePositive>>(self, s: T) -> D2 {
+    pub fn scale<T: TryInto<StrictlyPositive>>(self, s: T) -> D2 {
         D2::Scale(s.try_into().ok().unwrap(), Box::new(self))
     }
 
@@ -302,6 +302,16 @@ impl D2 {
         }
     }
 
+    pub fn rotate2<T: TryInto<StrictlyPositive<f64>>> (&self, theta: T) -> D2 {
+            // D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
+        match self {
+            D2::Rotate2(phi, d2) => D2::Rotate2(*phi + theta.try_into().ok().unwrap(), d2.clone()),
+            _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
+            // D2::Rotate(X(phi), d2) => D2::Rotate(X(phi + theta.0), d2.clone()),
+            // _ => D2::Rotate2(theta, Box::new(self.clone())),
+        }
+    }
+
     pub fn iter_rotate<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
         (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f64)))
     }
@@ -373,9 +383,9 @@ impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
-            D3::Cube(FinitePositive(size)) => format!("cube(size = {});", size),
-            D3::Cuboid(x, y, z) => format!("cube(size = [{}, {}, {}]);", x.0, y.0, z.0),
-            D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h.0, r.0),
+            D3::Cube(size) => format!("cube(size = {});", size),
+            D3::Cuboid(x, y, z) => format!("cube(size = [{}, {}, {}]);", x, y, z),
+            D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -384,7 +394,6 @@ impl SCAD for D3 {
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
-            // D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, indent_d3(shape)),
             D3::Translate(x, y, z, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", x.0, y.0, z.0, shape.indent()),
             D3::Rotate(x, y, z, shape) => format!("rotate(v = [{}, {}, {}]) {{\n  {}\n}}", x.0, y.0, z.0, shape.indent()),
             // D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
@@ -399,12 +408,12 @@ impl SCAD for D3 {
 
 impl D3 {
     /// Create a cube with side length `s` with lower left corner at the origin.
-    pub fn cube<T: TryInto<FinitePositive>>(s: T) -> D3 {
+    pub fn cube<T: TryInto<StrictlyPositive>>(s: T) -> D3 {
         D3::Cube(s.try_into().ok().unwrap())
     }
 
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
-    pub fn cuboid<T: TryInto<FinitePositive>>(x: T, y: T, z: T) -> D3 {
+    pub fn cuboid<T: TryInto<StrictlyPositive>>(x: T, y: T, z: T) -> D3 {
         D3::Cuboid(
                 x.try_into().ok().unwrap(),
                 y.try_into().ok().unwrap(),
@@ -421,6 +430,16 @@ impl D3 {
                 )
     }
 
+
+    pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+        (0..n).map(move |ii| self.clone().translate(xyz.0 * ii as f64, xyz.1 * ii as f64, xyz.2 * ii as f64))
+    }
+
+    // pub fn iter_translate2<'a, X: Into<Real> + 'a, Y: Into<Real> + 'a, Z: Into<Real> + 'a>(&'a self, x: X, y: Y, z: Z, n: u32) 
+        // -> impl Iterator<Item = D3> + 'a {
+        // (0..n).map(move |ii| self.clone().translate(x.clone().into(), y.clone().into(), z.clone().into()))
+    // }
+
     pub fn rotate<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(&self, x: X, y: Y, z: Z) -> D3 {
         D3::Rotate(
                 x.into(),
@@ -432,7 +451,7 @@ impl D3 {
 
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder<T: TryInto<FinitePositive>>(h: T, r:T) -> D3 {
+    pub fn cylinder<T: TryInto<StrictlyPositive>>(h: T, r:T) -> D3 {
         D3::Cylinder(h.try_into().ok().unwrap(), r.try_into().ok().unwrap())
     }
 
@@ -455,10 +474,6 @@ impl D3 {
         self.clone().add(f(self))
     }
 
-
-    pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.clone().translate(xyz.0 * ii as f64, xyz.1 * ii as f64, xyz.2 * ii as f64))
-    }
 
     pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
         (0..n).map(move |ii| self.rotate(theta.0 * ii as f64, theta.1 * ii as f64, theta.2 * ii as f64))
@@ -541,8 +556,8 @@ impl ops::Sub<D3> for D3 {
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
-            D2::Circle(FinitePositive(radius)) => format!("circle(r = {});", radius),
-            D2::Square(FinitePositive(size)) => format!("square(size = {});", size),
+            D2::Circle(radius) => format!("circle(r = {});", radius),
+            D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
@@ -553,21 +568,22 @@ impl SCAD for D2 {
                 , indent(shape)),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
-                    Aim::N => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., 0.)),
-                    Aim::U => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., 0.)),
-                    Aim::S => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., -MAX)),
-                    Aim::D => D2::Square(FinitePositive::MAX).translate(XY(-MAX/2., -MAX)),
-                    Aim::E => D2::Square(FinitePositive::MAX).translate(XY(0., -MAX/2.)),
-                    Aim::R => D2::Square(FinitePositive::MAX).translate(XY(0., -MAX/2.)),
-                    Aim::W => D2::Square(FinitePositive::MAX).translate(XY(-MAX, -MAX/2.)),
-                    Aim::L => D2::Square(FinitePositive::MAX).translate(XY(-MAX, -MAX/2.)),
-                    // Aim::Angle(theta) => D2::Square(FinitePositive(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+                    Aim::N => D2::square(MAX).translate(XY(-MAX/2., 0.)),
+                    Aim::U => D2::square(MAX).translate(XY(-MAX/2., 0.)),
+                    Aim::S => D2::square(MAX).translate(XY(-MAX/2., -MAX)),
+                    Aim::D => D2::square(MAX).translate(XY(-MAX/2., -MAX)),
+                    Aim::E => D2::square(MAX).translate(XY(0., -MAX/2.)),
+                    Aim::R => D2::square(MAX).translate(XY(0., -MAX/2.)),
+                    Aim::W => D2::square(MAX).translate(XY(-MAX, -MAX/2.)),
+                    Aim::L => D2::square(MAX).translate(XY(-MAX, -MAX/2.)),
+                    // Aim::Angle(theta) => D2::Square(StrictlyPositive(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
-            D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s.0, indent(shape)),
+            D2::Rotate2(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
+            D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
             D2::ScaleXY(xy, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", xy.0, xy.1, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
@@ -592,10 +608,12 @@ impl SCAD for D2 {
 mod test {
     use super::*;
 
-    const C5: D2 = D2::Circle(FinitePositive(5.));
-    const S9: D2 = D2::Square(FinitePositive(9.));
+    // const C5: D2 = D2::Circle(StrictlyPositive::new_unchecked::<f32>(5.));
+    // const S9: D2 = D2::Square(StrictlyPositive::new_unchecked::<f32>(9.));
+    lazy_static!{ static ref C5: D2 = D2::circle(5); }
     lazy_static!{ static ref C7: D2 = D2::circle(7); }
     lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
+    lazy_static!{ static ref S9: D2 = D2::square(9.0); }
 
     #[test]
     fn test_circle() {
@@ -614,7 +632,7 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(C5.add(S9).scad(),
+        assert_eq!(D2::circle(5).add(D2::square(9)).scad(),
         "union() {\n  circle(r = 5);\n  square(size = 9);\n}");
     }
 
@@ -662,7 +680,7 @@ mod test {
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(C5).scad(),
+        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(D2::circle(5)).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
         );
     }
@@ -706,6 +724,13 @@ mod test {
     fn test_iter_rotate_rotate() {
         assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).map(move |x| x.rotate(X(10.))).hull()),
             "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_rotate_rotate2() {
+        assert_eq!(format!("{}", S9.rotate2(20.).rotate2(10.)),
+            "rotate(30) {\n  square(size = 9);\n}"
         );
     }
 

@@ -10,5 +10,6 @@ itertools = "0.12.1"
 lazy_static = "1.4.0"
 nalgebra = "0.32.6"
 num-traits = "0.2.19"
+typed_floats = "1.0.1"
 
 

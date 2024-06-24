@@ -108,6 +108,19 @@ mod test {
     use super::*;
 
     #[test]
+    fn test_from_i32() {
+        assert_eq!(Real::from(5_i32), Real(5.));
+        assert_eq!(Real::from(i32::MAX), Real(2147483600.0));
+    }
+
+    #[test]
+    fn test_into_real() {
+        assert_eq!(<i32 as Into<Real>>::into(5), Real(5.));
+        assert_eq!(<u32 as Into<Real>>::into(5), Real(5.));
+        assert_eq!(<f64 as Into<Real>>::into(5.0), Real(5.));
+    }
+
+    #[test]
     fn test_try_from_i32() {
         assert_eq!(FinitePositive::try_from(5_i32), Ok(FinitePositive(5.)));
         assert_eq!(FinitePositive::try_from(0), Err(PositiveRealError::NonPositive));
