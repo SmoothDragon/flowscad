@@ -5,10 +5,11 @@
 // use std::ops::Add;
 
 use tgdscad::*;
+use anyhow::Result;
 
-fn main() {
-    let e = D2::circle(4.);
-    let f = D2::circle(10.)
+fn main() -> Result<()> {
+    let e = D2::circle(4.)?;
+    let f = D2::circle(10.)?
         .add(e)
         .translate(XY(4.,5.))
         .scale_xy(XY(3.,2.))
@@ -18,5 +19,6 @@ fn main() {
         .color(Color::Red)
         ;
     println!("{}", &f);
+    Ok(())
 }
 

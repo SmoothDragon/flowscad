@@ -5,6 +5,7 @@ extern crate typed_floats;
 use std::fmt;
 use std::ops;
 use std::iter::{Iterator, Sum, Product};
+use anyhow::{Context, Result};
 pub use std::f64::consts::PI;
 use num_traits::Num;
 use lazy_static::lazy_static;
@@ -189,8 +190,11 @@ pub fn indent_d3(shape: &D3) -> String {
 
 impl D2 {
     /// Create a circle of radius `r` centered at the origin.
-    pub fn circle<T: TryInto<StrictlyPositive>>(r: T) -> D2 {
-        D2::Circle(r.try_into().ok().unwrap())
+    pub fn circle<T: TryInto<typed_floats::StrictlyPositive>>(r: T) -> Result<D2>
+        where
+            anyhow::Error: From<T::Error>,
+        {
+        Ok(D2::Circle(r.try_into()?))
     }
 
     /// Create a square with side length `s` with lower left corner at the origin.
@@ -610,9 +614,9 @@ mod test {
 
     // const C5: D2 = D2::Circle(StrictlyPositive::new_unchecked::<f32>(5.));
     // const S9: D2 = D2::Square(StrictlyPositive::new_unchecked::<f32>(9.));
-    lazy_static!{ static ref C5: D2 = D2::circle(5); }
-    lazy_static!{ static ref C7: D2 = D2::circle(7); }
-    lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
+    lazy_static!{ static ref C5: D2 = D2::circle(5).unwrap(); }
+    lazy_static!{ static ref C7: D2 = D2::circle(7).unwrap(); }
+    lazy_static!{ static ref C8: D2 = D2::circle(8.0).unwrap(); }
     lazy_static!{ static ref S9: D2 = D2::square(9.0); }
 
     #[test]
@@ -632,13 +636,13 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(D2::circle(5).add(D2::square(9)).scad(),
+        assert_eq!(D2::circle(5).unwrap().add(D2::square(9)).scad(),
         "union() {\n  circle(r = 5);\n  square(size = 9);\n}");
     }
 
     #[test]
     fn test_color() {
-        assert_eq!(D2::circle(7_i32).add(D2::square(9)).color(Color::Red).scad(),
+        assert_eq!(D2::circle(7_i32).unwrap().add(D2::square(9)).color(Color::Red).scad(),
         "color(\"red\") {\n  union() {\n    circle(r = 7);\n    square(size = 9);\n  }\n}"
         );
     }
@@ -680,7 +684,7 @@ mod test {
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(D2::circle(5)).scad(),
+        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(D2::circle(5).unwrap()).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
         );
     }
