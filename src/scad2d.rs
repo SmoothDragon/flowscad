@@ -130,9 +130,9 @@ pub enum Color {
 
 #[derive(Clone, Debug)]
 pub enum D3 {
-    Cube(StrictlyPositive),
-    Cylinder(StrictlyPositive, StrictlyPositive),
-    Cuboid(StrictlyPositive, StrictlyPositive, StrictlyPositive),
+    Cube(StrictlyPositiveFinite),
+    Cylinder(StrictlyPositiveFinite, StrictlyPositiveFinite),
+    Cuboid(StrictlyPositiveFinite, StrictlyPositiveFinite, StrictlyPositiveFinite),
     Translate(Real, Real, Real, Box<D3>),
     Rotate(Real, Real, Real, Box<D3>),
     LinearExtrude(X, Box<D2>),
@@ -155,14 +155,14 @@ pub enum Join {
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(StrictlyPositive),
-    Square(StrictlyPositive),
+    Circle(StrictlyPositiveFinite),
+    Square(StrictlyPositiveFinite),
     Rectangle(XY),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(X, Box<D2>),
-    Rotate2(StrictlyPositive, Box<D2>),
-    Scale(StrictlyPositive, Box<D2>),
+    Rotate2(StrictlyPositiveFinite, Box<D2>),
+    Scale(StrictlyPositiveFinite, Box<D2>),
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
@@ -189,30 +189,31 @@ pub fn indent_d3(shape: &D3) -> String {
 }
 
 impl D2 {
-    /// Create a circle of radius `r` centered at the origin.
-    pub fn circle<T>(r: T) -> Result<D2>
+    /// Create a circle of radius `radius` centered at the origin.
+    pub fn circle<T>(radius: T) -> Result<D2>
         where
-            T: TryInto<typed_floats::StrictlyPositive>,
+            T: TryInto<typed_floats::StrictlyPositiveFinite>,
             anyhow::Error: From<T::Error>,
         {
-        Ok(D2::Circle(r.try_into()?))
+        Ok(D2::Circle(radius.try_into()?))
     }
 
-    /// Create a square with side length `s` with lower left corner at the origin.
-    pub fn square<T>(s: T) -> Result<D2>
+    /// Create a square with side length `side` with lower left corner at the origin.
+    pub fn square<T>(side: T) -> Result<D2>
         where
-            T: TryInto<typed_floats::StrictlyPositive>,
+            T: TryInto<typed_floats::StrictlyPositiveFinite>,
             anyhow::Error: From<T::Error>,
         {
-        Ok(D2::Square(s.try_into()?))
+        Ok(D2::Square(side.try_into()?))
     }
-    // pub fn square<T: TryInto<StrictlyPositive>>(s: T) -> D2 {
-        // D2::Square(s.try_into().ok().unwrap())
-    // }
 
     /// Scale size by the factor `s`.
-    pub fn scale<T: TryInto<StrictlyPositive>>(self, s: T) -> D2 {
-        D2::Scale(s.try_into().ok().unwrap(), Box::new(self))
+    pub fn scale<T>(self, scale_factor: T) -> Result<D2>
+        where
+            T: TryInto<typed_floats::StrictlyPositiveFinite>,
+            anyhow::Error: From<T::Error>,
+        {
+        Ok(D2::Scale(scale_factor.try_into()?, Box::new(self)))
     }
 
     pub fn add(self, other: D2) -> D2 {
@@ -314,10 +315,10 @@ impl D2 {
         }
     }
 
-    pub fn rotate2<T: TryInto<StrictlyPositive<f64>>> (&self, theta: T) -> D2 {
+    pub fn rotate2<T: TryInto<StrictlyPositiveFinite<f64>>> (&self, theta: T) -> D2 {
             // D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
         match self {
-            D2::Rotate2(phi, d2) => D2::Rotate2(*phi + theta.try_into().ok().unwrap(), d2.clone()),
+            D2::Rotate2(phi, d2) => D2::Rotate2((*phi + theta.try_into().ok().unwrap()).try_into().unwrap(), d2.clone()),
             _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
             // D2::Rotate(X(phi), d2) => D2::Rotate(X(phi + theta.0), d2.clone()),
             // _ => D2::Rotate2(theta, Box::new(self.clone())),
@@ -420,12 +421,12 @@ impl SCAD for D3 {
 
 impl D3 {
     /// Create a cube with side length `s` with lower left corner at the origin.
-    pub fn cube<T: TryInto<StrictlyPositive>>(s: T) -> D3 {
+    pub fn cube<T: TryInto<StrictlyPositiveFinite>>(s: T) -> D3 {
         D3::Cube(s.try_into().ok().unwrap())
     }
 
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
-    pub fn cuboid<T: TryInto<StrictlyPositive>>(x: T, y: T, z: T) -> D3 {
+    pub fn cuboid<T: TryInto<StrictlyPositiveFinite>>(x: T, y: T, z: T) -> D3 {
         D3::Cuboid(
                 x.try_into().ok().unwrap(),
                 y.try_into().ok().unwrap(),
@@ -463,7 +464,7 @@ impl D3 {
 
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder<T: TryInto<StrictlyPositive>>(h: T, r:T) -> D3 {
+    pub fn cylinder<T: TryInto<StrictlyPositiveFinite>>(h: T, r:T) -> D3 {
         D3::Cylinder(h.try_into().ok().unwrap(), r.try_into().ok().unwrap())
     }
 
@@ -588,7 +589,7 @@ impl SCAD for D2 {
                     Aim::R => D2::square(MAX).unwrap().translate(XY(0., -MAX/2.)),
                     Aim::W => D2::square(MAX).unwrap().translate(XY(-MAX, -MAX/2.)),
                     Aim::L => D2::square(MAX).unwrap().translate(XY(-MAX, -MAX/2.)),
-                    // Aim::Angle(theta) => D2::Square(StrictlyPositive(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+                    // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
@@ -620,8 +621,8 @@ impl SCAD for D2 {
 mod test {
     use super::*;
 
-    // const C5: D2 = D2::Circle(StrictlyPositive::new_unchecked::<f32>(5.));
-    // const S9: D2 = D2::Square(StrictlyPositive::new_unchecked::<f32>(9.));
+    // const C5: D2 = D2::Circle(StrictlyPositiveFinite::new_unchecked::<f32>(5.));
+    // const S9: D2 = D2::Square(StrictlyPositiveFinite::new_unchecked::<f32>(9.));
     lazy_static!{ static ref C5: D2 = D2::circle(5).unwrap(); }
     lazy_static!{ static ref C7: D2 = D2::circle(7).unwrap(); }
     lazy_static!{ static ref C8: D2 = D2::circle(8.0).unwrap(); }
