@@ -1,15 +1,17 @@
 //! Create OpenSCAD files using Rust.
 extern crate itertools;
 extern crate typed_floats;
+extern crate derive_more;
+extern crate nalgebra as na;
 
 use std::fmt;
 use std::ops;
 use std::iter::{Iterator, Sum, Product};
 use anyhow::{Context, Result};
+use derive_more::*;
 pub use std::f64::consts::PI;
 use num_traits::Num;
 use lazy_static::lazy_static;
-use nalgebra::*;
 
 use crate::finite_number::*;
 
@@ -18,6 +20,13 @@ use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
 
+pub fn v2(x: f64, y:f64) -> na::Vector2<f64> {
+    nalgebra::vector![x,y]
+}
+
+pub fn v3(x: f64, y:f64, z:f64) -> na::Vector3<f64> {
+    nalgebra::vector![x,y,z]
+}
 
 /// Methods for creating an SCAD object from an iterator of SCAD objects.
 pub trait DIterator<T> : Iterator<Item=T> {
@@ -136,6 +145,7 @@ pub enum D3 {
     Translate(Real, Real, Real, Box<D3>),
     Rotate(Real, Real, Real, Box<D3>),
     LinearExtrude(X, Box<D2>),
+    RotateExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
     Union(Box<Vec<D3>>),
@@ -156,12 +166,14 @@ pub enum Join {
 #[derive(Clone, Debug)]
 pub enum D2 {
     Circle(StrictlyPositiveFinite),
+    Circle2(f64),
     Square(StrictlyPositiveFinite),
     Rectangle(XY),
+    Polygon(Box<Vec<na::Vector2<f64>>>),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(X, Box<D2>),
-    Rotate2(StrictlyPositiveFinite, Box<D2>),
+    Rotate2(NonNaNFinite, Box<D2>),
     Scale(StrictlyPositiveFinite, Box<D2>),
     ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
@@ -198,6 +210,11 @@ impl D2 {
         Ok(D2::Circle(radius.try_into()?))
     }
 
+    /// Create a circle with `diameter` centered at the origin.
+    pub fn circle2(diameter: f64) -> D2 {
+        D2::Circle2(diameter)
+    }
+
     /// Create a square with side length `side` with lower left corner at the origin.
     pub fn square<T>(side: T) -> Result<D2>
         where
@@ -215,6 +232,25 @@ impl D2 {
         {
         Ok(D2::Scale(scale_factor.try_into()?, Box::new(self)))
     }
+
+    pub fn rotate2<T> (&self, theta: T) -> Result<D2>
+        where
+            T: TryInto<typed_floats::NonNaNFinite, Error = typed_floats::InvalidNumber>,
+            anyhow::Error: From<T::Error>,
+    {
+        Ok(match self {
+            D2::Rotate2(phi, d2) => D2::Rotate2((*phi + theta.try_into()?).try_into()?, d2.clone()),
+            _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
+        })
+    }
+
+    // pub fn iter_rotate2<'a, T>(&'a self, theta: T, n: u32) -> Result<impl Iterator<Item = D2> + 'a>
+        // where
+            // T: TryInto<typed_floats::NonNaNFinite, Error = typed_floats::InvalidNumber>,
+            // anyhow::Error: From<T::Error>,
+    // {
+        // Ok((0..n).map(move |ii| self.rotate((theta.try_into()? * ii.into()).try_into()?)))
+    // }
 
     pub fn add(self, other: D2) -> D2 {
         // match self { // Combine Unions if possible
@@ -292,6 +328,14 @@ impl D2 {
         // D2::Minkowski(Box::new(self), Box::new(other))
     }
 
+    pub fn triangle(xy0: na::Vector2<f64>, xy1: na::Vector2<f64>, xy2: na::Vector2<f64>) -> D2 {
+        D2::Polygon(Box::new(vec![xy0, xy1, xy2]))
+    }
+
+    pub fn polygon(points: Vec<na::Vector2<f64>>) -> D2 {
+        D2::Polygon(Box::new(points))
+    }
+
     pub fn translate(&self, xy: XY) -> D2 {
         // TODO: Is clone needed here?
         match self {
@@ -312,16 +356,6 @@ impl D2 {
         match self {
             D2::Rotate(X(phi), d2) => D2::Rotate(X(phi + theta.0), d2.clone()),
             _ => D2::Rotate(theta, Box::new(self.clone())),
-        }
-    }
-
-    pub fn rotate2<T: TryInto<StrictlyPositiveFinite<f64>>> (&self, theta: T) -> D2 {
-            // D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
-        match self {
-            D2::Rotate2(phi, d2) => D2::Rotate2((*phi + theta.try_into().ok().unwrap()).try_into().unwrap(), d2.clone()),
-            _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
-            // D2::Rotate(X(phi), d2) => D2::Rotate(X(phi + theta.0), d2.clone()),
-            // _ => D2::Rotate2(theta, Box::new(self.clone())),
         }
     }
 
@@ -353,6 +387,10 @@ impl D2 {
 
     pub fn linear_extrude(&self, x: X) -> D3 {
         D3::LinearExtrude(x, Box::new(self.clone()))
+    }
+
+    pub fn rotate_extrude(&self, x: X) -> D3 {
+        D3::RotateExtrude(x, Box::new(self.clone()))
     }
 }
 
@@ -396,6 +434,7 @@ impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
+            D3::RotateExtrude(X(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
             D3::Cuboid(x, y, z) => format!("cube(size = [{}, {}, {}]);", x, y, z),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
@@ -570,8 +609,11 @@ impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
             D2::Circle(radius) => format!("circle(r = {});", radius),
+            D2::Circle2(diameter) => format!("circle(d = {});", diameter),
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
+            D2::Polygon(points) => format!("polygon(points = [ {} ]);",
+                points.iter().map(|x| format!("{:?}", x).replace(r"[[", r"[").replace("]]", "]")).collect::<Vec<_>>().join(", ")),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
                     Color::Blue => "\"blue\"",
@@ -734,6 +776,13 @@ mod test {
     }
 
     #[test]
+    fn test_rotate_extrude() {
+        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().rotate_extrude(X(180.))),
+            "rotate_extrude(angle = 180) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
+        );
+    }
+
+    #[test]
     fn test_iter_rotate_rotate() {
         assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).map(move |x| x.rotate(X(10.))).hull()),
             "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
@@ -742,7 +791,7 @@ mod test {
 
     #[test]
     fn test_rotate_rotate2() {
-        assert_eq!(format!("{}", S9.rotate2(20.).rotate2(10.)),
+        assert_eq!(format!("{}", S9.rotate2(20.).unwrap().rotate2(10.).unwrap()),
             "rotate(30) {\n  square(size = 9);\n}"
         );
     }
@@ -752,6 +801,23 @@ mod test {
         assert_eq!(C5.iter_translate(XY(1.,2.),4).map(move |x| x.translate(XY(-1., -1.))).union().scad(),
             "union() {\n  translate(v = [-1, -1]) {\n    circle(r = 5);\n  }\n  translate(v = [0, 1]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 3]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 5]) {\n    circle(r = 5);\n  }\n}"
         );
+    }
+
+    #[test]
+    fn test_v2_mul() {
+        assert_eq!(format!("{:?}", v2(1.,2.)*3.), "[[3.0, 6.0]]");
+    }
+
+    #[test]
+    fn test_triangle() {
+        assert_eq!(D2::triangle(v2(0.,0.), v2(1., 0.), v2(0., 1.)).scad(),
+            "polygon(points = [ [0.0, 0.0], [1.0, 0.0], [0.0, 1.0] ]);");
+    }
+
+    #[test]
+    fn test_polygon() {
+        assert_eq!(D2::polygon(vec![v2(0.,0.), v2(1., 0.), v2(0., 1.)]).scad(),
+            "polygon(points = [ [0.0, 0.0], [1.0, 0.0], [0.0, 1.0] ]);");
     }
 
 }
