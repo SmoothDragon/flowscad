@@ -8,12 +8,12 @@ fn main() {
     let lower_h = 57.15;
     let inner_d = 103.1/2.;
     let upper = D2::triangle(v2(0.,0.), v2(upper_b, 0.), v2(0., upper_h))
-        .translate(XY(inner_d, 0.))
+        .translate(v2(inner_d, 0.))
         .rotate_extrude(X(360.))
         ;
 
     let lower = D2::polygon(vec![v2(0.,0.), v2(lower_b, 0.), v2(upper_b, lower_h), v2(0., lower_h)])
-        .translate(XY(inner_d, 0.))
+        .translate(v2(inner_d, 0.))
         .rotate_extrude(X(360.))
         ;
 

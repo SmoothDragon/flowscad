@@ -1,14 +1,36 @@
+use std::ops::*;
+use std::fmt;
+use derive_more::{Add, Mul, Display};
+
 #[derive(Debug, PartialEq)]
 pub enum PositiveRealError {
     NonPositive,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Add, Mul)]
 pub struct Real(pub f32);
 
 impl Real {
     /// Positive Real MAX is lower since it is used for super large objects that could be shifted or rotated.
     pub const MAX: Real = Real(f32::MAX/1000.0);
+}
+
+impl fmt::Debug for Real {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl fmt::Display for Real {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", &self.0)
+    }
+}
+
+impl AddAssign for Real {
+    fn add_assign(&mut self, other: Self) {
+        *self = Self(self.0 + other.0);
+    }
 }
 
 impl From<u32> for Real {
@@ -145,6 +167,14 @@ mod test {
 
     #[test]
     fn test_try_from_f64() {
+        assert_eq!(FinitePositive::try_from(5_f64), Ok(FinitePositive(5.)));
+        assert_eq!(FinitePositive::try_from(f64::NAN), Err(PositiveRealError::NonPositive));
+        assert_eq!(FinitePositive::try_from(f64::INFINITY), Err(PositiveRealError::NonPositive));
+        assert_eq!(FinitePositive::try_from(f64::NEG_INFINITY), Err(PositiveRealError::NonPositive));
+    }
+
+    #[test]
+    fn test_mul() {
         assert_eq!(FinitePositive::try_from(5_f64), Ok(FinitePositive(5.)));
         assert_eq!(FinitePositive::try_from(f64::NAN), Err(PositiveRealError::NonPositive));
         assert_eq!(FinitePositive::try_from(f64::INFINITY), Err(PositiveRealError::NonPositive));
