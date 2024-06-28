@@ -5,7 +5,7 @@ fn invertible_heart(r:f64) -> Result<D2> {
     let theta = (2.0/PI).atan()*180./PI;
     Ok(D2::circle(0.5*r)
         .translate(v2(0., r*PI/4.))
-        .rotate(X(theta))
+        .rotate(theta)
         .iter_rotate_equal(2)
         .hull()
         .intersection(D2::HalfPlane(Aim::W))

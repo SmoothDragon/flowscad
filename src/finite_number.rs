@@ -1,15 +1,14 @@
 use std::ops::*;
 use std::fmt;
-use derive_more::{Add, Mul, Display};
+use derive_more::*;
 
 #[derive(Debug, PartialEq)]
 pub enum PositiveRealError {
     NonPositive,
 }
 
-#[derive(Clone, Copy, PartialEq, Add, Mul)]
+#[derive(Clone, Copy, PartialEq, Add, Mul, Neg)]
 pub struct Real(pub f32);
-
 
 impl Real {
     /// Positive Real MAX is lower since it is used for super large objects that could be shifted or rotated.

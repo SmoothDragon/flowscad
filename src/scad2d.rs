@@ -20,6 +20,11 @@ use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
 
+#[derive(Clone, Copy, PartialEq, Add, Mul)]
+pub struct Real2(na::Vector2<Real>);
+
+// pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
+    // Real2([x.into(), y.into()])
 pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> na::Vector2<Real> {
     nalgebra::vector![x.into(), y.into()]
 }
@@ -93,20 +98,6 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
 }
 
 
-#[derive(Clone, Copy, Debug)]
-pub struct X(pub f64);
-
-impl From<i32> for X {
-    fn from(i: i32) -> X {
-        X(i as f64)
-    }
-}
-
-impl From<f64> for X {
-    fn from(f: f64) -> X {
-        X(f)
-    }
-}
 
 #[derive(Clone, Debug)]
 pub struct XYZ(pub f64, pub f64, pub f64);
@@ -115,7 +106,7 @@ pub struct XYZ(pub f64, pub f64, pub f64);
 pub enum Aim {
     N, S, E, W,
     U, D, L, R,
-    Angle(X),
+    Angle(Real),
 }
 
 #[derive(Clone, Debug)]
@@ -123,7 +114,7 @@ pub enum Pos {
     N, S, E, W,
     NE, NW, SE, SW,
     U, D, L, R,
-    Angle(X),
+    Angle(Real),
     Center,
 }
 
@@ -169,7 +160,7 @@ pub enum D2 {
     Polygon(Box<Vec<na::Vector2<Real>>>),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
-    Rotate(X, Box<D2>),
+    Rotate(Real, Box<D2>),
     Rotate2(NonNaNFinite, Box<D2>),
     Scale(Real, Box<D2>),
     ScaleXY(na::Vector2<Real>, Box<D2>),
@@ -218,34 +209,8 @@ impl D2 {
         D2::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
-    // pub fn rotate2<T> (&self, theta: T) -> Result<D2>
-        // where
-            // T: TryInto<typed_floats::NonNaNFinite, Error = typed_floats::InvalidNumber>,
-            // anyhow::Error: From<T::Error>,
-    // {
-        // Ok(match self {
-            // D2::Rotate2(phi, d2) => D2::Rotate2((*phi + theta.try_into()?).try_into()?, d2.clone()),
-            // _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
-        // })
-    // }
-
-    // pub fn iter_rotate2<'a, T>(&'a self, theta: T, n: u32) -> Result<impl Iterator<Item = D2> + 'a>
-        // where
-            // T: TryInto<typed_floats::NonNaNFinite, Error = typed_floats::InvalidNumber>,
-            // anyhow::Error: From<T::Error>,
-    // {
-        // Ok((0..n).map(move |ii| self.rotate((theta.try_into()? * ii.into()).try_into()?)))
-    // }
 
     pub fn add(self, other: D2) -> D2 {
-        // match self { // Combine Unions if possible
-            // D2::Union(vec) => {
-                // let mut vec = vec;
-                // vec.push(other);
-                // D2::Union(vec)
-                // },
-            // _ => D2::Union(Box::new(vec![self, other])),
-        // }
         match self { // Combine Unions if possible
             D2::Join("union", vec) => {
                 let mut vec = vec;
@@ -263,27 +228,11 @@ impl D2 {
 
     pub fn add_map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
         self.clone().add(f(self))
-        // D2::Union(Box::new(vec![self.clone(), f(self)]))
     }
-    /*
-    pub fn hull(self, other: D2) -> D2 {
-        match self { // Combine D2 hulls if possible
-            D2::Hull(vec) => {
-                let mut vec = vec;
-                vec.push(other);
-                D2::Hull(vec)
-                },
-            _ => D2::Hull(Box::new(vec![self, other])),
-        }
-        // D2::Hull(Box::new(vec![self, other]))
-    }
-    */
+
     pub fn hull(self) -> D2 {
-        // D3::Hull(Box::new(vec![self]))
         match self { // Combine Unions if possible
             D2::Join("union", vec) => D2::Join("hull", vec),
-            // D2::Union(vec) => D2::Hull(vec),
-            // _ => D2::Hull(Box::new(vec![self])),
             _ => D2::Join("hull", Box::new(vec![self])),
         }
     }
@@ -297,7 +246,6 @@ impl D2 {
                 },
             _ => D2::Join("intersection", Box::new(vec![self, other])),
         }
-        // D2::Intersection(Box::new(vec![self, other]))
     }
 
     pub fn minkowski(self, other: D2) -> D2 {
@@ -309,8 +257,6 @@ impl D2 {
                 },
             _ => D2::Join("minkowski", Box::new(vec![self, other])),
         }
-        // D2::Minkowski(Box::new(vec![self, other]))
-        // D2::Minkowski(Box::new(self), Box::new(other))
     }
 
     pub fn triangle(xy0: na::Vector2<Real>, xy1: na::Vector2<Real>, xy2: na::Vector2<Real>) -> D2 {
@@ -337,23 +283,26 @@ impl D2 {
         (0..n).map(move |ii| self.translate(v2(xy.x * ii as f32, xy.y * ii as f32)))
     }
 
-    pub fn rotate(&self, theta: X) -> D2 {
+    pub fn rotate<X: Into<Real>>(&self, theta: X) -> D2 {
         match self {
-            D2::Rotate(X(phi), d2) => D2::Rotate(X(phi + theta.0), d2.clone()),
-            _ => D2::Rotate(theta, Box::new(self.clone())),
+            D2::Rotate(phi, d2) => D2::Rotate(*phi + theta.into(), d2.clone()),
+            _ => D2::Rotate(theta.into(), Box::new(self.clone())),
         }
     }
 
-    pub fn iter_rotate<'a>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.rotate(X(theta.0 * ii as f64)))
+    pub fn iter_rotate<'a, X: Into<Real>>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
+        let angle = theta.into();
+        // (0..n).map(move |ii| self.rotate(theta.into() * <u32 as Into<Real>>::ii.into()))
+        (0..n).map(move |ii| self.rotate(angle * ii as f32))
     }
 
     pub fn iter_rotate_equal<'a>(&'a self, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.rotate(X(360./(n as f64) * ii as f64)))
+        (0..n).map(move |ii| self.rotate(360./(n as f64) * ii as f64))
     }
 
-    pub fn iter_square_edge<'a>(&'a self, d: X) -> impl Iterator<Item = D2> + 'a {
-        vec![v2(d.0, 0.), v2(0., d.0), v2(-d.0, 0.), v2(0., -d.0)]
+    pub fn iter_square_edge<'a, D: Into<Real>>(&'a self, d: D) -> impl Iterator<Item = D2> + 'a {
+        let shift = d.into();
+        vec![v2(shift, 0.), v2(0., shift), v2(-shift, 0.), v2(0., -shift)]
             .into_iter()
             .map(move |xy| self.translate(xy))
     }
@@ -622,7 +571,7 @@ impl SCAD for D2 {
             D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
             D2::Mirror(xy, shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
-            D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
+            D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Rotate2(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
             D2::ScaleXY(v, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
@@ -693,84 +642,84 @@ mod test {
 
     #[test]
     fn test_iter_rotate() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).sum::<D2>().scad(),
+        assert_eq!(S9.iter_rotate(20, 4).sum::<D2>().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_intersection() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).product::<D2>().scad(),
+        assert_eq!(S9.iter_rotate(20, 4).product::<D2>().scad(),
             "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_union() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().scad(),
+        assert_eq!(S9.iter_rotate(20, 4).union().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_add_map() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
+        assert_eq!(S9.iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  mirror(v = [1, 0]) {\n    union() {\n      rotate(0) {\n        square(size = 9);\n      }\n      rotate(20) {\n        square(size = 9);\n      }\n      rotate(40) {\n        square(size = 9);\n      }\n      rotate(60) {\n        square(size = 9);\n      }\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(D2::circle(5)).scad(),
+        assert_eq!(S9.iter_rotate(20, 4).union().add(D2::circle(5)).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
         );
     }
 
     #[test]
     fn test_iter_hull() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).hull()),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).hull()),
             "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_minkowski() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).minkowski()),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).minkowski()),
             "minkowski() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_union() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).union()),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).union()),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_intersection() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection()),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection()),
             "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_linear_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().linear_extrude(10)),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection().linear_extrude(10)),
             "linear_extrude(height = 10) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_rotate_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().rotate_extrude(180)),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection().rotate_extrude(180)),
             "rotate_extrude(angle = 180) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_rotate_rotate() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).map(move |x| x.rotate(X(10.))).hull()),
+        assert_eq!(format!("{}", S9.iter_rotate(20, 4).map(move |x| x.rotate(10)).hull()),
             "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
         );
     }
