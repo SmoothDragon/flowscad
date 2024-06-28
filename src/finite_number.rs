@@ -10,6 +10,7 @@ pub enum PositiveRealError {
 #[derive(Clone, Copy, PartialEq, Add, Mul)]
 pub struct Real(pub f32);
 
+
 impl Real {
     /// Positive Real MAX is lower since it is used for super large objects that could be shifted or rotated.
     pub const MAX: Real = Real(f32::MAX/1000.0);

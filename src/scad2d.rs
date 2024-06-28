@@ -20,10 +20,6 @@ use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
 
-// pub fn v2(x: f64, y:f64) -> na::Vector2<f64> {
-    // nalgebra::vector![x,y]
-// }
-
 pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> na::Vector2<Real> {
     nalgebra::vector![x.into(), y.into()]
 }
@@ -113,9 +109,6 @@ impl From<f64> for X {
 }
 
 #[derive(Clone, Debug)]
-pub struct XY(pub f64, pub f64);
-
-#[derive(Clone, Debug)]
 pub struct XYZ(pub f64, pub f64, pub f64);
 
 #[derive(Clone, Debug)]
@@ -143,13 +136,13 @@ pub enum Color {
 
 #[derive(Clone, Debug)]
 pub enum D3 {
-    Cube(StrictlyPositiveFinite),
-    Cylinder(StrictlyPositiveFinite, StrictlyPositiveFinite),
-    Cuboid(StrictlyPositiveFinite, StrictlyPositiveFinite, StrictlyPositiveFinite),
+    Cube(Real),
+    Cylinder(Real, Real),
+    Cuboid(Real, Real, Real),
     Translate(Real, Real, Real, Box<D3>),
     Rotate(Real, Real, Real, Box<D3>),
-    LinearExtrude(X, Box<D2>),
-    RotateExtrude(X, Box<D2>),
+    LinearExtrude(Real, Box<D2>),
+    RotateExtrude(Real, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
     Union(Box<Vec<D3>>),
@@ -169,19 +162,19 @@ pub enum Join {
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(StrictlyPositiveFinite),
+    Circle(Real),
     Circle2(f64),
-    Square(StrictlyPositiveFinite),
+    Square(Real),
     Rectangle(na::Vector2<Real>),
     Polygon(Box<Vec<na::Vector2<Real>>>),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(X, Box<D2>),
     Rotate2(NonNaNFinite, Box<D2>),
-    Scale(StrictlyPositiveFinite, Box<D2>),
+    Scale(Real, Box<D2>),
     ScaleXY(na::Vector2<Real>, Box<D2>),
     Translate(na::Vector2<Real>, Box<D2>),
-    Mirror(XY, Box<D2>),
+    Mirror(na::Vector2<Real>, Box<D2>),
     // Hull(Box<Vec<D2>>),
     // Intersection(Box<Vec<D2>>),
     // Union(Box<Vec<D2>>),
@@ -206,12 +199,8 @@ pub fn indent_d3(shape: &D3) -> String {
 
 impl D2 {
     /// Create a circle of radius `radius` centered at the origin.
-    pub fn circle<T>(radius: T) -> Result<D2>
-        where
-            T: TryInto<typed_floats::StrictlyPositiveFinite>,
-            anyhow::Error: From<T::Error>,
-        {
-        Ok(D2::Circle(radius.try_into()?))
+    pub fn circle<T: Into<Real>>(radius: T) -> D2 {
+        D2::Circle(radius.into())
     }
 
     /// Create a circle with `diameter` centered at the origin.
@@ -220,33 +209,25 @@ impl D2 {
     }
 
     /// Create a square with side length `side` with lower left corner at the origin.
-    pub fn square<T>(side: T) -> Result<D2>
-        where
-            T: TryInto<typed_floats::StrictlyPositiveFinite>,
-            anyhow::Error: From<T::Error>,
-        {
-        Ok(D2::Square(side.try_into()?))
+    pub fn square<T: Into<Real>>(side: T) -> D2 {
+        D2::Square(side.into())
     }
 
     /// Scale size by the factor `s`.
-    pub fn scale<T>(self, scale_factor: T) -> Result<D2>
-        where
-            T: TryInto<typed_floats::StrictlyPositiveFinite>,
-            anyhow::Error: From<T::Error>,
-        {
-        Ok(D2::Scale(scale_factor.try_into()?, Box::new(self)))
+    pub fn scale<T: Into<Real>>(self, scale_factor: T) -> D2 {
+        D2::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
-    pub fn rotate2<T> (&self, theta: T) -> Result<D2>
-        where
-            T: TryInto<typed_floats::NonNaNFinite, Error = typed_floats::InvalidNumber>,
-            anyhow::Error: From<T::Error>,
-    {
-        Ok(match self {
-            D2::Rotate2(phi, d2) => D2::Rotate2((*phi + theta.try_into()?).try_into()?, d2.clone()),
-            _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
-        })
-    }
+    // pub fn rotate2<T> (&self, theta: T) -> Result<D2>
+        // where
+            // T: TryInto<typed_floats::NonNaNFinite, Error = typed_floats::InvalidNumber>,
+            // anyhow::Error: From<T::Error>,
+    // {
+        // Ok(match self {
+            // D2::Rotate2(phi, d2) => D2::Rotate2((*phi + theta.try_into()?).try_into()?, d2.clone()),
+            // _ => D2::Rotate2(theta.try_into().ok().unwrap(), Box::new(self.clone()))
+        // })
+    // }
 
     // pub fn iter_rotate2<'a, T>(&'a self, theta: T, n: u32) -> Result<impl Iterator<Item = D2> + 'a>
         // where
@@ -348,12 +329,12 @@ impl D2 {
         }
     }
 
-    pub fn mirror(&self, xy: XY) -> D2 {
+    pub fn mirror(&self, xy: na::Vector2<Real>) -> D2 {
         D2::Mirror(xy, Box::new(self.clone()))
     }
 
-    pub fn iter_translate<'a>(&'a self, xy: XY, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f64, xy.1 * ii as f64)))
+    pub fn iter_translate<'a>(&'a self, xy: na::Vector2<Real>, n: u32) -> impl Iterator<Item = D2> + 'a {
+        (0..n).map(move |ii| self.translate(v2(xy.x * ii as f32, xy.y * ii as f32)))
     }
 
     pub fn rotate(&self, theta: X) -> D2 {
@@ -389,12 +370,12 @@ impl D2 {
         D2::ScaleXY(xy, Box::new(self))
     }
 
-    pub fn linear_extrude(&self, x: X) -> D3 {
-        D3::LinearExtrude(x, Box::new(self.clone()))
+    pub fn linear_extrude<X: Into<Real>>(&self, x: X) -> D3 {
+        D3::LinearExtrude(x.into(), Box::new(self.clone()))
     }
 
-    pub fn rotate_extrude(&self, x: X) -> D3 {
-        D3::RotateExtrude(x, Box::new(self.clone()))
+    pub fn rotate_extrude<X: Into<Real>>(&self, x: X) -> D3 {
+        D3::RotateExtrude(x.into(), Box::new(self.clone()))
     }
 }
 
@@ -437,8 +418,8 @@ trait SCAD {
 impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
-            D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
-            D3::RotateExtrude(X(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
+            D3::LinearExtrude(Real(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
+            D3::RotateExtrude(Real(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
             D3::Cuboid(x, y, z) => format!("cube(size = [{}, {}, {}]);", x, y, z),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
@@ -464,16 +445,16 @@ impl SCAD for D3 {
 
 impl D3 {
     /// Create a cube with side length `s` with lower left corner at the origin.
-    pub fn cube<T: TryInto<StrictlyPositiveFinite>>(s: T) -> D3 {
-        D3::Cube(s.try_into().ok().unwrap())
+    pub fn cube<T: Into<Real>>(side: T) -> D3 {
+        D3::Cube(side.into())
     }
 
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
-    pub fn cuboid<T: TryInto<StrictlyPositiveFinite>>(x: T, y: T, z: T) -> D3 {
+    pub fn cuboid<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> D3 {
         D3::Cuboid(
-                x.try_into().ok().unwrap(),
-                y.try_into().ok().unwrap(),
-                z.try_into().ok().unwrap()
+                x.into(),
+                y.into(),
+                z.into(),
                 )
     }
 
@@ -507,8 +488,8 @@ impl D3 {
 
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder<T: TryInto<StrictlyPositiveFinite>>(h: T, r:T) -> D3 {
-        D3::Cylinder(h.try_into().ok().unwrap(), r.try_into().ok().unwrap())
+    pub fn cylinder<H: Into<Real>, R: Into<Real>>(h: H, r:R) -> D3 {
+        D3::Cylinder(h.into(), r.into())
     }
 
     pub fn add(self, other: D3) -> D3 {
@@ -627,19 +608,20 @@ impl SCAD for D2 {
                 , indent(shape)),
             D2::HalfPlane(aim) => format!("{}",
                 match aim {
-                    Aim::N => D2::square(MAX).unwrap().translate(v2(-MAX/2., 0.)),
-                    Aim::U => D2::square(MAX).unwrap().translate(v2(-MAX/2., 0.)),
-                    Aim::S => D2::square(MAX).unwrap().translate(v2(-MAX/2., -MAX)),
-                    Aim::D => D2::square(MAX).unwrap().translate(v2(-MAX/2., -MAX)),
-                    Aim::E => D2::square(MAX).unwrap().translate(v2(0., -MAX/2.)),
-                    Aim::R => D2::square(MAX).unwrap().translate(v2(0., -MAX/2.)),
-                    Aim::W => D2::square(MAX).unwrap().translate(v2(-MAX, -MAX/2.)),
-                    Aim::L => D2::square(MAX).unwrap().translate(v2(-MAX, -MAX/2.)),
+                    Aim::N => D2::square(MAX).translate(v2(-MAX/2., 0.)),
+                    Aim::U => D2::square(MAX).translate(v2(-MAX/2., 0.)),
+                    Aim::S => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
+                    Aim::D => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
+                    Aim::E => D2::square(MAX).translate(v2(0., -MAX/2.)),
+                    Aim::R => D2::square(MAX).translate(v2(0., -MAX/2.)),
+                    Aim::W => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
+                    Aim::L => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
                     // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
             D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
-            D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Mirror(xy, shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
+            // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Rotate2(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
@@ -669,10 +651,10 @@ mod test {
 
     // const C5: D2 = D2::Circle(StrictlyPositiveFinite::new_unchecked::<f32>(5.));
     // const S9: D2 = D2::Square(StrictlyPositiveFinite::new_unchecked::<f32>(9.));
-    lazy_static!{ static ref C5: D2 = D2::circle(5).unwrap(); }
-    lazy_static!{ static ref C7: D2 = D2::circle(7).unwrap(); }
-    lazy_static!{ static ref C8: D2 = D2::circle(8.0).unwrap(); }
-    lazy_static!{ static ref S9: D2 = D2::square(9.0).unwrap(); }
+    lazy_static!{ static ref C5: D2 = D2::circle(5); }
+    lazy_static!{ static ref C7: D2 = D2::circle(7); }
+    lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
+    lazy_static!{ static ref S9: D2 = D2::square(9.0); }
 
     #[test]
     fn test_circle() {
@@ -681,7 +663,7 @@ mod test {
 
     #[test]
     fn test_cylinder() {
-        assert_eq!(D3::cylinder(10.0, 5.0).scad(), "cylinder(h = 10, r = 5);");
+        assert_eq!(D3::cylinder(10.0, 5).scad(), "cylinder(h = 10, r = 5);");
     }
 
     #[test]
@@ -691,20 +673,20 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(D2::circle(5).unwrap().add(D2::square(9).unwrap()).scad(),
+        assert_eq!(D2::circle(5).add(D2::square(9)).scad(),
         "union() {\n  circle(r = 5);\n  square(size = 9);\n}");
     }
 
     #[test]
     fn test_color() {
-        assert_eq!(D2::circle(7_i32).unwrap().add(D2::square(9).unwrap()).color(Color::Red).scad(),
+        assert_eq!(D2::circle(7_i32).add(D2::square(9)).color(Color::Red).scad(),
         "color(\"red\") {\n  union() {\n    circle(r = 7);\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_translate() {
-        assert_eq!(C5.iter_translate(XY(1.,2.),4).union().scad(),
+        assert_eq!(C5.iter_translate(v2(1.,2.),4).union().scad(),
             "union() {\n  translate(v = [0, 0]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(r = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(r = 5);\n  }\n}"
         );
     }
@@ -732,14 +714,14 @@ mod test {
 
     #[test]
     fn test_add_map() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().add_map(|x| x.mirror(XY(1., 0.))).scad(),
+        assert_eq!(S9.iter_rotate(X(20.), 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  mirror(v = [1, 0]) {\n    union() {\n      rotate(0) {\n        square(size = 9);\n      }\n      rotate(20) {\n        square(size = 9);\n      }\n      rotate(40) {\n        square(size = 9);\n      }\n      rotate(60) {\n        square(size = 9);\n      }\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(D2::circle(5).unwrap()).scad(),
+        assert_eq!(S9.iter_rotate(X(20.), 4).union().add(D2::circle(5)).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
         );
     }
@@ -774,14 +756,14 @@ mod test {
 
     #[test]
     fn test_linear_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().linear_extrude(X(10.))),
+        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().linear_extrude(10)),
             "linear_extrude(height = 10) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_rotate_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().rotate_extrude(X(180.))),
+        assert_eq!(format!("{}", S9.iter_rotate(X(20.), 4).intersection().rotate_extrude(180)),
             "rotate_extrude(angle = 180) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
@@ -793,16 +775,16 @@ mod test {
         );
     }
 
-    #[test]
-    fn test_rotate_rotate2() {
-        assert_eq!(format!("{}", S9.rotate2(20.).unwrap().rotate2(10.).unwrap()),
-            "rotate(30) {\n  square(size = 9);\n}"
-        );
-    }
+    // #[test]
+    // fn test_rotate_rotate2() {
+        // assert_eq!(format!("{}", S9.rotate2(20.).rotate2(10.)),
+            // "rotate(30) {\n  square(size = 9);\n}"
+        // );
+    // }
 
     #[test]
     fn test_iter_translate_translate() {
-        assert_eq!(C5.iter_translate(XY(1.,2.),4).map(move |x| x.translate(v2(-1., -1.))).union().scad(),
+        assert_eq!(C5.iter_translate(v2(1.,2.),4).map(move |x| x.translate(v2(-1., -1.))).union().scad(),
             "union() {\n  translate(v = [-1, -1]) {\n    circle(r = 5);\n  }\n  translate(v = [0, 1]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 3]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 5]) {\n    circle(r = 5);\n  }\n}"
         );
     }
