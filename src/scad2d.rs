@@ -144,7 +144,7 @@ pub enum Color {
 pub enum D3 {
     Cube(Real),
     Cylinder(Real, Real),
-    Cuboid(Real, Real, Real),
+    Cuboid(Real3),
     Translate(Real3, Box<D3>),
     Rotate(Real3, Box<D3>),
     LinearExtrude(Real, Box<D2>),
@@ -386,7 +386,7 @@ impl SCAD for D3 {
             D3::LinearExtrude(Real(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::RotateExtrude(Real(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
-            D3::Cuboid(x, y, z) => format!("cube(size = [{}, {}, {}]);", x, y, z),
+            D3::Cuboid(Real3(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
@@ -416,12 +416,8 @@ impl D3 {
     }
 
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
-    pub fn cuboid<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> D3 {
-        D3::Cuboid(
-                x.into(),
-                y.into(),
-                z.into(),
-                )
+    pub fn cuboid(xyz: Real3) -> D3 {
+        D3::Cuboid(xyz)
     }
 
     pub fn translate(self, xyz: Real3) -> D3 {
@@ -506,9 +502,9 @@ impl D3 {
         let z = xyz.0.z;
         let bevel = bevel_in.into();
         D3::Hull(Box::new(vec![
-            D3::cuboid(x,y-bevel*2.,z-bevel*2.).translate(v3(0.,bevel,bevel)),
-            D3::cuboid(x-bevel*2.,y-bevel*2.,z).translate(v3(bevel,bevel,0.)),
-            D3::cuboid(x-bevel*2.,y,z-bevel*2.).translate(v3(bevel,0.,bevel)),
+            D3::cuboid(v3(x,y-bevel*2.,z-bevel*2.)).translate(v3(0.,bevel,bevel)),
+            D3::cuboid(v3(x-bevel*2.,y-bevel*2.,z)).translate(v3(bevel,bevel,0.)),
+            D3::cuboid(v3(x-bevel*2.,y,z-bevel*2.)).translate(v3(bevel,0.,bevel)),
             ]))
     }
 
@@ -516,13 +512,13 @@ impl D3 {
         //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
         let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
-            D3::cuboid(l_edge, l_edge, 2.0*r_square)
+            D3::cuboid(v3(l_edge, l_edge, 2.0*r_square))
                 .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
                 .rotate(v3(0., 0., 45.)),
-            D3::cuboid(l_edge, 2.*r_square, l_edge)
+            D3::cuboid(v3(l_edge, 2.*r_square, l_edge))
                 .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
                 .rotate(v3(0., 45., 0.)),
-            D3::cuboid(2.*r_square, l_edge, l_edge)
+            D3::cuboid(v3(2.*r_square, l_edge, l_edge))
                 .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
                 .rotate(v3(45, 0, 0)),
             ]))

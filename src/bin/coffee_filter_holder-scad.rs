@@ -16,7 +16,7 @@ fn main() {
         .hull()
         .iter_rotate(v3(0.,0.,15.), 24)
         .union()
-        .intersection(D3::cuboid(200,200,40).translate(v3(-100.,-100.,0.)))
+        .intersection(D3::cuboid(v3(200,200,40)).translate(v3(-100.,-100.,0.)))
         ;
 
     println!("$fn=128;\n{}", &holder);
