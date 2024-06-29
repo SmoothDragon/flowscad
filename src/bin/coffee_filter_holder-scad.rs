@@ -10,7 +10,7 @@ fn main() {
     let h = 100;
      
     let holder = D3::cylinder(h, r)
-        .rotate(30., 0., 30.)
+        .rotate(v3(30., 0., 30.))
         .translate(v3(R, 0, -10))
         .add(D3::cylinder(h, r))
         .hull()
