@@ -20,13 +20,19 @@ use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
 
-#[derive(Clone, Copy, PartialEq, Add, Mul)]
+#[derive(Debug, Clone, Copy, PartialEq, Add, Mul)]
 pub struct Real2(na::Vector2<Real>);
 
-// pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
+impl fmt::Display for Real2 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
+    }
+}
+
+pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
     // Real2([x.into(), y.into()])
-pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> na::Vector2<Real> {
-    nalgebra::vector![x.into(), y.into()]
+// pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> na::Vector2<Real> {
+    Real2(nalgebra::vector![x.into(), y.into()])
 }
 
 pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> na::Vector3<Real> {
@@ -156,16 +162,17 @@ pub enum D2 {
     Circle(Real),
     Circle2(f64),
     Square(Real),
-    Rectangle(na::Vector2<Real>),
-    Polygon(Box<Vec<na::Vector2<Real>>>),
+    // Rectangle(na::Vector2<Real>),
+    Rectangle(Real2),
+    Polygon(Box<Vec<Real2>>),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(Real, Box<D2>),
     Rotate2(NonNaNFinite, Box<D2>),
     Scale(Real, Box<D2>),
-    ScaleXY(na::Vector2<Real>, Box<D2>),
-    Translate(na::Vector2<Real>, Box<D2>),
-    Mirror(na::Vector2<Real>, Box<D2>),
+    ScaleXY(Real2, Box<D2>),
+    Translate(Real2, Box<D2>),
+    Mirror(Real2, Box<D2>),
     // Hull(Box<Vec<D2>>),
     // Intersection(Box<Vec<D2>>),
     // Union(Box<Vec<D2>>),
@@ -259,28 +266,28 @@ impl D2 {
         }
     }
 
-    pub fn triangle(xy0: na::Vector2<Real>, xy1: na::Vector2<Real>, xy2: na::Vector2<Real>) -> D2 {
+    pub fn triangle(xy0: Real2, xy1: Real2, xy2: Real2) -> D2 {
         D2::Polygon(Box::new(vec![xy0, xy1, xy2]))
     }
 
-    pub fn polygon(points: Vec<na::Vector2<Real>>) -> D2 {
+    pub fn polygon(points: Vec<Real2>) -> D2 {
         D2::Polygon(Box::new(points))
     }
 
-    pub fn translate(&self, xy: na::Vector2<Real>) -> D2 {
+    pub fn translate(&self, xy: Real2) -> D2 {
         // TODO: Is clone needed here?
         match self {
-            D2::Translate(v, d2) => D2::Translate(v+xy, d2.clone()),
+            D2::Translate(v, d2) => D2::Translate(*v+xy, d2.clone()),
             _ => D2::Translate(xy, Box::new(self.clone())),
         }
     }
 
-    pub fn mirror(&self, xy: na::Vector2<Real>) -> D2 {
+    pub fn mirror(&self, xy: Real2) -> D2 {
         D2::Mirror(xy, Box::new(self.clone()))
     }
 
-    pub fn iter_translate<'a>(&'a self, xy: na::Vector2<Real>, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.translate(v2(xy.x * ii as f32, xy.y * ii as f32)))
+    pub fn iter_translate<'a>(&'a self, xy: Real2, n: u32) -> impl Iterator<Item = D2> + 'a {
+        (0..n).map(move |ii| self.translate(v2(xy.0.x * ii as f32, xy.0.y * ii as f32)))
     }
 
     pub fn rotate<X: Into<Real>>(&self, theta: X) -> D2 {
@@ -307,15 +314,15 @@ impl D2 {
             .map(move |xy| self.translate(xy))
     }
 
-    pub fn translate_vec(&self, xy: na::Vector2<Real>, n: u32) -> Vec<D2> {
-        (0..n).map(move |ii| self.translate(v2(xy.x * ii as f32, xy.y * ii as f32))).collect::<Vec<_>>()
+    pub fn translate_vec(&self, xy: Real2, n: u32) -> Vec<D2> {
+        (0..n).map(move |ii| self.translate(v2(xy.0.x * ii as f32, xy.0.y * ii as f32))).collect::<Vec<_>>()
     }
 
     pub fn color(self, color_name: Color) -> D2 {
         D2::Color(color_name, Box::new(self))
     }
 
-    pub fn scale_xy(self, xy: na::Vector2<Real>) -> D2 {
+    pub fn scale_xy(self, xy: Real2) -> D2 {
         D2::ScaleXY(xy, Box::new(self))
     }
 
@@ -545,9 +552,9 @@ impl SCAD for D2 {
             D2::Circle(radius) => format!("circle(r = {});", radius),
             D2::Circle2(diameter) => format!("circle(d = {});", diameter),
             D2::Square(size) => format!("square(size = {});", size),
-            D2::Rectangle(xy) => format!("square(size = [{}, {}]);", xy.x, xy.y),
+            D2::Rectangle(Real2(xy)) => format!("square(size = [{}, {}]);", xy.x, xy.y),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
-                points.iter().map(|x| format!("{:?}", x).replace(r"[[", r"[").replace("]]", "]")).collect::<Vec<_>>().join(", ")),
+                points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
                     Color::Blue => "\"blue\"",
@@ -568,13 +575,13 @@ impl SCAD for D2 {
                     // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
-            D2::Translate(xy, shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
-            D2::Mirror(xy, shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
+            D2::Translate(Real2(xy), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
+            D2::Mirror(Real2(xy), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Rotate2(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::ScaleXY(v, shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
+            D2::ScaleXY(Real2(v), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
             // D2::Hull(v) => format!("hull() {{\n  {}\n}}",
