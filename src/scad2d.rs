@@ -30,8 +30,6 @@ impl fmt::Display for Real2 {
 }
 
 pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
-    // Real2([x.into(), y.into()])
-// pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> na::Vector2<Real> {
     Real2(nalgebra::vector![x.into(), y.into()])
 }
 
@@ -143,6 +141,7 @@ pub enum Color {
 #[derive(Clone, Debug)]
 pub enum D3 {
     Cube(Real),
+    Sphere(Real),
     Cylinder(Real, Real),
     Cuboid(Real3),
     Translate(Real3, Box<D3>),
@@ -154,6 +153,7 @@ pub enum D3 {
     Union(Box<Vec<D3>>),
     Minkowski(Box<Vec<D3>>),
     Difference(Box<D3>, Box<D3>),
+    // TODO: Join(&'static str, Box<Vec<D3>>),
 }
 
 
@@ -169,15 +169,12 @@ pub enum Join {
 #[derive(Clone, Debug)]
 pub enum D2 {
     Circle(Real),
-    Circle2(f64),
     Square(Real),
-    // Rectangle(na::Vector2<Real>),
     Rectangle(Real2),
     Polygon(Box<Vec<Real2>>),
     HalfPlane(Aim),
     Color(Color, Box<D2>),
     Rotate(Real, Box<D2>),
-    Rotate2(NonNaNFinite, Box<D2>),
     Scale(Real, Box<D2>),
     ScaleXY(Real2, Box<D2>),
     Translate(Real2, Box<D2>),
@@ -191,11 +188,6 @@ pub enum D2 {
     // Minkowski(Box<D2>, Box<D2>),
 }
 
-// #[derive(Clone, Debug)]
-// pub enum Geo<T> where T: D2 + D3 {
-// }
-
-
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
@@ -208,11 +200,6 @@ impl D2 {
     /// Create a circle of radius `radius` centered at the origin.
     pub fn circle<T: Into<Real>>(radius: T) -> D2 {
         D2::Circle(radius.into())
-    }
-
-    /// Create a circle with `diameter` centered at the origin.
-    pub fn circle2(diameter: f64) -> D2 {
-        D2::Circle2(diameter)
     }
 
     /// Create a square with side length `side` with lower left corner at the origin.
@@ -386,6 +373,7 @@ impl SCAD for D3 {
             D3::LinearExtrude(Real(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::RotateExtrude(Real(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
+            D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cuboid(Real3(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
@@ -418,6 +406,11 @@ impl D3 {
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
     pub fn cuboid(xyz: Real3) -> D3 {
         D3::Cuboid(xyz)
+    }
+
+    /// Create a sphere with `radius` centered at the origin.
+    pub fn sphere<T: Into<Real>>(radius: T) -> D3 {
+        D3::Sphere(radius.into())
     }
 
     pub fn translate(self, xyz: Real3) -> D3 {
@@ -547,7 +540,6 @@ impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
             D2::Circle(radius) => format!("circle(r = {});", radius),
-            D2::Circle2(diameter) => format!("circle(d = {});", diameter),
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(Real2(xy)) => format!("square(size = [{}, {}]);", xy.x, xy.y),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
@@ -576,7 +568,6 @@ impl SCAD for D2 {
             D2::Mirror(Real2(xy), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
-            D2::Rotate2(theta, shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
             D2::ScaleXY(Real2(v), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
@@ -602,8 +593,6 @@ impl SCAD for D2 {
 mod test {
     use super::*;
 
-    // const C5: D2 = D2::Circle(StrictlyPositiveFinite::new_unchecked::<f32>(5.));
-    // const S9: D2 = D2::Square(StrictlyPositiveFinite::new_unchecked::<f32>(9.));
     lazy_static!{ static ref C5: D2 = D2::circle(5); }
     lazy_static!{ static ref C7: D2 = D2::circle(7); }
     lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
@@ -680,6 +669,34 @@ mod test {
     }
 
     #[test]
+    fn test_d2_add_op() {
+        assert_eq!((D2::square(9) + D2::circle(5)).scad(),
+            "union() {\n  square(size = 9);\n  circle(r = 5);\n}"
+        );
+    }
+
+    #[test]
+    fn test_d2_sub_op() {
+        assert_eq!((D2::square(9) - D2::circle(5)).scad(),
+            "difference() {\n  square(size = 9);\n  circle(r = 5);\n}"
+        );
+    }
+
+    #[test]
+    fn test_d3_add_op() {
+        assert_eq!((D3::cube(9) + D3::sphere(5)).scad(),
+            "union() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
+        );
+    }
+
+    #[test]
+    fn test_d3_sub_op() {
+        assert_eq!((D3::cube(9) - D3::sphere(5)).scad(),
+            "difference() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
+        );
+    }
+
+    #[test]
     fn test_iter_hull() {
         assert_eq!(format!("{}", S9.iter_rotate(20, 4).hull()),
             "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
@@ -727,13 +744,6 @@ mod test {
             "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
         );
     }
-
-    // #[test]
-    // fn test_rotate_rotate2() {
-        // assert_eq!(format!("{}", S9.rotate2(20.).rotate2(10.)),
-            // "rotate(30) {\n  square(size = 9);\n}"
-        // );
-    // }
 
     #[test]
     fn test_iter_translate_translate() {
