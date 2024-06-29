@@ -11,12 +11,12 @@ fn main() {
      
     let holder = D3::cylinder(h, r)
         .rotate(30., 0., 30.)
-        .translate(R, 0, -10)
+        .translate(v3(R, 0, -10))
         .add(D3::cylinder(h, r))
         .hull()
-        .iter_rotate(XYZ(0.,0.,15.), 24)
+        .iter_rotate(v3(0.,0.,15.), 24)
         .union()
-        .intersection(D3::cuboid(200,200,40).translate(-100.,-100.,0.))
+        .intersection(D3::cuboid(200,200,40).translate(v3(-100.,-100.,0.)))
         ;
 
     println!("$fn=128;\n{}", &holder);

@@ -35,8 +35,17 @@ pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
     Real2(nalgebra::vector![x.into(), y.into()])
 }
 
-pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> na::Vector3<Real> {
-    nalgebra::vector![x.into(), y.into(), z.into()]
+#[derive(Debug, Clone, Copy, PartialEq, Add, Mul)]
+pub struct Real3(na::Vector3<Real>);
+
+impl fmt::Display for Real3 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
+    }
+}
+
+pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> Real3 {
+    Real3(nalgebra::vector![x.into(), y.into(), z.into()])
 }
 
 /// Methods for creating an SCAD object from an iterator of SCAD objects.
@@ -105,8 +114,8 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
 
 
 
-#[derive(Clone, Debug)]
-pub struct XYZ(pub f64, pub f64, pub f64);
+// #[derive(Clone, Debug)]
+// pub struct XYZ(pub f64, pub f64, pub f64);
 
 #[derive(Clone, Debug)]
 pub enum Aim {
@@ -136,7 +145,7 @@ pub enum D3 {
     Cube(Real),
     Cylinder(Real, Real),
     Cuboid(Real, Real, Real),
-    Translate(Real, Real, Real, Box<D3>),
+    Translate(Real3, Box<D3>),
     Rotate(Real, Real, Real, Box<D3>),
     LinearExtrude(Real, Box<D2>),
     RotateExtrude(Real, Box<D2>),
@@ -387,7 +396,7 @@ impl SCAD for D3 {
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
-            D3::Translate(x, y, z, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", x.0, y.0, z.0, shape.indent()),
+            D3::Translate(Real3(xyz), shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
             D3::Rotate(x, y, z, shape) => format!("rotate(v = [{}, {}, {}]) {{\n  {}\n}}", x.0, y.0, z.0, shape.indent()),
             // D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
@@ -414,18 +423,13 @@ impl D3 {
                 )
     }
 
-    pub fn translate<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(self, x: X, y: Y, z: Z) -> D3 {
-        D3::Translate(
-                x.into(),
-                y.into(),
-                z.into(),
-                Box::new(self.clone())
-                )
+    pub fn translate(self, xyz: Real3) -> D3 {
+        D3::Translate(xyz, Box::new(self.clone()))
     }
 
 
-    pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.clone().translate(xyz.0 * ii as f64, xyz.1 * ii as f64, xyz.2 * ii as f64))
+    pub fn iter_translate<'a>(&'a self, xyz: Real3, n: u32) -> impl Iterator<Item = D3> + 'a {
+        (0..n).map(move |ii| self.clone().translate(v3(xyz.0.x * ii as f32, xyz.0.y * ii as f32, xyz.0.z * ii as f32)))
     }
 
     // pub fn iter_translate2<'a, X: Into<Real> + 'a, Y: Into<Real> + 'a, Z: Into<Real> + 'a>(&'a self, x: X, y: Y, z: Z, n: u32) 
@@ -468,8 +472,8 @@ impl D3 {
     }
 
 
-    pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.rotate(theta.0 * ii as f64, theta.1 * ii as f64, theta.2 * ii as f64))
+    pub fn iter_rotate<'a>(&'a self, theta: Real3, n: u32) -> impl Iterator<Item = D3> + 'a {
+        (0..n).map(move |ii| self.rotate(theta.0.x * ii as f32, theta.0.y * ii as f32, theta.0.z * ii as f32))
     }
 
     pub fn hull(self) -> D3 {
@@ -500,14 +504,15 @@ impl D3 {
         }
     }
 
-    pub fn beveled_box(xyz: XYZ, bevel: f64) -> D3 {
-        let x = xyz.0; 
-        let y = xyz.1;
-        let z = xyz.2;
+    pub fn beveled_box<T: Into<Real>>(xyz: Real3, bevel_in: T) -> D3 {
+        let x = xyz.0.x; 
+        let y = xyz.0.y;
+        let z = xyz.0.z;
+        let bevel = bevel_in.into();
         D3::Hull(Box::new(vec![
-            D3::cuboid(x,y-bevel*2.,z-bevel*2.).translate(0.,bevel,bevel),
-            D3::cuboid(x-bevel*2.,y-bevel*2.,z).translate(bevel,bevel,0.),
-            D3::cuboid(x-bevel*2.,y,z-bevel*2.).translate(bevel,0.,bevel),
+            D3::cuboid(x,y-bevel*2.,z-bevel*2.).translate(v3(0.,bevel,bevel)),
+            D3::cuboid(x-bevel*2.,y-bevel*2.,z).translate(v3(bevel,bevel,0.)),
+            D3::cuboid(x-bevel*2.,y,z-bevel*2.).translate(v3(bevel,0.,bevel)),
             ]))
     }
 
@@ -516,13 +521,13 @@ impl D3 {
         let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
             D3::cuboid(l_edge, l_edge, 2.0*r_square)
-                .translate(-l_edge/2.0, -l_edge/2.0, -r_square)
+                .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
                 .rotate(0., 0., 45.),
             D3::cuboid(l_edge, 2.*r_square, l_edge)
-                .translate(-l_edge/2.0, -r_square, -l_edge/2.0)
+                .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
                 .rotate(0., 45., 0.),
             D3::cuboid(2.*r_square, l_edge, l_edge)
-                .translate(-r_square, -l_edge/2.0, -l_edge/2.0)
+                .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
                 .rotate(45., 0., 0.),
             ]))
     }

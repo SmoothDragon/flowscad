@@ -7,7 +7,7 @@ pub enum PositiveRealError {
     NonPositive,
 }
 
-#[derive(Clone, Copy, PartialEq, Add, Mul, Neg)]
+#[derive(Clone, Copy, PartialEq, Add, Sub, Mul, Neg)]
 pub struct Real(pub f32);
 
 impl Real {

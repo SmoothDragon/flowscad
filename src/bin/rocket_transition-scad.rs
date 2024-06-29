@@ -17,5 +17,5 @@ fn main() {
         .rotate_extrude(360)
         ;
 
-    println!("$fn=256;\n{}", &upper.translate(2.*inner_d,2.*inner_d, 0.).add(lower));
+    println!("$fn=256;\n{}", &upper.translate(v3(2.*inner_d,2.*inner_d, 0)).add(lower));
 }
