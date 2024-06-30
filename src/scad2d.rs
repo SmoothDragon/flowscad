@@ -141,10 +141,12 @@ pub enum Color {
 #[derive(Clone, Debug)]
 pub enum D3 {
     Cube(Real),
-    Sphere(Real),
-    Cylinder(Real, Real),
     Cuboid(Real3),
+    Cylinder(Real, Real),
+    Sphere(Real),
     Translate(Real3, Box<D3>),
+    Scale(Real, Box<D3>),
+    Scale3(Real3, Box<D3>),
     Rotate(Real3, Box<D3>),
     LinearExtrude(Real, Box<D2>),
     RotateExtrude(Real, Box<D2>),
@@ -176,7 +178,7 @@ pub enum D2 {
     Color(Color, Box<D2>),
     Rotate(Real, Box<D2>),
     Scale(Real, Box<D2>),
-    ScaleXY(Real2, Box<D2>),
+    Scale2(Real2, Box<D2>),
     Translate(Real2, Box<D2>),
     Mirror(Real2, Box<D2>),
     // Hull(Box<Vec<D2>>),
@@ -205,11 +207,6 @@ impl D2 {
     /// Create a square with side length `side` with lower left corner at the origin.
     pub fn square<T: Into<Real>>(side: T) -> D2 {
         D2::Square(side.into())
-    }
-
-    /// Scale size by the factor `s`.
-    pub fn scale<T: Into<Real>>(self, scale_factor: T) -> D2 {
-        D2::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
 
@@ -318,8 +315,14 @@ impl D2 {
         D2::Color(color_name, Box::new(self))
     }
 
-    pub fn scale_xy(self, xy: Real2) -> D2 {
-        D2::ScaleXY(xy, Box::new(self))
+    /// Scale size by the factor `s`.
+    pub fn scale<T: Into<Real>>(self, scale_factor: T) -> D2 {
+        D2::Scale(scale_factor.into(), Box::new(self.clone()))
+    }
+
+    /// Scale in `x` and `y` directions.
+    pub fn scale2(self, xy: Real2) -> D2 {
+        D2::Scale2(xy, Box::new(self))
     }
 
     pub fn linear_extrude<X: Into<Real>>(&self, x: X) -> D3 {
@@ -373,9 +376,11 @@ impl SCAD for D3 {
             D3::LinearExtrude(Real(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::RotateExtrude(Real(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
-            D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cuboid(Real3(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
+            D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
+            D3::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, shape.indent()),
+            D3::Scale3(Real3(v), shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.x, v.y, v.z, shape.indent()),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -411,6 +416,21 @@ impl D3 {
     /// Create a sphere with `radius` centered at the origin.
     pub fn sphere<T: Into<Real>>(radius: T) -> D3 {
         D3::Sphere(radius.into())
+    }
+
+    /// Create a spheroid with radii, `r1, r2, r3` centered at the origin.
+    pub fn spheroid(radii: Real3) -> D3 {
+        D3::Sphere(Real(1.0)).scale3(radii)
+    }
+
+    /// Scale size by the factor `s`.
+    pub fn scale<T: Into<Real>>(self, scale_factor: T) -> D3 {
+        D3::Scale(scale_factor.into(), Box::new(self.clone()))
+    }
+
+    /// Scale in `x` and `y` directions.
+    pub fn scale3(self, xyz: Real3) -> D3 {
+        D3::Scale3(xyz, Box::new(self))
     }
 
     pub fn translate(self, xyz: Real3) -> D3 {
@@ -569,7 +589,7 @@ impl SCAD for D2 {
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::ScaleXY(Real2(v), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
+            D2::Scale2(Real2(v), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
             // D2::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -691,8 +711,8 @@ mod test {
 
     #[test]
     fn test_d3_sub_op() {
-        assert_eq!((D3::cube(9) - D3::sphere(5)).scad(),
-            "difference() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
+        assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
+            "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
         );
     }
 
