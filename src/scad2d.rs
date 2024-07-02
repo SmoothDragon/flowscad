@@ -2,19 +2,13 @@
 
 use nalgebra as na;
 
-// use std::iter::{Iterator, Sum, Product};
-// use anyhow::{Context, Result};
-// use derive_more::*;
 pub use std::f64::consts::PI;
-// use num_traits::Num;
 use lazy_static::lazy_static;
 
-use crate::{v2, v3, Real, Real2, Real3};
+// use crate::{v2, v3, Real, Real2, Real3};
+use crate::*;
 
-// use itertools::Itertools;
-// use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
-// const MAX: f64 = 1000.;
 
 /// Methods for creating an SCAD object from an iterator of SCAD objects.
 pub trait DIterator<T> : Iterator<Item=T> {
