@@ -1,50 +1,20 @@
 //! Create OpenSCAD files using Rust.
-extern crate itertools;
-extern crate typed_floats;
-extern crate derive_more;
-extern crate nalgebra as na;
 
-use std::fmt;
-use std::ops;
-use std::iter::{Iterator, Sum, Product};
-use anyhow::{Context, Result};
-use derive_more::*;
+use nalgebra as na;
+
+// use std::iter::{Iterator, Sum, Product};
+// use anyhow::{Context, Result};
+// use derive_more::*;
 pub use std::f64::consts::PI;
-use num_traits::Num;
+// use num_traits::Num;
 use lazy_static::lazy_static;
 
-use crate::finite_number::*;
+use crate::{v2, v3, Real, Real2, Real3};
 
 // use itertools::Itertools;
-use typed_floats::*;
+// use typed_floats::*;
 const MAX: f64 = f64::MAX / 100.;
 // const MAX: f64 = 1000.;
-
-#[derive(Debug, Clone, Copy, PartialEq, Add, Mul)]
-pub struct Real2(na::Vector2<Real>);
-
-impl fmt::Display for Real2 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
-    }
-}
-
-pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
-    Real2(nalgebra::vector![x.into(), y.into()])
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Add, Mul)]
-pub struct Real3(na::Vector3<Real>);
-
-impl fmt::Display for Real3 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
-    }
-}
-
-pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> Real3 {
-    Real3(nalgebra::vector![x.into(), y.into(), z.into()])
-}
 
 /// Methods for creating an SCAD object from an iterator of SCAD objects.
 pub trait DIterator<T> : Iterator<Item=T> {
@@ -76,7 +46,7 @@ impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     }
 }
 
-impl ops::Add<D2> for D2 {
+impl std::ops::Add<D2> for D2 {
     type Output = D2;
 
     fn add(self, other: D2) -> D2 {
@@ -84,36 +54,13 @@ impl ops::Add<D2> for D2 {
     }
 }
 
-impl ops::Sub<D2> for D2 {
+impl std::ops::Sub<D2> for D2 {
     type Output = D2;
 
     fn sub(self, other: D2) -> D2 {
         self.difference(other)
     }
 }
-
-impl<T: Iterator<Item=D3>> DIterator<D3> for T {
-    fn hull(self: Self) -> D3 {
-        D3::Hull(Box::new(self.collect::<Vec<D3>>()))
-    }
-
-    fn union(self: Self) -> D3 {
-        D3::Union(Box::new(self.collect::<Vec<D3>>()))
-    }
-
-    fn intersection(self: Self) -> D3 {
-        D3::Intersection(Box::new(self.collect::<Vec<D3>>()))
-    }
-
-    fn minkowski(self: Self) -> D3 {
-        D3::Minkowski(Box::new(self.collect::<Vec<D3>>()))
-    }
-}
-
-
-
-// #[derive(Clone, Debug)]
-// pub struct XYZ(pub f64, pub f64, pub f64);
 
 #[derive(Clone, Debug)]
 pub enum Aim {
@@ -136,26 +83,6 @@ pub enum Color {
     Blue,
     Green,
     Red,
-}
-
-#[derive(Clone, Debug)]
-pub enum D3 {
-    Cube(Real),
-    Cuboid(Real3),
-    Cylinder(Real, Real),
-    Sphere(Real),
-    Translate(Real3, Box<D3>),
-    Scale(Real, Box<D3>),
-    Scale3(Real3, Box<D3>),
-    Rotate(Real3, Box<D3>),
-    LinearExtrude(Real, Box<D2>),
-    RotateExtrude(Real, Box<D2>),
-    Hull(Box<Vec<D3>>),
-    Intersection(Box<Vec<D3>>),
-    Union(Box<Vec<D3>>),
-    Minkowski(Box<Vec<D3>>),
-    Difference(Box<D3>, Box<D3>),
-    // TODO: Join(&'static str, Box<Vec<D3>>),
 }
 
 
@@ -193,11 +120,6 @@ pub enum D2 {
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
-
-pub fn indent_d3(shape: &D3) -> String {
-    format!("{}", shape).replace("\n", "\n  ")
-}
-
 impl D2 {
     /// Create a circle of radius `radius` centered at the origin.
     pub fn circle<T: Into<Real>>(radius: T) -> D2 {
@@ -334,17 +256,16 @@ impl D2 {
     }
 }
 
-impl Sum for D2 {
+impl std::iter::Sum for D2 {
     fn sum<I>(iter: I) -> Self
       where 
         I: Iterator<Item = Self>
     {
         D2::Join("union", Box::new(iter.collect::<Vec<Self>>()))
-        // D2::Union(Box::new(iter.collect::<Vec<Self>>()))
     }
 }
 
-impl Product for D2 {
+impl std::iter::Product for D2 {
     fn product<I>(iter: I) -> Self
       where 
         I: Iterator<Item = Self>
@@ -353,14 +274,62 @@ impl Product for D2 {
     }
 }
 
-impl fmt::Display for D2 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl std::fmt::Display for D2 {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", &self.scad())
     }
 }
 
-impl fmt::Display for D3 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl<T: Iterator<Item=D3>> DIterator<D3> for T {
+    fn hull(self: Self) -> D3 {
+        D3::Hull(Box::new(self.collect::<Vec<D3>>()))
+    }
+
+    fn union(self: Self) -> D3 {
+        D3::Union(Box::new(self.collect::<Vec<D3>>()))
+    }
+
+    fn intersection(self: Self) -> D3 {
+        D3::Intersection(Box::new(self.collect::<Vec<D3>>()))
+    }
+
+    fn minkowski(self: Self) -> D3 {
+        D3::Minkowski(Box::new(self.collect::<Vec<D3>>()))
+    }
+}
+
+
+
+// #[derive(Clone, Debug)]
+// pub struct XYZ(pub f64, pub f64, pub f64);
+
+#[derive(Clone, Debug)]
+pub enum D3 {
+    Cube(Real),
+    Cuboid(Real3),
+    Cylinder(Real, Real),
+    Sphere(Real),
+    Translate(Real3, Box<D3>),
+    Scale(Real, Box<D3>),
+    Scale3(Real3, Box<D3>),
+    Rotate(Real3, Box<D3>),
+    LinearExtrude(Real, Box<D2>),
+    RotateExtrude(Real, Box<D2>),
+    Hull(Box<Vec<D3>>),
+    Intersection(Box<Vec<D3>>),
+    Union(Box<Vec<D3>>),
+    Minkowski(Box<Vec<D3>>),
+    Difference(Box<D3>, Box<D3>),
+    // TODO: Join(&'static str, Box<Vec<D3>>),
+}
+
+
+pub fn indent_d3(shape: &D3) -> String {
+    format!("{}", shape).replace("\n", "\n  ")
+}
+
+impl std::fmt::Display for D3 {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", &self.scad())
     }
 }
@@ -540,7 +509,7 @@ impl D3 {
 
 }
 
-impl ops::Add<D3> for D3 {
+impl std::ops::Add<D3> for D3 {
     type Output = D3;
 
     fn add(self, other: D3) -> D3 {
@@ -548,7 +517,7 @@ impl ops::Add<D3> for D3 {
     }
 }
 
-impl ops::Sub<D3> for D3 {
+impl std::ops::Sub<D3> for D3 {
     type Output = D3;
 
     fn sub(self, other: D3) -> D3 {
@@ -772,11 +741,6 @@ mod test {
         );
     }
 
-    // TODO:
-    // #[test]
-    // fn test_v2_mul() {
-        // assert_eq!(format!("{:?}", v2(1.,2.)*3.), "[[3.0, 6.0]]");
-    // }
 
     #[test]
     fn test_triangle() {

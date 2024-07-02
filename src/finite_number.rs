@@ -1,11 +1,8 @@
+extern crate nalgebra as na;
+
 use std::ops::*;
 use std::fmt;
 use derive_more::*;
-
-#[derive(Debug, PartialEq)]
-pub enum PositiveRealError {
-    NonPositive,
-}
 
 #[derive(Clone, Copy, PartialEq, Add, Sub, Mul, Neg)]
 pub struct Real(pub f32);
@@ -59,7 +56,7 @@ impl From<i64> for Real {
 
 impl From<f32> for Real {
     fn from(f: f32) -> Real {
-        Real(f)
+        Real(f as f32)
     }
 }
 
@@ -69,60 +66,45 @@ impl From<f64> for Real {
     }
 }
 
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub struct FinitePositive(pub f32);
+#[derive(Debug, Clone, Copy, PartialEq, Add)]
+pub struct Real2(pub na::Vector2<Real>); // TODO: Remove pub na::
 
-impl FinitePositive {
-    /// Positive Real MAX is lower since it is used for super large objects that could be shifted or rotated.
-    pub const MAX: FinitePositive = FinitePositive(f32::MAX/1000.0);
-}
-
-impl TryFrom<i32> for FinitePositive {
-    type Error = PositiveRealError;
-
-    fn try_from(i: i32) -> Result<FinitePositive, PositiveRealError> {
-        if i > 0 {
-            Ok(FinitePositive(i as f32))
-        } else {
-            Err(PositiveRealError::NonPositive)
-        }
+impl fmt::Display for Real2 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
     }
 }
 
-impl TryFrom<i64> for FinitePositive {
-    type Error = PositiveRealError;
+pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
+    Real2(nalgebra::vector![x.into(), y.into()])
+}
 
-    fn try_from(i: i64) -> Result<FinitePositive, PositiveRealError> {
-        if i > 0 {
-            Ok(FinitePositive(i as f32))
-        } else {
-            Err(PositiveRealError::NonPositive)
-        }
+impl std::ops::Mul<f32> for Real2 {
+    type Output = Real2;
+    fn mul(self, rhs: f32) -> Self::Output {
+        v2(self.0.x * rhs, self.0.y * rhs)
     }
 }
 
-impl TryFrom<f32> for FinitePositive {
-    type Error = PositiveRealError;
 
-    fn try_from(f: f32) -> Result<FinitePositive, PositiveRealError> {
-        if f > 0. && f < f32::INFINITY {
-            Ok(FinitePositive(f))
-        } else {
-            Err(PositiveRealError::NonPositive)
-        }
+impl std::ops::Mul<Real2> for f32 {
+    type Output = Real2;
+    fn mul(self, rhs: Real2) -> Self::Output {
+        v2(rhs.0.x * self, rhs.0.y * self)
     }
 }
 
-impl TryFrom<f64> for FinitePositive {
-    type Error = PositiveRealError;
+#[derive(Debug, Clone, Copy, PartialEq, Add, Mul)]
+pub struct Real3(pub na::Vector3<Real>);  // TODO: Remove pub na::
 
-    fn try_from(f: f64) -> Result<FinitePositive, PositiveRealError> {
-        if f > 0. && f < f64::INFINITY {
-            Ok(FinitePositive(f as f32))
-        } else {
-            Err(PositiveRealError::NonPositive)
-        }
+impl fmt::Display for Real3 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
     }
+}
+
+pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> Real3 {
+    Real3(nalgebra::vector![x.into(), y.into(), z.into()])
 }
 
 #[cfg(test)]
@@ -142,42 +124,10 @@ mod test {
         assert_eq!(<f64 as Into<Real>>::into(5.0), Real(5.));
     }
 
+    // TODO:
     #[test]
-    fn test_try_from_i32() {
-        assert_eq!(FinitePositive::try_from(5_i32), Ok(FinitePositive(5.)));
-        assert_eq!(FinitePositive::try_from(0), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(-5_i32), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(i32::MAX), Ok(FinitePositive(2147483600.0)));
-    }
-
-    #[test]
-    fn test_try_from_i64() {
-        assert_eq!(FinitePositive::try_from(5_i64), Ok(FinitePositive(5.)));
-        assert_eq!(FinitePositive::try_from(i64::MAX), Ok(FinitePositive(9.223372036854776e18)));
-    }
-
-    #[test]
-    fn test_try_from_f32() {
-        assert_eq!(FinitePositive::try_from(5_f32), Ok(FinitePositive(5.)));
-        assert_eq!(FinitePositive::try_from(-5_f32), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f32::NAN), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f32::INFINITY), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f32::NEG_INFINITY), Err(PositiveRealError::NonPositive));
-    }
-
-    #[test]
-    fn test_try_from_f64() {
-        assert_eq!(FinitePositive::try_from(5_f64), Ok(FinitePositive(5.)));
-        assert_eq!(FinitePositive::try_from(f64::NAN), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f64::INFINITY), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f64::NEG_INFINITY), Err(PositiveRealError::NonPositive));
-    }
-
-    #[test]
-    fn test_mul() {
-        assert_eq!(FinitePositive::try_from(5_f64), Ok(FinitePositive(5.)));
-        assert_eq!(FinitePositive::try_from(f64::NAN), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f64::INFINITY), Err(PositiveRealError::NonPositive));
-        assert_eq!(FinitePositive::try_from(f64::NEG_INFINITY), Err(PositiveRealError::NonPositive));
+    fn test_v2_mul() {
+        assert_eq!(format!("{}", v2(1.,2.)*3.), "[3, 6]");
+        assert_eq!(format!("{}", 3. * v2(1.,2.)), "[3, 6]");
     }
 }
