@@ -16,7 +16,7 @@ fn main() -> Result<()> {
         .add(D2::square(9))
         .scale(4)
         .minkowski(D2::Rectangle(v2(0.5,1.5)))
-        .color(Color::Red)
+        .color(ColorEnum::Red)
         ;
     println!("{}", &f);
     Ok(())
