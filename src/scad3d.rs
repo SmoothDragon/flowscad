@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use crate::*;
 use crate::common::*;
 
-use common::ColorEnum;
+// use common::ColorEnum;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self: Self) -> D3 {
@@ -57,6 +57,25 @@ pub fn indent_d3(shape: &D3) -> String {
 impl std::fmt::Display for D3 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", &self.scad())
+    }
+}
+
+impl std::iter::Sum for D3 {
+    fn sum<I>(iter: I) -> Self
+      where 
+        I: Iterator<Item = Self>
+    {
+        D3::Union(Box::new(iter.collect::<Vec<Self>>()))
+        // D3::Join("union", Box::new(iter.collect::<Vec<Self>>()))
+    }
+}
+
+impl std::iter::Product for D3 {
+    fn product<I>(iter: I) -> Self
+      where 
+        I: Iterator<Item = Self>
+    {
+        D3::Intersection(Box::new(iter.collect::<Vec<Self>>()))
     }
 }
 
@@ -262,26 +281,6 @@ impl std::ops::Sub<D3> for D3 {
     }
 }
 
-/*
-impl<T: Iterator<Item=D3>> DIterator<D3> for T {
-    fn hull(self: Self) -> D3 {
-        D3::Hull(Box::new(self.collect::<Vec<D3>>()))
-    }
-
-    fn union(self: Self) -> D3 {
-        D3::Union(Box::new(self.collect::<Vec<D3>>()))
-    }
-
-    fn intersection(self: Self) -> D3 {
-        D3::Intersection(Box::new(self.collect::<Vec<D3>>()))
-    }
-
-    fn minkowski(self: Self) -> D3 {
-        D3::Minkowski(Box::new(self.collect::<Vec<D3>>()))
-    }
-}
-
-*/
 #[cfg(test)]
 mod test {
     use super::*;
@@ -317,35 +316,35 @@ mod test {
         );
     }
 }
-    /*
     #[test]
     fn test_iter_translate() {
-        assert_eq!(D3::.iter_translate(v2(1.,2.),4).union().scad(),
-            "union() {\n  translate(v = [0, 0]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(r = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(r = 5);\n  }\n}"
+        assert_eq!(D3::cube(3).iter_translate(v3(1.,2.,3.),4).union().scad(),
+            "union() {\n  translate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  translate(v = [1, 2, 3]) {\n    cube(size = 3);\n  }\n  translate(v = [2, 4, 6]) {\n    cube(size = 3);\n  }\n  translate(v = [3, 6, 9]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_rotate() {
-        assert_eq!(S9.iter_rotate(20, 4).sum::<D2>().scad(),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).sum::<D3>().scad(),
+            "union() {\n  rotate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate(v = [10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate(v = [20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate(v = [30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
     #[test]
     fn test_intersection() {
-        assert_eq!(S9.iter_rotate(20, 4).product::<D2>().scad(),
-            "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).product::<D3>().scad(),
+            "intersection() {\n  rotate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate(v = [10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate(v = [20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate(v = [30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
     #[test]
     fn test_union() {
-        assert_eq!(S9.iter_rotate(20, 4).union().scad(),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).union().scad(),
+            "union() {\n  rotate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate(v = [10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate(v = [20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate(v = [30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
+    /*
     #[test]
     fn test_add_map() {
         assert_eq!(S9.iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
