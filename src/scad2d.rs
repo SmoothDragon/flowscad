@@ -10,14 +10,6 @@ use crate::*;
 
 const MAX: f64 = f64::MAX / 100.;
 
-/// Methods for creating an SCAD object from an iterator of SCAD objects.
-pub trait DIterator<T> : Iterator<Item=T> {
-    fn hull(self: Self) -> T where Self: Iterator<Item = T>;
-    fn union(self: Self) -> T where Self: Iterator<Item = T>;
-    fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
-    fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
-}
-
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     fn hull(self: Self) -> D2 {
         // D2::Hull(Box::new(self.collect::<Vec<D2>>()))

@@ -8,6 +8,7 @@ use crate::common::*;
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self: Self) -> D3 {
         D3::Hull(Box::new(self.collect::<Vec<D3>>()))
+        // D2::Join("hull", Box::new(self.collect::<Vec<D2>>()))
     }
 
     fn union(self: Self) -> D3 {
@@ -46,6 +47,7 @@ pub enum D3 {
     Union(Box<Vec<D3>>),
     Minkowski(Box<Vec<D3>>),
     Difference(Box<D3>, Box<D3>),
+    Join(&'static str, Box<Vec<D3>>),
     // TODO: Join(&'static str, Box<Vec<D3>>),
 }
 
@@ -111,10 +113,10 @@ impl SCAD for D3 {
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Translate(Real3(xyz), shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
-            D3::Rotate(Real3(xyz), shape) => format!("rotate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
-            // D3::Rotate(x, y, z, shape) => format!("rotate(v = [{}, {}, {}]) {{\n  {}\n}}", x.0, y.0, z.0, shape.indent()),
-            // D3::Rotate(theta, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", theta.0, theta.1, theta.2, indent_d3(shape)),
+            D3::Rotate(Real3(xyz), shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
+            D3::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
+                v.iter().map(|x| format!("{}", x.indent())).collect::<Vec<_>>().join("\n  ")),
         }
     }
     fn indent(&self) -> String {
@@ -137,6 +139,16 @@ impl D3 {
     /// Create a sphere with `radius` centered at the origin.
     pub fn sphere<T: Into<Real>>(radius: T) -> D3 {
         D3::Sphere(radius.into())
+    }
+
+    /// Subtract `self` from a cube centered at the origin with edge length `l_edge`.
+    // pub fn invert<T: Into<Real>>(self, l_edge: T) -> D3 { TODO
+    pub fn invert(self, l_edge: f64) -> D3 {
+        let shift = -l_edge/2.0;
+        D3::cube(l_edge)
+            .translate(v3(shift,shift,shift)) 
+            // .translate(-0.5*v3(l_edge,l_edge,l_edge)) 
+            - self
     }
 
     /// Create a spheroid with radii, `r1, r2, r3` centered at the origin.
@@ -197,9 +209,24 @@ impl D3 {
         D3::Difference(Box::new(self), Box::new(other))
     }
 
+    pub fn minkowski(self, other: D3) -> D3 {
+        D3::Minkowski(Box::new(vec![self, other]))
+        /*
+        match self { // Combine Minkowski sums if possible
+            D2::Join("minkowski", vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Join("minkowski", vec)
+                },
+            _ => D2::Join("minkowski", Box::new(vec![self, other])),
+        }
+        */
+    }
+
     pub fn add_map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
         self.clone().add(f(self))
     }
+
 
 
     pub fn iter_rotate<'a>(&'a self, theta: Real3, n: u32) -> impl Iterator<Item = D3> + 'a {
@@ -262,6 +289,27 @@ impl D3 {
             ]))
     }
 
+    /*
+    pub fn truncated_octahedron(r: f64) -> D3 {
+        /// Create a truncated ocatahedron with edge length `l_edge` centered at the origin
+        /// Create a truncated ocatahedron centered at the origin.
+        /// `r_square` equals distance from origin to center of square face.
+        // let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
+        let r_square = r; // r.into() TODO
+        let l_edge = 2.0_f64.powf(0.5) / r_square;  // height of truncated octahedron between square faces
+        D3::Hull(Box::new(vec![
+            D3::cuboid(v3(l_edge, l_edge, 2.0*r_square))
+                .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
+                .rotate(v3(0., 0., 45.)),
+            D3::cuboid(v3(l_edge, 2.*r_square, l_edge))
+                .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
+                .rotate(v3(0., 45., 0.)),
+            D3::cuboid(v3(2.*r_square, l_edge, l_edge))
+                .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
+                .rotate(v3(45, 0, 0)),
+            ]))
+    }
+    */
 
 }
 
@@ -326,21 +374,21 @@ mod test {
     #[test]
     fn test_iter_rotate() {
         assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).sum::<D3>().scad(),
-            "union() {\n  rotate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate(v = [10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate(v = [20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate(v = [30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
+            "union() {\n  rotate([0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
     #[test]
     fn test_intersection() {
         assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).product::<D3>().scad(),
-            "intersection() {\n  rotate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate(v = [10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate(v = [20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate(v = [30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
+            "intersection() {\n  rotate([0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
     #[test]
     fn test_union() {
         assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).union().scad(),
-            "union() {\n  rotate(v = [0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate(v = [10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate(v = [20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate(v = [30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
+            "union() {\n  rotate([0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
         );
     }
 
