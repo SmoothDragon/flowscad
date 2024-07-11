@@ -227,6 +227,9 @@ impl D3 {
         self.clone().add(f(self))
     }
 
+    pub fn map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
+        f(self)
+    }
 
 
     pub fn iter_rotate<'a>(&'a self, theta: Real3, n: u32) -> impl Iterator<Item = D3> + 'a {
