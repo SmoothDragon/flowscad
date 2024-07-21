@@ -1,5 +1,5 @@
 use anyhow::Result;
-use tgdscad::*;
+use flowscad::*;
 
 fn racetrack(r:f64) -> Result<D3> {
     Ok(D2::circle(0.5*r)

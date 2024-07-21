@@ -1,4 +1,4 @@
-use tgdscad::*;
+use flowscad::*;
 
 fn main() {
     let scale = 5.;  // Should be 60mm G4G `G`

@@ -5,7 +5,7 @@
 // use std::ops::Add;
 
 use anyhow::Result;
-use tgdscad::*;
+use flowscad::*;
 
 fn main() -> Result<()> {
     let e = D2::circle(4);

@@ -25,7 +25,6 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
 }
 
 
-
 // #[derive(Clone, Debug)]
 // pub struct XYZ(pub f64, pub f64, pub f64);
 
@@ -171,7 +170,7 @@ impl D3 {
     }
 
     pub fn translate(self, xyz: Real3) -> D3 {
-        D3::Translate(xyz, Box::new(self.clone()))
+        D3::Translate(xyz, Box::new(self))
     }
 
 

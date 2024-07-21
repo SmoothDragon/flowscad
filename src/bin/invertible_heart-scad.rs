@@ -1,5 +1,5 @@
 use anyhow::Result;
-use tgdscad::*;
+use flowscad::*;
 
 fn invertible_heart(r:f64) -> Result<D2> {
     let theta = (2.0/PI).atan()*180./PI;

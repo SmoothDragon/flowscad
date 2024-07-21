@@ -1,5 +1,5 @@
 use anyhow::Result;
-use tgdscad::*;
+use flowscad::*;
 
 fn main() -> Result<()> {
     let f = D2::square(10)

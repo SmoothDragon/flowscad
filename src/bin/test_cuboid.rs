@@ -1,4 +1,4 @@
-use tgdscad::*;
+use flowscad::*;
 
 fn main() {
     let f = D3::cuboid(v3(10., 20., 30.));

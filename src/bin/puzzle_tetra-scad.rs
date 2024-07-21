@@ -1,5 +1,5 @@
 
-use tgdscad::*;
+use flowscad::*;
 
 fn main() {
     let e = 10.;

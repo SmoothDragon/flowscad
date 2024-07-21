@@ -1,4 +1,4 @@
-use tgdscad::*;
+use flowscad::*;
 
 fn main() {
     let s = 80.;  // base edge length of pyramid

@@ -2,7 +2,7 @@
 // Above the XY plane will be something equivalent to the old piece.
 // Below the XY plane will be what is added on.
 
-use tgdscad::*;
+use flowscad::*;
 
 fn main() {
     let extend = 10.;

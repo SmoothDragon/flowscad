@@ -4,7 +4,7 @@
 // use itertools::Itertools;
 // use std::ops::Add;
 
-use tgdscad::*;
+use flowscad::*;
 use anyhow::Result;
 
 fn main() -> Result<()> {

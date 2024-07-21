@@ -78,6 +78,14 @@ pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
     Real2(nalgebra::vector![x.into(), y.into()])
 }
 
+impl<X: Into<Real>, Y: Into<Real>> From<(X,Y)> for Real2 {
+    fn from(xy: (X,Y)) -> Real2 {
+        v2(xy.0, xy.1)
+    }
+}
+
+
+
 impl std::ops::Mul<f32> for Real2 {
     type Output = Real2;
     fn mul(self, rhs: f32) -> Self::Output {
