@@ -85,7 +85,6 @@ impl<X: Into<Real>, Y: Into<Real>> From<(X,Y)> for Real2 {
 }
 
 
-
 impl std::ops::Mul<f32> for Real2 {
     type Output = Real2;
     fn mul(self, rhs: f32) -> Self::Output {
@@ -166,4 +165,12 @@ mod test {
         assert_eq!(format!("{}", v3(1.,2., 4)*3.), "[3, 6, 12]");
         assert_eq!(format!("{}", 8. * v3(1.,2., 4)), "[8, 16, 32]");
     }
+
+    #[test]
+    fn test_into_real2() {
+        assert_eq!(Real2::from( (5_i32, 10_i32) ), v2(5., 10.));
+        assert_eq!(Real2::from( (5_i32, 10_u64) ), v2(5., 10.));
+        assert_eq!(Real2::from( (5.0_f32, 10_u64) ), v2(5., 10.));
+    }
+
 }
