@@ -1,8 +1,9 @@
 use nalgebra as na;
+use std::ops::*;
 
 use derive_more::*;
 
-#[derive(Clone, Copy, PartialEq, Add, Sub, Mul, Neg)]
+#[derive(Clone, Copy, PartialEq, Add, Sub, Neg)]
 pub struct Real(pub f32);
 
 impl Real {
@@ -25,6 +26,12 @@ impl std::fmt::Display for Real {
 impl std::ops::AddAssign for Real {
     fn add_assign(&mut self, other: Self) {
         *self = Self(self.0 + other.0);
+    }
+}
+
+impl std::ops::SubAssign for Real {
+    fn sub_assign(&mut self, other: Self) {
+        *self = Self(self.0 - other.0);
     }
 }
 
@@ -65,17 +72,64 @@ impl From<f64> for Real {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Add)]
-pub struct Real2(pub na::Vector2<Real>); // TODO: Remove pub na::
+impl<X: Into<Real>> std::ops::Mul<X> for Real {
+    type Output = Real;
+    fn mul(self, other: X) -> Self::Output {
+        Real(self.0 * other.into().0)
+    }
+}
+
+// impl<X: Into<Real>, Y: Into<Real>> std::ops::Mul<X> for Y {
+    // type Output = Real;
+    // fn mul(self, other: X) -> Self::Output {
+        // Real(self.into().0 * other.into().0)
+    // }
+// }
+
+
+// impl<X: Into<Real>> std::ops::Mul<Real> for X {
+    // type Output = Real;
+    // fn mul(self, other: Real) -> Self::Output {
+        // Real(self.into().0 * other.0)
+    // }
+// }
+
+
+impl std::ops::Mul<Real> for f32 {
+    type Output = Real;
+    fn mul(self, other: Real) -> Real {
+        Real(self * other.0)
+    }
+}
+
+impl std::ops::Mul<Real> for i32 {
+    type Output = Real;
+    fn mul(self, other: Real) -> Real {
+        Real((self as f32) * other.0)
+    }
+}
+
+
+#[derive(Debug, Clone, Copy, PartialEq, Add, Neg)]
+pub struct Real2(pub f32, pub f32); // TODO: Remove pub na::
+// pub struct Real2(pub na::Vector2<Real>); // TODO: Remove pub na::
+
+// impl Iterator<Item=Real2> {
+    // fn to_edges(self) -> Iterator<Item=[Real2; 2]> {
+        // let first = self.next();
+        // let mut current = first.clone();
+    // }
+// }
 
 impl std::fmt::Display for Real2 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
+        write!(f, "{}", format!("[{}, {}]", &self.0, &self.1))
+        // write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
     }
 }
 
 pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> Real2 {
-    Real2(nalgebra::vector![x.into(), y.into()])
+    Real2(x.into().0, y.into().0)
 }
 
 impl<X: Into<Real>, Y: Into<Real>> From<(X,Y)> for Real2 {
@@ -85,19 +139,35 @@ impl<X: Into<Real>, Y: Into<Real>> From<(X,Y)> for Real2 {
 }
 
 
-
-impl std::ops::Mul<f32> for Real2 {
+impl<X: Into<Real>> std::ops::Mul<X> for Real2 {
     type Output = Real2;
-    fn mul(self, rhs: f32) -> Self::Output {
-        v2(self.0.x * rhs, self.0.y * rhs)
+    fn mul(self, other: X) -> Self::Output {
+        let y: f32 = other.into().0;
+        // v2(self.0.x * other.clone().into().0, self.0.y * other.into().0)
+        v2(self.0 * y, self.1 * y)
     }
 }
+
+
+// impl std::ops::Mul<f32> for Real2 {
+    // type Output = Real2;
+    // fn mul(self, rhs: f32) -> Self::Output {
+        // v2(self.0.x * rhs, self.0.y * rhs)
+    // }
+// }
 
 
 impl std::ops::Mul<Real2> for f32 {
     type Output = Real2;
     fn mul(self, rhs: Real2) -> Self::Output {
-        v2(rhs.0.x * self, rhs.0.y * self)
+        v2(rhs.0 * self as f32, rhs.1 * self as f32)
+    }
+}
+
+impl std::ops::Mul<Real2> for i32 {
+    type Output = Real2;
+    fn mul(self, rhs: Real2) -> Self::Output {
+        v2(rhs.0 * self as f32, rhs.1 * self as f32)
     }
 }
 
@@ -110,6 +180,14 @@ impl std::ops::Mul<Real2> for f32 {
     // }
 // }
 
+impl Sub for Real2 {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self(self.0 - other.0, self.1 - other.1)
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Add)]
 pub struct Real3(pub na::Vector3<Real>);  // TODO: Remove pub na::
 
@@ -121,6 +199,12 @@ impl std::fmt::Display for Real3 {
 
 pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> Real3 {
     Real3(nalgebra::vector![x.into(), y.into(), z.into()])
+}
+
+impl From<Real2> for Real3 {
+    fn from(xy: Real2) -> Real3 {
+        v3(xy.0, xy.1, 0)
+    }
 }
 
 impl std::ops::Mul<f32> for Real3 {
@@ -156,9 +240,19 @@ mod test {
     }
 
     #[test]
+    fn test_real_mul() {
+        assert_eq!(Real(5.) * 2., Real(10.));
+        assert_eq!(Real(5.) * 2, Real(10.));
+        assert_eq!(2. * Real(5.), Real(10.));
+        assert_eq!(2 * Real(5.), Real(10.));
+    }
+
+    #[test]
     fn test_v2_mul() {
         assert_eq!(format!("{}", v2(1.,2.)*3.), "[3, 6]");
         assert_eq!(format!("{}", 3. * v2(1.,2.)), "[3, 6]");
+        assert_eq!(format!("{}", v2(1.,2.)*3), "[3, 6]");
+        assert_eq!(format!("{}", 3 * v2(1.,2.)), "[3, 6]");
     }
 
     #[test]

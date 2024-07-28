@@ -1,11 +1,8 @@
 //! Create OpenSCAD files using Rust.
 
-use nalgebra as na;
-
 pub use std::f64::consts::PI;
 use lazy_static::lazy_static;
 
-// use crate::{v2, v3, Real, Real2, Real3};
 use crate::*;
 
 const MAX: f64 = f64::MAX / 100.;
@@ -181,7 +178,7 @@ impl D2 {
     }
 
     pub fn iter_translate<'a>(&'a self, xy: Real2, n: u32) -> impl Iterator<Item = D2> + 'a {
-        (0..n).map(move |ii| self.translate(v2(xy.0.x * ii as f32, xy.0.y * ii as f32)))
+        (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
 
     pub fn rotate<X: Into<Real>>(&self, theta: X) -> D2 {
@@ -209,7 +206,7 @@ impl D2 {
     }
 
     pub fn translate_vec(&self, xy: Real2, n: u32) -> Vec<D2> {
-        (0..n).map(move |ii| self.translate(v2(xy.0.x * ii as f32, xy.0.y * ii as f32))).collect::<Vec<_>>()
+        (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
     }
 
     pub fn color(self, color_name: ColorEnum) -> D2 {
@@ -263,7 +260,7 @@ impl SCAD for D2 {
         match &self {
             D2::Circle(radius) => format!("circle(r = {});", radius),
             D2::Square(size) => format!("square(size = {});", size),
-            D2::Rectangle(Real2(xy)) => format!("square(size = [{}, {}]);", xy.x, xy.y),
+            D2::Rectangle(Real2(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
                 points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
@@ -286,12 +283,12 @@ impl SCAD for D2 {
                     // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
                     Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
-            D2::Translate(Real2(xy), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
-            D2::Mirror(Real2(xy), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", xy.x, xy.y, indent(shape)),
+            D2::Translate(Real2(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Mirror(Real2(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::Scale2(Real2(v), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", v.x, v.y, indent(shape)),
+            D2::Scale2(Real2(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
             // D2::Hull(v) => format!("hull() {{\n  {}\n}}",

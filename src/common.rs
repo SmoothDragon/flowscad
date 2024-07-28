@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 pub trait SCAD {
     fn scad(&self) -> String;
     fn indent(&self) -> String;
@@ -9,6 +11,7 @@ pub trait DIterator<T> : Iterator<Item=T> {
     fn union(self: Self) -> T where Self: Iterator<Item = T>;
     fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
     fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
+
 }
 
 #[derive(Clone, Debug)]
@@ -18,3 +21,18 @@ pub enum ColorEnum {
     Red,
 }
 
+
+pub trait PairedIterator<T>: IntoIterator<Item = T> {
+    fn pairs(self: Self) -> impl Iterator<Item = (T, T)> where Self: IntoIterator<Item = T>;
+}
+
+impl<T: Clone, I: IntoIterator<Item=T>> PairedIterator<T> for I {  
+    fn pairs(self: Self) -> impl Iterator<Item = (I::Item, I::Item)> 
+    where 
+        Self: IntoIterator<Item = T>
+    {
+        let mut pk = self.into_iter().peekable();
+        let first = pk.peek().unwrap().clone();
+        pk.chain(std::iter::once(first)).tuple_windows()
+    }
+}
