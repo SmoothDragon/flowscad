@@ -1,6 +1,5 @@
-# rust_scad
-Rust interface to OpenSCAD in the spirit of SolidPython
+# flowscad
+Rust interface to OpenSCAD using the natural flow of function programming.
 
 TODO:
-Union working in general
 How to do traits for SCAD structs

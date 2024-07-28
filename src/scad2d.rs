@@ -169,8 +169,8 @@ impl D2 {
         D2::Polygon(Box::new(points))
     }
 
-    pub fn polygon2<P: Into<Real2> + Clone>(points: Vec<P>) -> D2 {
-        D2::Polygon(Box::new(points.iter().map(|x| x.clone().into()).collect()))
+    pub fn polygon2<XY: Into<Real2> + Clone>(points: Vec<XY>) -> D2 {
+        D2::Polygon(Box::new(points.iter().map(|xy| xy.clone().into()).collect()))
     }
 
     pub fn translate<XY: Into<Real2>>(&self, xy: XY) -> D2 {
