@@ -161,15 +161,23 @@ impl D2 {
         D2::Polygon(Box::new(vec![xy0, xy1, xy2]))
     }
 
+    pub fn triangle2<P1: Into<Real2>, P2: Into<Real2>, P3: Into<Real2>>(xy0: P1, xy1: P2, xy2: P3) -> D2 {
+        D2::Polygon(Box::new(vec![xy0.into(), xy1.into(), xy2.into()]))
+    }
+
     pub fn polygon(points: Vec<Real2>) -> D2 {
         D2::Polygon(Box::new(points))
     }
 
-    pub fn translate(&self, xy: Real2) -> D2 {
+    pub fn polygon2<P: Into<Real2> + Clone>(points: Vec<P>) -> D2 {
+        D2::Polygon(Box::new(points.iter().map(|x| x.clone().into()).collect()))
+    }
+
+    pub fn translate<XY: Into<Real2>>(&self, xy: XY) -> D2 {
         // TODO: Is clone needed here?
         match self {
-            D2::Translate(v, d2) => D2::Translate(*v+xy, d2.clone()),
-            _ => D2::Translate(xy, Box::new(self.clone())),
+            D2::Translate(v, d2) => D2::Translate(*v+xy.into(), d2.clone()),
+            _ => D2::Translate(xy.into(), Box::new(self.clone())),
         }
     }
 
@@ -205,7 +213,8 @@ impl D2 {
             .map(move |xy| self.translate(xy))
     }
 
-    pub fn translate_vec(&self, xy: Real2, n: u32) -> Vec<D2> {
+    pub fn translate_vec<XY: Into<Real2> + Clone>(&self, ixy: XY, n: u32) -> Vec<D2> {
+        let xy: Real2 = ixy.into();
         (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
     }
 
@@ -479,8 +488,26 @@ mod test {
     }
 
     #[test]
+    fn test_triangle2() {
+        assert_eq!(D2::triangle2((0.,0.), (1., 0.), (0., 1.)).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+        assert_eq!(D2::triangle2((0,0), v2(1., 0.), (0, 1.)).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+    }
+
+    #[test]
     fn test_polygon() {
         assert_eq!(D2::polygon(vec![v2(0.,0.), v2(1., 0.), v2(0., 1.)]).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+    }
+
+    #[test]
+    fn test_polygon2() {
+        assert_eq!(D2::polygon2(vec![v2(0.,0.), v2(1., 0.), v2(0., 1.)]).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+        assert_eq!(D2::polygon2(vec![(0.,0.), (1., 0.), (0., 1.)]).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+        assert_eq!(D2::polygon2(vec![(0,0), (1, 0), (0, 1)]).scad(),
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
     }
 
