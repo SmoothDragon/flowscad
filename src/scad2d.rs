@@ -1,11 +1,9 @@
 //! Create OpenSCAD files using Rust.
 
-pub use std::f64::consts::PI;
 use lazy_static::lazy_static;
 
 use crate::*;
 
-const MAX: f64 = f64::MAX / 100.;
 
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     fn hull(self: Self) -> D2 {
@@ -48,8 +46,9 @@ impl std::ops::Sub<D2> for D2 {
 #[derive(Clone, Debug)]
 pub enum Aim {
     N, S, E, W,
-    U, D, L, R,
-    Angle(Real),
+    U, D, 
+    // L, R,
+    // Angle(Real),
 }
 
 #[derive(Clone, Debug)]
@@ -75,15 +74,15 @@ pub enum Join {
 pub enum D2 {
     Circle(Real),
     Square(Real),
-    Rectangle(Real2),
-    Polygon(Box<Vec<Real2>>),
+    Rectangle(XY),
+    Polygon(Box<Vec<XY>>),
     HalfPlane(Aim),
     Color(ColorEnum, Box<D2>),
     Rotate(Real, Box<D2>),
     Scale(Real, Box<D2>),
-    Scale2(Real2, Box<D2>),
-    Translate(Real2, Box<D2>),
-    Mirror(Real2, Box<D2>),
+    Scale2(XY, Box<D2>),
+    Translate(XY, Box<D2>),
+    Mirror(XY, Box<D2>),
     // Hull(Box<Vec<D2>>),
     // Intersection(Box<Vec<D2>>),
     // Union(Box<Vec<D2>>),
@@ -157,23 +156,23 @@ impl D2 {
         }
     }
 
-    pub fn triangle(xy0: Real2, xy1: Real2, xy2: Real2) -> D2 {
+    pub fn triangle(xy0: XY, xy1: XY, xy2: XY) -> D2 {
         D2::Polygon(Box::new(vec![xy0, xy1, xy2]))
     }
 
-    pub fn triangle2<P1: Into<Real2>, P2: Into<Real2>, P3: Into<Real2>>(xy0: P1, xy1: P2, xy2: P3) -> D2 {
+    pub fn triangle2<P1: Into<XY>, P2: Into<XY>, P3: Into<XY>>(xy0: P1, xy1: P2, xy2: P3) -> D2 {
         D2::Polygon(Box::new(vec![xy0.into(), xy1.into(), xy2.into()]))
     }
 
-    pub fn polygon(points: Vec<Real2>) -> D2 {
+    pub fn polygon(points: Vec<XY>) -> D2 {
         D2::Polygon(Box::new(points))
     }
 
-    pub fn polygon2<XY: Into<Real2> + Clone>(points: Vec<XY>) -> D2 {
+    pub fn polygon2<IXY: Into<XY> + Clone>(points: Vec<IXY>) -> D2 {
         D2::Polygon(Box::new(points.iter().map(|xy| xy.clone().into()).collect()))
     }
 
-    pub fn translate<XY: Into<Real2>>(&self, xy: XY) -> D2 {
+    pub fn translate<IXY: Into<XY>>(&self, xy: IXY) -> D2 {
         // TODO: Is clone needed here?
         match self {
             D2::Translate(v, d2) => D2::Translate(*v+xy.into(), d2.clone()),
@@ -181,11 +180,11 @@ impl D2 {
         }
     }
 
-    pub fn mirror(&self, xy: Real2) -> D2 {
+    pub fn mirror(&self, xy: XY) -> D2 {
         D2::Mirror(xy, Box::new(self.clone()))
     }
 
-    pub fn iter_translate<'a>(&'a self, xy: Real2, n: u32) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_translate<'a>(&'a self, xy: XY, n: u32) -> impl Iterator<Item = D2> + 'a {
         (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
 
@@ -213,8 +212,8 @@ impl D2 {
             .map(move |xy| self.translate(xy))
     }
 
-    pub fn translate_vec<XY: Into<Real2> + Clone>(&self, ixy: XY, n: u32) -> Vec<D2> {
-        let xy: Real2 = ixy.into();
+    pub fn translate_vec<IXY: Into<XY> + Clone>(&self, ixy: IXY, n: u32) -> Vec<D2> {
+        let xy: XY = ixy.into();
         (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32))).collect::<Vec<_>>()
     }
 
@@ -228,7 +227,7 @@ impl D2 {
     }
 
     /// Scale in `x` and `y` directions.
-    pub fn scale2(self, xy: Real2) -> D2 {
+    pub fn scale2(self, xy: XY) -> D2 {
         D2::Scale2(xy, Box::new(self))
     }
 
@@ -269,7 +268,7 @@ impl SCAD for D2 {
         match &self {
             D2::Circle(radius) => format!("circle(r = {});", radius),
             D2::Square(size) => format!("square(size = {});", size),
-            D2::Rectangle(Real2(x,y)) => format!("square(size = [{}, {}]);", x, y),
+            D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
                 points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
@@ -286,18 +285,18 @@ impl SCAD for D2 {
                     Aim::S => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
                     Aim::D => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
                     Aim::E => D2::square(MAX).translate(v2(0., -MAX/2.)),
-                    Aim::R => D2::square(MAX).translate(v2(0., -MAX/2.)),
                     Aim::W => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
-                    Aim::L => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
+                    // Aim::R => D2::square(MAX).translate(v2(0., -MAX/2.)),
+                    // Aim::L => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
                     // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
-                    Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
+                    // Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
                 }),
-            D2::Translate(Real2(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
-            D2::Mirror(Real2(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::Scale2(Real2(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::Scale2(XY(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
             // D2::Hull(v) => format!("hull() {{\n  {}\n}}",

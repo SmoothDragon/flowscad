@@ -1,5 +1,8 @@
 use itertools::Itertools;
 
+pub use std::f64::consts::PI;
+pub const MAX: f64 = f64::MAX / 100.;
+
 pub trait SCAD {
     fn scad(&self) -> String;
     fn indent(&self) -> String;

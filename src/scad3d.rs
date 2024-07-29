@@ -31,14 +31,14 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
 #[derive(Clone, Debug)]
 pub enum D3 {
     Cube(Real),
-    Cuboid(Real3),
+    Cuboid(XYZ),
     Color(ColorEnum, Box<D3>),
     Cylinder(Real, Real),
     Sphere(Real),
-    Translate(Real3, Box<D3>),
+    Translate(XYZ, Box<D3>),
     Scale(Real, Box<D3>),
-    Scale3(Real3, Box<D3>),
-    Rotate(Real3, Box<D3>),
+    Scale3(XYZ, Box<D3>),
+    Rotate(XYZ, Box<D3>),
     LinearExtrude(Real, Box<D2>),
     RotateExtrude(Real, Box<D2>),
     Hull(Box<Vec<D3>>),
@@ -91,7 +91,7 @@ impl SCAD for D3 {
             D3::LinearExtrude(Real(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::RotateExtrude(Real(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
-            D3::Cuboid(Real3(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
+            D3::Cuboid(XYZ(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
             D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
             D3::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
@@ -102,7 +102,7 @@ impl SCAD for D3 {
                 }
                 , shape.indent()),
             D3::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, shape.indent()),
-            D3::Scale3(Real3(v), shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.x, v.y, v.z, shape.indent()),
+            D3::Scale3(XYZ(v), shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.x, v.y, v.z, shape.indent()),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -111,8 +111,8 @@ impl SCAD for D3 {
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
-            D3::Translate(Real3(xyz), shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
-            D3::Rotate(Real3(xyz), shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
+            D3::Translate(XYZ(xyz), shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
+            D3::Rotate(XYZ(xyz), shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
             D3::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| format!("{}", x.indent())).collect::<Vec<_>>().join("\n  ")),
@@ -131,13 +131,24 @@ impl D3 {
     }
 
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
-    pub fn cuboid(xyz: Real3) -> D3 {
+    pub fn cuboid(xyz: XYZ) -> D3 {
         D3::Cuboid(xyz)
     }
 
     /// Create a sphere with `radius` centered at the origin.
     pub fn sphere<T: Into<Real>>(radius: T) -> D3 {
         D3::Sphere(radius.into())
+    }
+
+    pub fn half_space(aim: Aim) -> D3 {
+        match aim {
+            Aim::N => D3::cube(MAX).translate(v3(-MAX/2., 0., -MAX/2.)),
+            Aim::S => D3::cube(MAX).translate(v3(-MAX/2., -MAX, -MAX/2.)),
+            Aim::E => D3::cube(MAX).translate(v3(0., -MAX/2., -MAX/2.)),
+            Aim::W => D3::cube(MAX).translate(v3(-MAX, -MAX/2., -MAX/2.)),
+            Aim::U => D3::cube(MAX).translate(v3(-MAX/2., -MAX/2., 0.)),
+            Aim::D => D3::cube(MAX).translate(v3(-MAX/2., -MAX/2., -MAX)),
+            }
     }
 
     /// Subtract `self` from a cube centered at the origin with edge length `l_edge`.
@@ -151,7 +162,7 @@ impl D3 {
     }
 
     /// Create a spheroid with radii, `r1, r2, r3` centered at the origin.
-    pub fn spheroid(radii: Real3) -> D3 {
+    pub fn spheroid(radii: XYZ) -> D3 {
         D3::Sphere(Real(1.0)).scale3(radii)
     }
 
@@ -165,16 +176,16 @@ impl D3 {
     }
 
     /// Scale in `x` and `y` directions.
-    pub fn scale3(self, xyz: Real3) -> D3 {
+    pub fn scale3(self, xyz: XYZ) -> D3 {
         D3::Scale3(xyz, Box::new(self))
     }
 
-    pub fn translate(self, xyz: Real3) -> D3 {
+    pub fn translate(self, xyz: XYZ) -> D3 {
         D3::Translate(xyz, Box::new(self))
     }
 
 
-    pub fn iter_translate<'a>(&'a self, xyz: Real3, n: u32) -> impl Iterator<Item = D3> + 'a {
+    pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
         (0..n).map(move |ii| self.clone().translate(v3(xyz.0.x * ii as f32, xyz.0.y * ii as f32, xyz.0.z * ii as f32)))
     }
 
@@ -183,7 +194,7 @@ impl D3 {
         // (0..n).map(move |ii| self.clone().translate(x.clone().into(), y.clone().into(), z.clone().into()))
     // }
 
-    pub fn rotate(self, xyz: Real3) -> D3 {
+    pub fn rotate(self, xyz: XYZ) -> D3 {
         D3::Rotate(xyz, Box::new(self.clone()))
     }
 
@@ -231,7 +242,7 @@ impl D3 {
     }
 
 
-    pub fn iter_rotate<'a>(&'a self, theta: Real3, n: u32) -> impl Iterator<Item = D3> + 'a {
+    pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
         (0..n).map(move |ii| self.clone().rotate(v3(theta.0.x * ii as f32, theta.0.y * ii as f32, theta.0.z * ii as f32)))
     }
 
@@ -263,7 +274,7 @@ impl D3 {
         }
     }
 
-    pub fn beveled_box<T: Into<Real>>(xyz: Real3, bevel_in: T) -> D3 {
+    pub fn beveled_box<T: Into<Real>>(xyz: XYZ, bevel_in: T) -> D3 {
         let x = xyz.0.x; 
         let y = xyz.0.y;
         let z = xyz.0.z;
