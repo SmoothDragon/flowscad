@@ -11,7 +11,6 @@ pub trait DIterator<T> : Iterator<Item=T> {
     fn union(self: Self) -> T where Self: Iterator<Item = T>;
     fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
     fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
-
 }
 
 #[derive(Clone, Debug)]
@@ -34,5 +33,17 @@ impl<T: Clone, I: IntoIterator<Item=T>> PairedIterator<T> for I {
         let mut pk = self.into_iter().peekable();
         let first = pk.peek().unwrap().clone();
         pk.chain(std::iter::once(first)).tuple_windows()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_pairs() {
+        assert_eq!([1,5,3,2].pairs().collect::<Vec<_>>(), [(1,5), (5,3), (3,2), (2,1)]);
+        assert_eq!([(0,0), (0,1), (1,1), (1,0)].pairs().collect::<Vec<_>>(),
+            [((0, 0), (0, 1)), ((0, 1), (1, 1)), ((1, 1), (1, 0)), ((1, 0), (0, 0))]);
     }
 }

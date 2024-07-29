@@ -1,4 +1,5 @@
 use nalgebra as na;
+use itertools::Itertools;
 use std::ops::*;
 
 use derive_more::*;
@@ -79,22 +80,6 @@ impl<X: Into<Real>> std::ops::Mul<X> for Real {
     }
 }
 
-// impl<X: Into<Real>, Y: Into<Real>> std::ops::Mul<X> for Y {
-    // type Output = Real;
-    // fn mul(self, other: X) -> Self::Output {
-        // Real(self.into().0 * other.into().0)
-    // }
-// }
-
-
-// impl<X: Into<Real>> std::ops::Mul<Real> for X {
-    // type Output = Real;
-    // fn mul(self, other: Real) -> Self::Output {
-        // Real(self.into().0 * other.0)
-    // }
-// }
-
-
 impl std::ops::Mul<Real> for f32 {
     type Output = Real;
     fn mul(self, other: Real) -> Real {
@@ -111,15 +96,7 @@ impl std::ops::Mul<Real> for i32 {
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Add, Neg)]
-pub struct Real2(pub f32, pub f32); // TODO: Remove pub na::
-// pub struct Real2(pub na::Vector2<Real>); // TODO: Remove pub na::
-
-// impl Iterator<Item=Real2> {
-    // fn to_edges(self) -> Iterator<Item=[Real2; 2]> {
-        // let first = self.next();
-        // let mut current = first.clone();
-    // }
-// }
+pub struct Real2(pub f32, pub f32); 
 
 impl std::fmt::Display for Real2 {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -138,7 +115,7 @@ impl<X: Into<Real>, Y: Into<Real>> From<(X,Y)> for Real2 {
     }
 }
 
-
+/// Generalized multiplication on the right is possible
 impl<X: Into<Real>> std::ops::Mul<X> for Real2 {
     type Output = Real2;
     fn mul(self, other: X) -> Self::Output {
@@ -148,15 +125,9 @@ impl<X: Into<Real>> std::ops::Mul<X> for Real2 {
     }
 }
 
-
-// impl std::ops::Mul<f32> for Real2 {
-    // type Output = Real2;
-    // fn mul(self, rhs: f32) -> Self::Output {
-        // v2(self.0.x * rhs, self.0.y * rhs)
-    // }
-// }
-
-
+/// Generalized multiplication on the left is not currently possible
+/// Each type must be specified individually
+/// TODO: This should become a macro
 impl std::ops::Mul<Real2> for f32 {
     type Output = Real2;
     fn mul(self, rhs: Real2) -> Self::Output {
@@ -171,20 +142,22 @@ impl std::ops::Mul<Real2> for i32 {
     }
 }
 
-// TODO: Make this happen
-// impl<T: Into<Real>> std::ops::Mul<Real2> for T {
-    // type Output = Real2;
-    // fn mul(self, rhs: Real2) -> Self::Output {
-        // let value = self.into().0;
-        // v2(rhs.0.x * value, rhs.0.y * value)
-    // }
-// }
 
 impl Sub for Real2 {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
         Self(self.0 - other.0, self.1 - other.1)
+    }
+}
+
+/// Multiplication treats Real2 as a complex number
+impl Mul for Real2 {
+    type Output = Self;
+
+    fn mul(self, other: Self) -> Self {
+        Self(self.0 * other.0 - self.1 * other.1, 
+             self.0 * other.1 + self.1 * other.0)
     }
 }
 
@@ -253,6 +226,11 @@ mod test {
         assert_eq!(format!("{}", 3. * v2(1.,2.)), "[3, 6]");
         assert_eq!(format!("{}", v2(1.,2.)*3), "[3, 6]");
         assert_eq!(format!("{}", 3 * v2(1.,2.)), "[3, 6]");
+    }
+
+    #[test]
+    fn test_v2_v2_mul() {
+        assert_eq!(format!("{}", v2(1.,2.)*v2(1, -2)), "[5, 0]");
     }
 
     #[test]
