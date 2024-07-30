@@ -286,7 +286,6 @@ impl D3 {
             ]))
     }
 
-    // pub fn beveled_cube_block<T0: Into<Real>, T1: Into<Real>, T2: Into<Real>>(xyz_dim: XYZ, cube_side: T1 
     pub fn beveled_cube_block<T0: Into<Real>, T1: Into<Real>, T2: Into<Real>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
         let cube_side: Real = i_cube_side.into(); 
         let bevel: Real = i_bevel.into(); 
@@ -303,7 +302,16 @@ impl D3 {
                         )).translate(v3(gap+bevel,gap+bevel,gap+bevel))
                     )
     }
-
+    
+    pub fn rounded_cube<T: Into<Real>>(i_side: T) -> D3 {
+        /// Creates a rounded cube
+        ///    1) Centered at the origin
+        ///    2) Angle of attack is 30 degrees for the transition from cube face to sphere.
+        let side: Real = i_side.into();
+        D3::cube(side)
+            .translate(v3(-side*0.5,-side*0.5,-side*0.5))
+            .intersection(D3::sphere(side * (1.0/3.0_f32.sqrt())))
+    }
 
     pub fn truncated_octahedron(l_edge: f64) -> D3 {
         //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
