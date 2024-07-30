@@ -286,6 +286,25 @@ impl D3 {
             ]))
     }
 
+    // pub fn beveled_cube_block<T0: Into<Real>, T1: Into<Real>, T2: Into<Real>>(xyz_dim: XYZ, cube_side: T1 
+    pub fn beveled_cube_block<T0: Into<Real>, T1: Into<Real>, T2: Into<Real>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
+        let cube_side: Real = i_cube_side.into(); 
+        let bevel: Real = i_bevel.into(); 
+        let gap: Real = i_gap.into(); 
+        D3::beveled_box(v3(cube_side-2*gap, cube_side-2*gap, cube_side-2*gap), bevel)
+            .translate(v3(gap, gap, gap))
+            .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0).union()
+            .iter_translate(v3(0, cube_side.0, 0.), xyz_dim.1).union()
+            .iter_translate(v3(0, 0, cube_side.0), xyz_dim.2).union()
+            .add(D3::cuboid(v3(
+                        cube_side*xyz_dim.0 - 2*(gap + bevel),
+                        cube_side*xyz_dim.1 - 2*(gap + bevel),
+                        cube_side*xyz_dim.2 - 2*(gap + bevel)
+                        )).translate(v3(gap+bevel,gap+bevel,gap+bevel))
+                    )
+    }
+
+
     pub fn truncated_octahedron(l_edge: f64) -> D3 {
         //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
         let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
