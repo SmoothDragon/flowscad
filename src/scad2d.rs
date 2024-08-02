@@ -1,9 +1,9 @@
 //! Create OpenSCAD files using Rust.
 
-use lazy_static::lazy_static;
 
 use crate::*;
 
+pub const MAX2: f32 = 1000.;
 
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     fn hull(self: Self) -> D2 {
@@ -76,7 +76,7 @@ pub enum D2 {
     Square(Real),
     Rectangle(XY),
     Polygon(Box<Vec<XY>>),
-    HalfPlane(Aim),
+    // HalfPlane(Aim),
     Color(ColorEnum, Box<D2>),
     Rotate(Real, Box<D2>),
     Scale(Real, Box<D2>),
@@ -122,6 +122,18 @@ impl D2 {
         D2::Difference(Box::new(self), Box::new(other))
     }
 
+    pub fn half_plane(aim: Aim) -> D2 {
+        match aim {
+            Aim::N => D2::square(MAX2).translate(v2(-MAX2/2., 0.)),
+            Aim::S => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
+            Aim::E => D2::square(MAX).translate(v2(0., -MAX/2.)),
+            Aim::W => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
+            Aim::U => D2::square(MAX).translate(v2(-MAX/2., 0.)),
+            Aim::D => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
+            // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+            // Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
+            }
+    }
 
     pub fn add_map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
         self.clone().add(f(self))
@@ -278,19 +290,6 @@ impl SCAD for D2 {
                     ColorEnum::Red => "\"red\"",
                 }
                 , indent(shape)),
-            D2::HalfPlane(aim) => format!("{}",
-                match aim {
-                    Aim::N => D2::square(MAX).translate(v2(-MAX/2., 0.)),
-                    Aim::U => D2::square(MAX).translate(v2(-MAX/2., 0.)),
-                    Aim::S => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
-                    Aim::D => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
-                    Aim::E => D2::square(MAX).translate(v2(0., -MAX/2.)),
-                    Aim::W => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
-                    // Aim::R => D2::square(MAX).translate(v2(0., -MAX/2.)),
-                    // Aim::L => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
-                    // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
-                    // Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
-                }),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
@@ -319,6 +318,7 @@ impl SCAD for D2 {
 #[cfg(test)]
 mod test {
     use super::*;
+    use lazy_static::lazy_static;
 
     lazy_static!{ static ref C5: D2 = D2::circle(5); }
     lazy_static!{ static ref C7: D2 = D2::circle(7); }

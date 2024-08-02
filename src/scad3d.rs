@@ -1,9 +1,8 @@
 
 use lazy_static::lazy_static;
 use crate::*;
-use crate::common::*;
 
-// use common::ColorEnum;
+pub const MAX2: f32 = 1000.;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self: Self) -> D3 {
@@ -24,9 +23,6 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     }
 }
 
-
-// #[derive(Clone, Debug)]
-// pub struct XYZ(pub f64, pub f64, pub f64);
 
 #[derive(Clone, Debug)]
 pub enum D3 {
