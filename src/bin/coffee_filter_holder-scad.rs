@@ -5,14 +5,14 @@
 use flowscad::*;
 
 fn main() {
-    let r = 8;
-    let R = 37.;
-    let h = 100;
+    let r_inner = 8;
+    let r_outer = 37.;
+    let h_rim = 100;
      
-    let holder = D3::cylinder(h, r)
+    let holder = D3::cylinder(h_rim, r_inner)
         .rotate(v3(30., 0., 30.))
-        .translate(v3(R, 0, -10))
-        .add(D3::cylinder(h, r))
+        .translate(v3(r_outer, 0, -10))
+        .add(D3::cylinder(h_rim, r_inner))
         .hull()
         .iter_rotate(v3(0.,0.,15.), 24)
         .union()
