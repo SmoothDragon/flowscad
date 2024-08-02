@@ -26,17 +26,17 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
 
 #[derive(Clone, Debug)]
 pub enum D3 {
-    Cube(Real),
+    Cube(X),
     Cuboid(XYZ),
     Color(ColorEnum, Box<D3>),
-    Cylinder(Real, Real),
-    Sphere(Real),
+    Cylinder(X, X),
+    Sphere(X),
     Translate(XYZ, Box<D3>),
-    Scale(Real, Box<D3>),
+    Scale(X, Box<D3>),
     Scale3(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
-    LinearExtrude(Real, Box<D2>),
-    RotateExtrude(Real, Box<D2>),
+    LinearExtrude(X, Box<D2>),
+    RotateExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
     Union(Box<Vec<D3>>),
@@ -84,8 +84,8 @@ impl std::iter::Product for D3 {
 impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
-            D3::LinearExtrude(Real(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
-            D3::RotateExtrude(Real(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
+            D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
+            D3::RotateExtrude(X(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
             D3::Cuboid(XYZ(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
             D3::Sphere(radius) => format!("sphere(r = {});", radius),
@@ -122,7 +122,7 @@ impl SCAD for D3 {
 
 impl D3 {
     /// Create a cube with side length `s` with lower left corner at the origin.
-    pub fn cube<T: Into<Real>>(side: T) -> D3 {
+    pub fn cube<T: Into<X>>(side: T) -> D3 {
         D3::Cube(side.into())
     }
 
@@ -132,7 +132,7 @@ impl D3 {
     }
 
     /// Create a sphere with `radius` centered at the origin.
-    pub fn sphere<T: Into<Real>>(radius: T) -> D3 {
+    pub fn sphere<T: Into<X>>(radius: T) -> D3 {
         D3::Sphere(radius.into())
     }
 
@@ -148,7 +148,7 @@ impl D3 {
     }
 
     /// Subtract `self` from a cube centered at the origin with edge length `l_edge`.
-    // pub fn invert<T: Into<Real>>(self, l_edge: T) -> D3 { TODO
+    // pub fn invert<T: Into<X>>(self, l_edge: T) -> D3 { TODO
     pub fn invert(self, l_edge: f64) -> D3 {
         let shift = -l_edge/2.0;
         D3::cube(l_edge)
@@ -159,7 +159,7 @@ impl D3 {
 
     /// Create a spheroid with radii, `r1, r2, r3` centered at the origin.
     pub fn spheroid(radii: XYZ) -> D3 {
-        D3::Sphere(Real(1.0)).scale3(radii)
+        D3::Sphere(X(1.0)).scale3(radii)
     }
 
     pub fn color(self, color_name: ColorEnum) -> D3 {
@@ -167,7 +167,7 @@ impl D3 {
     }
 
     /// Scale size by the factor `s`.
-    pub fn scale<T: Into<Real>>(self, scale_factor: T) -> D3 {
+    pub fn scale<T: Into<X>>(self, scale_factor: T) -> D3 {
         D3::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
@@ -185,7 +185,7 @@ impl D3 {
         (0..n).map(move |ii| self.clone().translate(v3(xyz.0.x * ii as f32, xyz.0.y * ii as f32, xyz.0.z * ii as f32)))
     }
 
-    // pub fn iter_translate2<'a, X: Into<Real> + 'a, Y: Into<Real> + 'a, Z: Into<Real> + 'a>(&'a self, x: X, y: Y, z: Z, n: u32) 
+    // pub fn iter_translate2<'a, X: Into<X> + 'a, Y: Into<X> + 'a, Z: Into<X> + 'a>(&'a self, x: X, y: Y, z: Z, n: u32) 
         // -> impl Iterator<Item = D3> + 'a {
         // (0..n).map(move |ii| self.clone().translate(x.clone().into(), y.clone().into(), z.clone().into()))
     // }
@@ -196,7 +196,7 @@ impl D3 {
 
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder<H: Into<Real>, R: Into<Real>>(h: H, r:R) -> D3 {
+    pub fn cylinder<H: Into<X>, R: Into<X>>(h: H, r:R) -> D3 {
         D3::Cylinder(h.into(), r.into())
     }
 
@@ -270,7 +270,7 @@ impl D3 {
         }
     }
 
-    pub fn beveled_box<T: Into<Real>>(xyz: XYZ, bevel_in: T) -> D3 {
+    pub fn beveled_box<T: Into<X>>(xyz: XYZ, bevel_in: T) -> D3 {
         let x = xyz.0.x; 
         let y = xyz.0.y;
         let z = xyz.0.z;
@@ -282,10 +282,10 @@ impl D3 {
             ]))
     }
 
-    pub fn beveled_cube_block<T0: Into<Real>, T1: Into<Real>, T2: Into<Real>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
-        let cube_side: Real = i_cube_side.into(); 
-        let bevel: Real = i_bevel.into(); 
-        let gap: Real = i_gap.into(); 
+    pub fn beveled_cube_block<T0: Into<X>, T1: Into<X>, T2: Into<X>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
+        let cube_side: X = i_cube_side.into(); 
+        let bevel: X = i_bevel.into(); 
+        let gap: X = i_gap.into(); 
         D3::beveled_box(v3(cube_side-2*gap, cube_side-2*gap, cube_side-2*gap), bevel)
             .translate(v3(gap, gap, gap))
             .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0).union()
@@ -299,11 +299,11 @@ impl D3 {
                     )
     }
     
-    pub fn rounded_cube<T: Into<Real>>(i_side: T) -> D3 {
+    pub fn rounded_cube<T: Into<X>>(i_side: T) -> D3 {
         /// Creates a rounded cube
         ///    1) Centered at the origin
         ///    2) Angle of attack is 30 degrees for the transition from cube face to sphere.
-        let side: Real = i_side.into();
+        let side: X = i_side.into();
         D3::cube(side)
             .translate(v3(-side*0.5,-side*0.5,-side*0.5))
             .intersection(D3::sphere(side * (1.0/3.0_f32.sqrt())))

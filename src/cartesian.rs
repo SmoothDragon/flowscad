@@ -4,93 +4,166 @@ use std::ops::*;
 
 use derive_more::*;
 
-#[derive(Clone, Copy, PartialEq, Add, Sub, Neg)]
-pub struct Real(pub f32);
+pub const PI: X = X(std::f32::consts::PI);
 
-impl Real {
-    /// Positive Real MAX is lower since it is used for super large objects that could be shifted or rotated.
-    pub const MAX: Real = Real(f32::MAX/1000.0);
+#[derive(Clone, Copy, PartialEq, Neg)]
+pub struct X(pub f32);
+
+impl X {
+    /// Positive X MAX is lower since it is used for super large objects that could be shifted or rotated.
+    pub const MAX: X = X(f32::MAX/1000.0);
+
+    pub fn atan(self) -> Self {
+        X(self.0.atan())
+    }
+
+    pub fn cos(self) -> Self {
+        X(self.0.cos())
+    }
 }
 
-impl std::fmt::Debug for Real {
+impl std::fmt::Debug for X {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", &self.0)
     }
 }
 
-impl std::fmt::Display for Real {
+impl std::fmt::Display for X {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", &self.0)
     }
 }
 
-impl std::ops::AddAssign for Real {
+impl std::ops::AddAssign for X {
     fn add_assign(&mut self, other: Self) {
         *self = Self(self.0 + other.0);
     }
 }
 
-impl std::ops::SubAssign for Real {
+impl std::ops::SubAssign for X {
     fn sub_assign(&mut self, other: Self) {
         *self = Self(self.0 - other.0);
     }
 }
 
 // TODO: Macro to replace all this?
-impl From<u32> for Real {
-    fn from(i: u32) -> Real {
-        Real(i as f32)
+impl From<u32> for X {
+    fn from(i: u32) -> X {
+        X(i as f32)
     }
 }
 
-impl From<i32> for Real {
-    fn from(i: i32) -> Real {
-        Real(i as f32)
+impl From<i32> for X {
+    fn from(i: i32) -> X {
+        X(i as f32)
     }
 }
 
-impl From<u64> for Real {
-    fn from(i: u64) -> Real {
-        Real(i as f32)
+impl From<u64> for X {
+    fn from(i: u64) -> X {
+        X(i as f32)
     }
 }
 
-impl From<i64> for Real {
-    fn from(i: i64) -> Real {
-        Real(i as f32)
+impl From<i64> for X {
+    fn from(i: i64) -> X {
+        X(i as f32)
     }
 }
 
-impl From<f32> for Real {
-    fn from(f: f32) -> Real {
-        Real(f as f32)
+impl From<f32> for X {
+    fn from(f: f32) -> X {
+        X(f as f32)
     }
 }
 
-impl From<f64> for Real {
-    fn from(f: f64) -> Real {
-        Real(f as f32)
+impl From<f64> for X {
+    fn from(f: f64) -> X {
+        X(f as f32)
     }
 }
 
-impl<X: Into<Real>> std::ops::Mul<X> for Real {
-    type Output = Real;
-    fn mul(self, other: X) -> Self::Output {
-        Real(self.0 * other.into().0)
+impl<IX: Into<X>> std::ops::Mul<IX> for X {
+    type Output = X;
+    fn mul(self, other: IX) -> Self::Output {
+        X(self.0 * other.into().0)
     }
 }
 
-impl std::ops::Mul<Real> for f32 {
-    type Output = Real;
-    fn mul(self, other: Real) -> Real {
-        Real(self * other.0)
+impl<IX: Into<X>> std::ops::Div<IX> for X {
+    type Output = X;
+    fn div(self, other: IX) -> Self::Output {
+        X(self.0 / other.into().0)
     }
 }
 
-impl std::ops::Mul<Real> for i32 {
-    type Output = Real;
-    fn mul(self, other: Real) -> Real {
-        Real((self as f32) * other.0)
+impl<IX: Into<X>> std::ops::Add<IX> for X {
+    type Output = X;
+    fn add(self, other: IX) -> Self::Output {
+        X(self.0 + other.into().0)
+    }
+}
+
+impl<IX: Into<X>> std::ops::Sub<IX> for X {
+    type Output = X;
+    fn sub(self, other: IX) -> Self::Output {
+        X(self.0 - other.into().0)
+    }
+}
+
+impl std::ops::Mul<X> for f32 {
+    type Output = X;
+    fn mul(self, other: X) -> X {
+        X(self * other.0)
+    }
+}
+
+impl std::ops::Mul<X> for i32 {
+    type Output = X;
+    fn mul(self, other: X) -> X {
+        X((self as f32) * other.0)
+    }
+}
+
+impl std::ops::Div<X> for f32 {
+    type Output = X;
+    fn div(self, other: X) -> X {
+        X(self / other.0)
+    }
+}
+
+impl std::ops::Div<X> for i32 {
+    type Output = X;
+    fn div(self, other: X) -> X {
+        X((self as f32) / other.0)
+    }
+}
+
+impl std::ops::Sub<X> for f32 {
+    type Output = X;
+    fn sub(self, other: X) -> X {
+        X(self - other.0)
+    }
+}
+
+impl std::ops::Sub<X> for i32 {
+    type Output = X;
+    fn sub(self, other: X) -> X {
+        X((self as f32) - other.0)
+    }
+}
+
+impl std::ops::Add<X> for f32 {
+    type Output = X;
+    fn add(self, other: X) -> X {
+        X(self + other.0)
+    }
+}
+
+impl std::ops::Add<X> for i32 {
+    type Output = X;
+    fn add(self, other: X) -> X {
+        X((self as f32) + other.0)
     }
 }
 
@@ -105,20 +178,20 @@ impl std::fmt::Display for XY {
     }
 }
 
-pub fn v2<X: Into<Real>, Y: Into<Real>>(x: X, y: Y) -> XY {
+pub fn v2<IX: Into<X>, IY: Into<X>>(x: IX, y: IY) -> XY {
     XY(x.into().0, y.into().0)
 }
 
-impl<X: Into<Real>, Y: Into<Real>> From<(X,Y)> for XY {
-    fn from(xy: (X,Y)) -> XY {
+impl<IX: Into<X>, IY: Into<X>> From<(IX,IY)> for XY {
+    fn from(xy: (IX,IY)) -> XY {
         v2(xy.0, xy.1)
     }
 }
 
 /// Generalized multiplication on the right is possible
-impl<X: Into<Real>> std::ops::Mul<X> for XY {
+impl<IX: Into<X>> std::ops::Mul<IX> for XY {
     type Output = XY;
-    fn mul(self, other: X) -> Self::Output {
+    fn mul(self, other: IX) -> Self::Output {
         let y: f32 = other.into().0;
         // v2(self.0.x * other.clone().into().0, self.0.y * other.into().0)
         v2(self.0 * y, self.1 * y)
@@ -162,7 +235,7 @@ impl Mul for XY {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Add)]
-pub struct XYZ(pub na::Vector3<Real>);  // TODO: Remove pub na::
+pub struct XYZ(pub na::Vector3<X>);  // TODO: Remove pub na::
 
 impl std::fmt::Display for XYZ {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
@@ -170,7 +243,7 @@ impl std::fmt::Display for XYZ {
     }
 }
 
-pub fn v3<X: Into<Real>, Y: Into<Real>, Z: Into<Real>>(x: X, y: Y, z: Z) -> XYZ {
+pub fn v3<IX: Into<X>, IY: Into<X>, IZ: Into<X>>(x: IX, y: IY, z: IZ) -> XYZ {
     XYZ(nalgebra::vector![x.into(), y.into(), z.into()])
 }
 
@@ -201,23 +274,23 @@ mod test {
 
     #[test]
     fn test_from_i32() {
-        assert_eq!(Real::from(5_i32), Real(5.));
-        assert_eq!(Real::from(i32::MAX), Real(2147483600.0));
+        assert_eq!(X::from(5_i32), X(5.));
+        assert_eq!(X::from(i32::MAX), X(2147483600.0));
     }
 
     #[test]
     fn test_into_real() {
-        assert_eq!(<i32 as Into<Real>>::into(5), Real(5.));
-        assert_eq!(<u32 as Into<Real>>::into(5), Real(5.));
-        assert_eq!(<f64 as Into<Real>>::into(5.0), Real(5.));
+        assert_eq!(<i32 as Into<X>>::into(5), X(5.));
+        assert_eq!(<u32 as Into<X>>::into(5), X(5.));
+        assert_eq!(<f64 as Into<X>>::into(5.0), X(5.));
     }
 
     #[test]
     fn test_real_mul() {
-        assert_eq!(Real(5.) * 2., Real(10.));
-        assert_eq!(Real(5.) * 2, Real(10.));
-        assert_eq!(2. * Real(5.), Real(10.));
-        assert_eq!(2 * Real(5.), Real(10.));
+        assert_eq!(X(5.) * 2., X(10.));
+        assert_eq!(X(5.) * 2, X(10.));
+        assert_eq!(2. * X(5.), X(10.));
+        assert_eq!(2 * X(5.), X(10.));
     }
 
     #[test]

@@ -1,20 +1,20 @@
 use anyhow::Result;
 use flowscad::*;
 
-fn invertible_heart(r:f64) -> Result<D2> {
+fn invertible_heart(r: X) -> Result<D2> {
     let theta = (2.0/PI).atan()*180./PI;
     Ok(D2::circle(0.5*r)
         .translate(v2(0., r*PI/4.))
         .rotate(theta)
         .iter_rotate_equal(2)
         .hull()
-        .intersection(D2::HalfPlane(Aim::W))
+        .intersection(D2::half_plane(Aim::W))
         .add_map(|x| x.mirror(v2(1., 0.)))
         )
 }
 
 fn main() -> Result<()> {
-    println!("{}", invertible_heart(25.)?);
+    println!("{}", invertible_heart(X(25.))?);
     Ok(())
 }
 

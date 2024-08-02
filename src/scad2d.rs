@@ -48,7 +48,7 @@ pub enum Aim {
     N, S, E, W,
     U, D, 
     // L, R,
-    // Angle(Real),
+    // Angle(X),
 }
 
 #[derive(Clone, Debug)]
@@ -56,7 +56,7 @@ pub enum Pos {
     N, S, E, W,
     NE, NW, SE, SW,
     U, D, L, R,
-    Angle(Real),
+    Angle(X),
     Center,
 }
 
@@ -72,14 +72,14 @@ pub enum Join {
 
 #[derive(Clone, Debug)]
 pub enum D2 {
-    Circle(Real),
-    Square(Real),
+    Circle(X),
+    Square(X),
     Rectangle(XY),
     Polygon(Box<Vec<XY>>),
     // HalfPlane(Aim),
     Color(ColorEnum, Box<D2>),
-    Rotate(Real, Box<D2>),
-    Scale(Real, Box<D2>),
+    Rotate(X, Box<D2>),
+    Scale(X, Box<D2>),
     Scale2(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
@@ -97,12 +97,12 @@ pub fn indent(shape: &D2) -> String {
 }
 impl D2 {
     /// Create a circle of radius `radius` centered at the origin.
-    pub fn circle<T: Into<Real>>(radius: T) -> D2 {
+    pub fn circle<T: Into<X>>(radius: T) -> D2 {
         D2::Circle(radius.into())
     }
 
     /// Create a square with side length `side` with lower left corner at the origin.
-    pub fn square<T: Into<Real>>(side: T) -> D2 {
+    pub fn square<T: Into<X>>(side: T) -> D2 {
         D2::Square(side.into())
     }
 
@@ -200,16 +200,16 @@ impl D2 {
         (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
 
-    pub fn rotate<X: Into<Real>>(&self, theta: X) -> D2 {
+    pub fn rotate<IX: Into<X>>(&self, theta: IX) -> D2 {
         match self {
             D2::Rotate(phi, d2) => D2::Rotate(*phi + theta.into(), d2.clone()),
             _ => D2::Rotate(theta.into(), Box::new(self.clone())),
         }
     }
 
-    pub fn iter_rotate<'a, X: Into<Real>>(&'a self, theta: X, n: u32) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_rotate<'a, IX: Into<X>>(&'a self, theta: IX, n: u32) -> impl Iterator<Item = D2> + 'a {
         let angle = theta.into();
-        // (0..n).map(move |ii| self.rotate(theta.into() * <u32 as Into<Real>>::ii.into()))
+        // (0..n).map(move |ii| self.rotate(theta.into() * <u32 as Into<X>>::ii.into()))
         (0..n).map(move |ii| self.rotate(angle * ii as f32))
     }
 
@@ -217,7 +217,7 @@ impl D2 {
         (0..n).map(move |ii| self.rotate(360./(n as f64) * ii as f64))
     }
 
-    pub fn iter_square_edge<'a, D: Into<Real>>(&'a self, d: D) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_square_edge<'a, D: Into<X>>(&'a self, d: D) -> impl Iterator<Item = D2> + 'a {
         let shift = d.into();
         vec![v2(shift, 0.), v2(0., shift), v2(-shift, 0.), v2(0., -shift)]
             .into_iter()
@@ -234,7 +234,7 @@ impl D2 {
     }
 
     /// Scale size by the factor `s`.
-    pub fn scale<T: Into<Real>>(self, scale_factor: T) -> D2 {
+    pub fn scale<T: Into<X>>(self, scale_factor: T) -> D2 {
         D2::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
@@ -243,11 +243,11 @@ impl D2 {
         D2::Scale2(xy, Box::new(self))
     }
 
-    pub fn linear_extrude<X: Into<Real>>(&self, x: X) -> D3 {
+    pub fn linear_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
         D3::LinearExtrude(x.into(), Box::new(self.clone()))
     }
 
-    pub fn rotate_extrude<X: Into<Real>>(&self, x: X) -> D3 {
+    pub fn rotate_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
         D3::RotateExtrude(x.into(), Box::new(self.clone()))
     }
 }
@@ -293,7 +293,7 @@ impl SCAD for D2 {
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
-            D2::Rotate(Real(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
+            D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
             D2::Scale2(XY(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",

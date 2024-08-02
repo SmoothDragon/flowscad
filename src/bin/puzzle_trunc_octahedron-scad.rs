@@ -42,7 +42,7 @@ fn main() {
         .iter_translate(v3(r_square, r_square, r_square), 5)
         .union()
         .rotate(v3(0., 0., 45.))
-        .rotate(v3((-1.0_f64/3.).acos()*180.0/PI/2., 0., 0.))
+        .rotate(v3((-1.0_f32/3.).acos()*180.0/PI/2., 0., 0.))
         .translate(v3(-3.*r_square,0.,0.))
         ;
 
