@@ -51,24 +51,6 @@ pub enum Aim {
     // Angle(X),
 }
 
-#[derive(Clone, Debug)]
-pub enum Pos {
-    N, S, E, W,
-    NE, NW, SE, SW,
-    U, D, L, R,
-    Angle(X),
-    Center,
-}
-
-
-#[derive(Clone, Debug)]
-pub enum Join {
-    Intersection,
-    Union,
-    Hull,
-    Minkowski,
-}
-
 
 #[derive(Clone, Debug)]
 pub enum D2 {
@@ -76,7 +58,6 @@ pub enum D2 {
     Square(X),
     Rectangle(XY),
     Polygon(Box<Vec<XY>>),
-    // HalfPlane(Aim),
     Color(ColorEnum, Box<D2>),
     Rotate(X, Box<D2>),
     Scale(X, Box<D2>),
@@ -89,7 +70,6 @@ pub enum D2 {
     // Minkowski(Box<Vec<D2>>),
     Join(&'static str, Box<Vec<D2>>),
     Difference(Box<D2>, Box<D2>),
-    // Minkowski(Box<D2>, Box<D2>),
 }
 
 pub fn indent(shape: &D2) -> String {

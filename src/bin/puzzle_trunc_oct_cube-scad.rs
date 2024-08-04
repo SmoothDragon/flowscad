@@ -17,7 +17,7 @@ fn main() {
     // let r_square = 10.;
     // let to = D3::truncated_octahedron(l_edge);
     let gap = 0.1;
-    let to_gap = D3::truncated_octahedron(gap);
+    // let to_gap = D3::truncated_octahedron(gap);
     let result = D3::truncated_octahedron(l_edge + gap)
         .add_map(move |x| x.translate(v3(0,2.0*r_square,0)))
         .add_map(move |x| x.translate(v3(2.0*r_square,0,0)))

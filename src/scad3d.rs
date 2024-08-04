@@ -31,6 +31,7 @@ pub enum D3 {
     Color(ColorEnum, Box<D3>),
     Cylinder(X, X),
     Sphere(X),
+    Polyhedron(Box<Vec<[f32; 3]>>, Box<Vec<Box<Vec<u32>>>>),
     Translate(XYZ, Box<D3>),
     Scale(X, Box<D3>),
     Scale3(XYZ, Box<D3>),
@@ -90,6 +91,7 @@ impl SCAD for D3 {
             D3::Cuboid(XYZ(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
             D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
+            D3::Polyhedron(points, vertices) => format!("polyhedron(points = {:?}, faces = {:?});", points, vertices),
             D3::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
                     ColorEnum::Blue => "\"blue\"",
@@ -134,6 +136,14 @@ impl D3 {
     /// Create a sphere with `radius` centered at the origin.
     pub fn sphere<T: Into<X>>(radius: T) -> D3 {
         D3::Sphere(radius.into())
+    }
+
+    /// Create a polyhedron from an array of vertices.
+    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
+        D3::Polyhedron(
+            Box::new(points.into_iter().map(|w| {let v = w.into().0; [v.x.0, v.y.0, v.z.0]}).collect::<Vec<[f32; 3]>>()),
+            Box::new(vec![Box::new(vec![0,1,2])])
+            )
     }
 
     pub fn half_space(aim: Aim) -> D3 {
@@ -428,6 +438,21 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_polyhedron() {
+        assert_eq!(D3::polyhedron([
+            v3(  0,  0,  0 ),  //0
+            v3( 10,  0,  0 ),  //1
+            v3( 10,  7,  0 ),  //2
+            v3(  0,  7,  0 ),  //3
+            v3(  0,  0,  5 ),  //4
+            v3( 10,  0,  5 ),  //5
+            v3( 10,  7,  5 ),  //6
+            v3(  0,  7,  5 )]  //7
+                ).scad(),
+            "polyhedron(points = [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [10.0, 7.0, 0.0], [0.0, 7.0, 0.0], [0.0, 0.0, 5.0], [10.0, 0.0, 5.0], [10.0, 7.0, 5.0], [0.0, 7.0, 5.0]], faces = [[0, 1, 2]]);"
+        );
+    }
     /*
     #[test]
     fn test_add_map() {

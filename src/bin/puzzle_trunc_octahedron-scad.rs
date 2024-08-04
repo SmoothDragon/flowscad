@@ -30,9 +30,9 @@ pub fn beveled_truncated_octahedron(l_edge: f32) -> D3 {
 fn main() {
     let l_edge = 5.;
     let r_square = 2.0_f32.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
-    let r_hexagon = 0.75 * 3.0_f32.powf(0.5) * l_edge;  // height of truncated octahedron between hexagonal faces
+    // let r_hexagon = 0.75 * 3.0_f32.powf(0.5) * l_edge;  // height of truncated octahedron between hexagonal faces
     let t = beveled_truncated_octahedron(l_edge);
-    let bevel = 1.;
+    // let bevel = 1.;
     let piece = t.clone()
         .add_map(move |x| x.translate(v3(2.*r_square, 0., 0.)))
         .add_map(move |x| x.translate(v3(0., 2.*r_square, 0.)))
