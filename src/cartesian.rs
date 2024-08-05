@@ -178,6 +178,12 @@ impl std::fmt::Display for XY {
     }
 }
 
+impl From<XY> for [f32; 2] {
+    fn from(xy: XY) -> [f32; 2] {
+        [xy.0, xy.1]
+    }
+}
+
 pub fn v2<IX: Into<X>, IY: Into<X>>(x: IX, y: IY) -> XY {
     XY(x.into().0, y.into().0)
 }
@@ -235,16 +241,19 @@ impl Mul for XY {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Add)]
-pub struct XYZ(pub na::Vector3<X>);  // TODO: Remove pub na::
+// pub struct XYZ(pub na::Vector3<X>);  // TODO: Remove pub na::
+pub struct XYZ(pub f32, pub f32, pub f32);
 
 impl std::fmt::Display for XYZ {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
+        // write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
+        write!(f, "{}", format!("[{}, {}, {}]", &self.0, &self.1, &self.2))
     }
 }
 
 pub fn v3<IX: Into<X>, IY: Into<X>, IZ: Into<X>>(x: IX, y: IY, z: IZ) -> XYZ {
-    XYZ(nalgebra::vector![x.into(), y.into(), z.into()])
+    // XYZ(nalgebra::vector![x.into(), y.into(), z.into()])
+    XYZ(x.into().0, y.into().0, z.into().0)
 }
 
 impl From<XY> for XYZ {
@@ -256,7 +265,7 @@ impl From<XY> for XYZ {
 impl std::ops::Mul<f32> for XYZ {
     type Output = XYZ;
     fn mul(self, rhs: f32) -> Self::Output {
-        v3(self.0.x * rhs, self.0.y * rhs, self.0.z * rhs)
+        v3(self.0 * rhs, self.1 * rhs, self.2 * rhs)
     }
 }
 
@@ -264,7 +273,7 @@ impl std::ops::Mul<f32> for XYZ {
 impl std::ops::Mul<XYZ> for f32 {
     type Output = XYZ;
     fn mul(self, rhs: XYZ) -> Self::Output {
-        v3(rhs.0.x * self, rhs.0.y * self, rhs.0.z * self)
+        v3(rhs.0 * self, rhs.1 * self, rhs.2 * self)
     }
 }
 
@@ -283,6 +292,11 @@ mod test {
         assert_eq!(<i32 as Into<X>>::into(5), X(5.));
         assert_eq!(<u32 as Into<X>>::into(5), X(5.));
         assert_eq!(<f64 as Into<X>>::into(5.0), X(5.));
+    }
+
+    #[test]
+    fn test_into_array_f32() {
+        assert_eq!(Into::<[f32; 2]>::into(XY(1.0, 2.0)), [1.0, 2.0]);
     }
 
     #[test]

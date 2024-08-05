@@ -88,7 +88,7 @@ impl SCAD for D3 {
             D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
             D3::RotateExtrude(X(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
-            D3::Cuboid(XYZ(xyz)) => format!("cube(size = [{}, {}, {}]);", xyz.x, xyz.y, xyz.z),
+            D3::Cuboid(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
             D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
             D3::Polyhedron(points, vertices) => format!("polyhedron(points = {:?}, faces = {:?});", points, vertices),
@@ -100,7 +100,7 @@ impl SCAD for D3 {
                 }
                 , shape.indent()),
             D3::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, shape.indent()),
-            D3::Scale3(XYZ(v), shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.x, v.y, v.z, shape.indent()),
+            D3::Scale3(v, shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.0, v.1, v.2, shape.indent()),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -109,8 +109,8 @@ impl SCAD for D3 {
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
-            D3::Translate(XYZ(xyz), shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
-            D3::Rotate(XYZ(xyz), shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", xyz.x, xyz.y, xyz.z, shape.indent()),
+            D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
+            D3::Rotate(xyz, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
             D3::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| format!("{}", x.indent())).collect::<Vec<_>>().join("\n  ")),
@@ -141,7 +141,7 @@ impl D3 {
     /// Create a polyhedron from an array of vertices.
     pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
         D3::Polyhedron(
-            Box::new(points.into_iter().map(|w| {let v = w.into().0; [v.x.0, v.y.0, v.z.0]}).collect::<Vec<[f32; 3]>>()),
+            Box::new(points.into_iter().map(|w| {let v = w.into(); [v.0, v.1, v.2]}).collect::<Vec<[f32; 3]>>()),
             Box::new(vec![Box::new(vec![0,1,2])])
             )
     }
@@ -192,7 +192,7 @@ impl D3 {
 
 
     pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.clone().translate(v3(xyz.0.x * ii as f32, xyz.0.y * ii as f32, xyz.0.z * ii as f32)))
+        (0..n).map(move |ii| self.clone().translate(v3(xyz.0 * ii as f32, xyz.1 * ii as f32, xyz.2 * ii as f32)))
     }
 
     // pub fn iter_translate2<'a, X: Into<X> + 'a, Y: Into<X> + 'a, Z: Into<X> + 'a>(&'a self, x: X, y: Y, z: Z, n: u32) 
@@ -249,7 +249,7 @@ impl D3 {
 
 
     pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
-        (0..n).map(move |ii| self.clone().rotate(v3(theta.0.x * ii as f32, theta.0.y * ii as f32, theta.0.z * ii as f32)))
+        (0..n).map(move |ii| self.clone().rotate(v3(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
     }
 
     pub fn hull(self) -> D3 {
@@ -281,9 +281,9 @@ impl D3 {
     }
 
     pub fn beveled_box<T: Into<X>>(xyz: XYZ, bevel_in: T) -> D3 {
-        let x = xyz.0.x; 
-        let y = xyz.0.y;
-        let z = xyz.0.z;
+        let x = xyz.0; 
+        let y = xyz.1;
+        let z = xyz.2;
         let bevel = bevel_in.into();
         D3::Hull(Box::new(vec![
             D3::cuboid(v3(x,y-bevel*2.,z-bevel*2.)).translate(v3(0.,bevel,bevel)),
