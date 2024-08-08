@@ -1,5 +1,3 @@
-use nalgebra as na;
-use itertools::Itertools;
 use std::ops::*;
 
 use derive_more::*;

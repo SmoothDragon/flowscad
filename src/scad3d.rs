@@ -1,5 +1,4 @@
 
-use lazy_static::lazy_static;
 use crate::*;
 
 pub const MAX2: f32 = 1000.;
@@ -378,6 +377,7 @@ impl std::ops::Sub<D3> for D3 {
 #[cfg(test)]
 mod test {
     use super::*;
+    use lazy_static::lazy_static;
 
     lazy_static!{ static ref S5: D3 = D3::sphere(5); }
     lazy_static!{ static ref C9: D3 = D3::cube(9.0); }

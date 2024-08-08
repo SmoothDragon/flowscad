@@ -76,9 +76,9 @@ pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace("\n", "\n  ")
 }
 impl D2 {
-    /// Create a circle of radius `radius` centered at the origin.
-    pub fn circle<T: Into<X>>(radius: T) -> D2 {
-        D2::Circle(radius.into())
+    /// Create a circle of `diameter` centered at the origin.
+    pub fn circle<T: Into<X>>(diameter: T) -> D2 {
+        D2::Circle(diameter.into())
     }
 
     /// Create a square with side length `side` with lower left corner at the origin.
@@ -100,6 +100,14 @@ impl D2 {
 
     pub fn difference(self, other: D2) -> D2 {
         D2::Difference(Box::new(self), Box::new(other))
+    }
+
+    pub fn sub(self, other: D2) -> D2 {
+        D2::Difference(Box::new(self), Box::new(other))
+    }
+
+    pub fn and(self, other: D2) -> D2 {
+        D2::intersection(self, other)
     }
 
     pub fn half_plane(aim: Aim) -> D2 {
@@ -258,7 +266,7 @@ impl std::fmt::Display for D2 {
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
-            D2::Circle(radius) => format!("circle(r = {});", radius),
+            D2::Circle(diameter) => format!("circle(d = {});", diameter),
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
@@ -307,7 +315,7 @@ mod test {
 
     #[test]
     fn test_circle() {
-        assert_eq!(C5.scad(), "circle(r = 5);");
+        assert_eq!(C5.scad(), "circle(d = 5);");
     }
 
     #[test]
@@ -323,20 +331,20 @@ mod test {
     #[test]
     fn test_add() {
         assert_eq!(D2::circle(5).add(D2::square(9)).scad(),
-        "union() {\n  circle(r = 5);\n  square(size = 9);\n}");
+        "union() {\n  circle(d = 5);\n  square(size = 9);\n}");
     }
 
     #[test]
     fn test_color() {
         assert_eq!(D2::circle(7_i32).add(D2::square(9)).color(ColorEnum::Red).scad(),
-        "color(\"red\") {\n  union() {\n    circle(r = 7);\n    square(size = 9);\n  }\n}"
+        "color(\"red\") {\n  union() {\n    circle(d = 7);\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_translate() {
         assert_eq!(C5.iter_translate(v2(1.,2.),4).union().scad(),
-            "union() {\n  translate(v = [0, 0]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(r = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(r = 5);\n  }\n}"
+            "union() {\n  translate(v = [0, 0]) {\n    circle(d = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(d = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(d = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(d = 5);\n  }\n}"
         );
     }
 
@@ -371,21 +379,21 @@ mod test {
     #[test]
     fn test_union_union() {
         assert_eq!(S9.iter_rotate(20, 4).union().add(D2::circle(5)).scad(),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
+            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(d = 5);\n}"
         );
     }
 
     #[test]
     fn test_d2_add_op() {
         assert_eq!((D2::square(9) + D2::circle(5)).scad(),
-            "union() {\n  square(size = 9);\n  circle(r = 5);\n}"
+            "union() {\n  square(size = 9);\n  circle(d = 5);\n}"
         );
     }
 
     #[test]
     fn test_d2_sub_op() {
         assert_eq!((D2::square(9) - D2::circle(5)).scad(),
-            "difference() {\n  square(size = 9);\n  circle(r = 5);\n}"
+            "difference() {\n  square(size = 9);\n  circle(d = 5);\n}"
         );
     }
 
@@ -455,7 +463,7 @@ mod test {
     #[test]
     fn test_iter_translate_translate() {
         assert_eq!(C5.iter_translate(v2(1.,2.),4).map(move |x| x.translate(v2(-1., -1.))).union().scad(),
-            "union() {\n  translate(v = [-1, -1]) {\n    circle(r = 5);\n  }\n  translate(v = [0, 1]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 3]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 5]) {\n    circle(r = 5);\n  }\n}"
+            "union() {\n  translate(v = [-1, -1]) {\n    circle(d = 5);\n  }\n  translate(v = [0, 1]) {\n    circle(d = 5);\n  }\n  translate(v = [1, 3]) {\n    circle(d = 5);\n  }\n  translate(v = [2, 5]) {\n    circle(d = 5);\n  }\n}"
         );
     }
 
