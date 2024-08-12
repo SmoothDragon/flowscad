@@ -1,7 +1,4 @@
-
 use crate::*;
-
-pub const MAX2: f32 = 1000.;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self: Self) -> D3 {
@@ -30,7 +27,7 @@ pub enum D3 {
     Color(ColorEnum, Box<D3>),
     Cylinder(X, X),
     Sphere(X),
-    Polyhedron(Box<Vec<[f32; 3]>>, Box<Vec<Box<Vec<u32>>>>),
+    Polyhedron(Box<Vec<XYZ>>, Box<Vec<Vec<u32>>>),
     Translate(XYZ, Box<D3>),
     Scale(X, Box<D3>),
     Scale3(XYZ, Box<D3>),
@@ -76,10 +73,6 @@ impl std::iter::Product for D3 {
     }
 }
 
-// trait SCAD {
-    // fn scad(&self) -> String;
-    // fn indent(&self) -> String;
-// }
 
 impl SCAD for D3 {
     fn scad(&self) -> String {
@@ -90,7 +83,9 @@ impl SCAD for D3 {
             D3::Cuboid(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
             D3::Sphere(radius) => format!("sphere(r = {});", radius),
             D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
-            D3::Polyhedron(points, vertices) => format!("polyhedron(points = {:?}, faces = {:?});", points, vertices),
+            D3::Polyhedron(points, faces) => format!("polyhedron(points = [{}], faces = {:?});", 
+                points.iter().map(|xyz| format!("{}", xyz)).collect::<Vec<_>>().join(", "),
+                faces),
             D3::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
                 match color {
                     ColorEnum::Blue => "\"blue\"",
@@ -137,13 +132,60 @@ impl D3 {
         D3::Sphere(radius.into())
     }
 
+
     /// Create a polyhedron from an array of vertices.
-    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
+    // pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
+        // D3::Polyhedron(
+            // Box::new(points.into_iter().map(|w| {let v = w.into(); [v.0, v.1, v.2]}).collect::<Vec<[f32; 3]>>()),
+            // Box::new(vec![vec![0,1,2]])
+            // )
+    // }
+
+    /// Create a polyhedron from convex hull of vertices.
+    pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
+        let vertices = points.into_iter().map(|w| {
+            let v = w.into(); [v.0 as f64, v.1 as f64, v.2 as f64]
+        }).collect::<Vec<[f64; 3]>>();
+        let (vert, face) = convex_hull_3d(vertices);
         D3::Polyhedron(
-            Box::new(points.into_iter().map(|w| {let v = w.into(); [v.0, v.1, v.2]}).collect::<Vec<[f32; 3]>>()),
-            Box::new(vec![Box::new(vec![0,1,2])])
+            Box::new(
+                vert.into_iter()
+                .map(|w| Into::<XYZ>::into(w))
+                .collect::<Vec<XYZ>>()
+                ),
+            Box::new(face)
             )
     }
+    /*
+    pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
+        let mut faces: Vec<Vec<u32>> = Vec::new();
+        let mut vertex: BTreeMap<u32, XYZ> = BTreeMap::new();
+        let vertex_iter = points.into_iter()
+            .map(|w| {let v = w.into(); [v.0 as f64, v.1 as f64, v.2 as f64]});
+        let qh = Qh::builder().compute(true).build_from_iter(vertex_iter).unwrap();
+
+        for face in qh.faces() {
+            let face_num = face.vertices().unwrap().iter()
+                .map(|v| {
+                    let v_id = v.id()-1;  // 1-indexed to 0-indexed
+                    vertex.entry(v_id)
+                        .or_insert_with(|| {
+                            let xyz =v.point();
+                            v3(xyz[0], xyz[1], xyz[2])
+                        });
+                    v_id
+                }).collect::<Vec<u32>>();
+            faces.push(face_num);
+        }
+        // Given the BTreeMap contains `n` distinct u32 entries,
+        // assert the first entry is `0` and the last entry is `n-1`.
+        // This proves all values `0..n` are present. 
+        assert!(*vertex.first_entry().unwrap().key() == 0);
+        assert!(*vertex.last_entry().unwrap().key() as usize == vertex.len()-1);
+        let vertices: Vec<XYZ> = vertex.into_values().collect();
+        D3::Polyhedron(Box::new(vertices), Box::new(faces))
+    }
+    */
 
     pub fn half_space(aim: Aim) -> D3 {
         match aim {
@@ -308,10 +350,10 @@ impl D3 {
                     )
     }
     
+    /// Creates a rounded cube
+    ///    1) Centered at the origin
+    ///    2) Angle of attack is 30 degrees for the transition from cube face to sphere.
     pub fn rounded_cube<T: Into<X>>(i_side: T) -> D3 {
-        /// Creates a rounded cube
-        ///    1) Centered at the origin
-        ///    2) Angle of attack is 30 degrees for the transition from cube face to sphere.
         let side: X = i_side.into();
         D3::cube(side)
             .translate(v3(-side*0.5,-side*0.5,-side*0.5))
@@ -439,8 +481,8 @@ mod test {
     }
 
     #[test]
-    fn test_polyhedron() {
-        assert_eq!(D3::polyhedron([
+    fn test_convex_hull() {
+        assert_eq!(D3::convex_hull([
             v3(  0,  0,  0 ),  //0
             v3( 10,  0,  0 ),  //1
             v3( 10,  7,  0 ),  //2
@@ -450,7 +492,18 @@ mod test {
             v3( 10,  7,  5 ),  //6
             v3(  0,  7,  5 )]  //7
                 ).scad(),
-            "polyhedron(points = [[0.0, 0.0, 0.0], [10.0, 0.0, 0.0], [10.0, 7.0, 0.0], [0.0, 7.0, 0.0], [0.0, 0.0, 5.0], [10.0, 0.0, 5.0], [10.0, 7.0, 5.0], [0.0, 7.0, 5.0]], faces = [[0, 1, 2]]);"
+            "polyhedron(points = [[0, 0, 0], [10, 0, 0], [10, 7, 0], [0, 7, 0], [0, 0, 5], [10, 0, 5], [10, 7, 5], [0, 7, 5]], faces = [[3, 0, 1, 2], [4, 5, 1, 0], [7, 4, 0, 3], [5, 6, 2, 1], [6, 7, 3, 2], [7, 6, 5, 4]]);"
+        );
+    }
+
+    #[test]
+    fn test_convex_hull_octahedron() {
+        assert_eq!(D3::convex_hull([
+        [1,1,0], [-1,1,0],[-1,-1,0],[1,-1,0],  // point in xy-plane
+        [1,0,1], [-1,0,1],[-1,0,-1],[1,0,-1],  // point in xz-plane
+        [0,1,1], [0,-1,1],[0,-1,-1],[0,1,-1],  // point in yz-plane
+        ]).scad(),
+        "polyhedron(points = [[1, 1, 0], [-1, 1, 0], [-1, -1, 0], [1, -1, 0], [1, 0, 1], [-1, 0, 1], [-1, 0, -1], [1, 0, -1], [0, 1, 1], [0, -1, 1], [0, -1, -1], [0, 1, -1]], faces = [[6, 11, 1], [10, 6, 2], [11, 7, 0], [7, 10, 3], [0, 7, 3, 4], [7, 11, 6, 10], [1, 5, 2, 6], [4, 8, 0], [8, 5, 1], [8, 1, 11, 0], [9, 4, 3], [5, 9, 2], [4, 9, 5, 8], [2, 9, 3, 10]]);"
         );
     }
     /*

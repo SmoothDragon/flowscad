@@ -1,0 +1,16 @@
+# Example qhull file
+# cat octahedron.qhull | qhull o
+3
+12
+1 1 0
+-1 1 0
+-1 -1 0
+1 -1 0
+1 0 1
+-1 0 1
+-1 0 -1
+1 0 -1
+0 1 1
+0 -1 1
+0 -1 -1
+0 1 -1

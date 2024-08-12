@@ -260,6 +260,18 @@ impl From<XY> for XYZ {
     }
 }
 
+impl From<[i32; 3]> for XYZ {
+    fn from(xyz: [i32; 3]) -> XYZ {
+        v3(xyz[0], xyz[1], xyz[2])
+    }
+}
+
+impl From<[f64; 3]> for XYZ {
+    fn from(xyz: [f64; 3]) -> XYZ {
+        v3(xyz[0] as f32, xyz[1] as f32, xyz[2] as f32)
+    }
+}
+
 impl std::ops::Mul<f32> for XYZ {
     type Output = XYZ;
     fn mul(self, rhs: f32) -> Self::Output {
