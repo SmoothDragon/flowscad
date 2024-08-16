@@ -123,8 +123,8 @@ impl D3 {
     }
 
     /// Create a rectangular cuboid with side lengths `x,y,z` with lower left corner at the origin.
-    pub fn cuboid(xyz: XYZ) -> D3 {
-        D3::Cuboid(xyz)
+    pub fn cuboid<IXYZ: Into<XYZ>>(xyz: IXYZ) -> D3 {
+        D3::Cuboid(xyz.into())
     }
 
     /// Create a sphere with `radius` centered at the origin.
@@ -141,14 +141,6 @@ impl D3 {
             _ => self,
         }
     }
-
-    /// Create a polyhedron from an array of vertices.
-    // pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
-        // D3::Polyhedron(
-            // Box::new(points.into_iter().map(|w| {let v = w.into(); [v.0, v.1, v.2]}).collect::<Vec<[f32; 3]>>()),
-            // Box::new(vec![vec![0,1,2]])
-            // )
-    // }
 
     /// Create a polyhedron from convex hull of vertices.
     pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
@@ -270,10 +262,21 @@ impl D3 {
         // (0..n).map(move |ii| self.clone().translate(x.clone().into(), y.clone().into(), z.clone().into()))
     // }
 
-    pub fn rotate(self, xyz: XYZ) -> D3 {
-        D3::Rotate(xyz, Box::new(self.clone()))
+    pub fn rotate<IXYZ: Into<XYZ>>(&self, xyz: IXYZ) -> D3 {
+        D3::Rotate(xyz.into(), Box::new(self.clone()))
     }
 
+    pub fn rotate_x<IX: Into<X>>(&self, theta: IX) -> D3 {
+        self.rotate( (theta,0,0) )
+    }
+
+    pub fn rotate_y<IX: Into<X>>(&self, theta: IX) -> D3 {
+        self.rotate( (0,theta,0) )
+    }
+
+    pub fn rotate_z<IX: Into<X>>(&self, theta: IX) -> D3 {
+        self.rotate( (0,0,theta) )
+    }
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
     pub fn cylinder<H: Into<X>, D: Into<X>>(h: H, d:D) -> D3 {
@@ -491,6 +494,48 @@ mod test {
     }
 
     #[test]
+    fn test_rotate_tuple() {
+        assert_eq!(D3::cube(3).rotate((10,20.,30.0)).scad(),
+            "rotate([10, 20, 30]) {\n  cube(size = 3);\n}"
+        );
+    }
+
+    #[test]
+    fn test_rotate_array_int() {
+        assert_eq!(D3::cube(3).rotate([10,20,30]).scad(),
+            "rotate([10, 20, 30]) {\n  cube(size = 3);\n}"
+        );
+    }
+
+    #[test]
+    fn test_rotate_array_float() {
+        assert_eq!(D3::cube(3).rotate([10.,20.,30.]).scad(),
+            "rotate([10, 20, 30]) {\n  cube(size = 3);\n}"
+        );
+    }
+
+    #[test]
+    fn test_rotate_x() {
+        assert_eq!(D3::cube(3).rotate_x(10).scad(),
+            "rotate([10, 0, 0]) {\n  cube(size = 3);\n}"
+        );
+    }
+
+    #[test]
+    fn test_rotate_y() {
+        assert_eq!(D3::cube(3).rotate_y(20.).scad(),
+            "rotate([0, 20, 0]) {\n  cube(size = 3);\n}"
+        );
+    }
+
+    #[test]
+    fn test_rotate_z() {
+        assert_eq!(D3::cube(3).rotate_z(30.0).scad(),
+            "rotate([0, 0, 30]) {\n  cube(size = 3);\n}"
+        );
+    }
+
+    #[test]
     fn test_iter_rotate() {
         assert_eq!(D3::cube(3).iter_rotate(v3(10,20,30), 4).sum::<D3>().scad(),
             "union() {\n  rotate([0, 0, 0]) {\n    cube(size = 3);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 3);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 3);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 3);\n  }\n}"
@@ -537,10 +582,11 @@ mod test {
         "polyhedron(points = [[1, 1, 0], [-1, 1, 0], [-1, -1, 0], [1, -1, 0], [1, 0, 1], [-1, 0, 1], [-1, 0, -1], [1, 0, -1], [0, 1, 1], [0, -1, 1], [0, -1, -1], [0, 1, -1]], faces = [[6, 11, 1], [10, 6, 2], [11, 7, 0], [7, 10, 3], [0, 7, 3, 4], [7, 11, 6, 10], [1, 5, 2, 6], [4, 8, 0], [8, 5, 1], [8, 1, 11, 0], [9, 4, 3], [5, 9, 2], [4, 9, 5, 8], [2, 9, 3, 10]]);"
         );
     }
+
     /*
     #[test]
     fn test_add_map() {
-        assert_eq!(S9.iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
+        assert_eq!(D3::cube(9).iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  mirror(v = [1, 0]) {\n    union() {\n      rotate(0) {\n        square(size = 9);\n      }\n      rotate(20) {\n        square(size = 9);\n      }\n      rotate(40) {\n        square(size = 9);\n      }\n      rotate(60) {\n        square(size = 9);\n      }\n    }\n  }\n}"
         );
     }

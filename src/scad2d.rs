@@ -86,6 +86,20 @@ impl D2 {
         D2::Square(side.into())
     }
 
+    /// Create a rectangle with lower left corner at the origin.
+    pub fn rectangle<IXY: Into<XY>>(xy: IXY) -> D2 {
+        D2::Rectangle(xy.into())
+    }
+
+    /// Center an object, if we know how
+    pub fn center(self) -> D2 {
+        match self {
+            D2::Square(s) => self.translate(-v2(s,s)/2),
+            D2::Rectangle(XY(x,y)) => self.translate(-v2(x,y)/2),
+            _ => self,
+        }
+    }
+
 
     pub fn add(self, other: D2) -> D2 {
         match self { // Combine Unions if possible

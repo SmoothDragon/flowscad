@@ -219,6 +219,14 @@ impl std::ops::Mul<XY> for i32 {
     }
 }
 
+impl<IX: Into<X>> std::ops::Div<IX> for XY {
+    type Output = XY;
+    fn div(self, other: IX) -> Self::Output {
+        let d = other.into().0;
+        XY(self.0 / d, self.1 / d)
+    }
+}
+
 
 impl Sub for XY {
     type Output = Self;
@@ -249,7 +257,6 @@ impl std::fmt::Display for XYZ {
 }
 
 pub fn v3<IX: Into<X>, IY: Into<X>, IZ: Into<X>>(x: IX, y: IY, z: IZ) -> XYZ {
-    // XYZ(nalgebra::vector![x.into(), y.into(), z.into()])
     XYZ(x.into().0, y.into().0, z.into().0)
 }
 
@@ -268,6 +275,12 @@ impl From<[i32; 3]> for XYZ {
 impl From<[f64; 3]> for XYZ {
     fn from(xyz: [f64; 3]) -> XYZ {
         v3(xyz[0] as f32, xyz[1] as f32, xyz[2] as f32)
+    }
+}
+
+impl<IX: Into<X>, IY: Into<X>, IZ: Into<X>> From<(IX, IY, IZ)> for XYZ {
+    fn from(xyz: (IX, IY, IZ)) -> XYZ {
+        v3(xyz.0, xyz.1, xyz.2)
     }
 }
 
