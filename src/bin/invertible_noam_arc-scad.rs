@@ -9,11 +9,11 @@ fn invertible_noam_arc<T: Into<X>>(diameter: T) -> D3 {
         .add(D2::circle(d/3).translate( (d/3,0) ))
         .add(D2::circle(d/3).translate( (-d/3,0) ))
         .sub(D2::circle(d/3))
-        .linear_extrude(5)
+        .linear_extrude(8)
 }
 
 fn main() -> Result<()> {
-    println!("$fn=256;\n{}", invertible_noam_arc(40.));
+    println!("$fn=256;\n{}", invertible_noam_arc(80.));
     Ok(())
 }
 

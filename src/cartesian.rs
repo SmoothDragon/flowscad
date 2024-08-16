@@ -238,8 +238,7 @@ impl Mul for XY {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Add)]
-// pub struct XYZ(pub na::Vector3<X>);  // TODO: Remove pub na::
+#[derive(Debug, Clone, Copy, PartialEq, Add, Neg)]
 pub struct XYZ(pub f32, pub f32, pub f32);
 
 impl std::fmt::Display for XYZ {
@@ -284,6 +283,14 @@ impl std::ops::Mul<XYZ> for f32 {
     type Output = XYZ;
     fn mul(self, rhs: XYZ) -> Self::Output {
         v3(rhs.0 * self, rhs.1 * self, rhs.2 * self)
+    }
+}
+
+impl<IX: Into<X>> std::ops::Div<IX> for XYZ {
+    type Output = XYZ;
+    fn div(self, other: IX) -> Self::Output {
+        let d = other.into().0;
+        XYZ(self.0 / d, self.1 / d, self.2 / d)
     }
 }
 
@@ -334,6 +341,12 @@ mod test {
     fn test_v3_mul() {
         assert_eq!(format!("{}", v3(1.,2., 4)*3.), "[3, 6, 12]");
         assert_eq!(format!("{}", 8. * v3(1.,2., 4)), "[8, 16, 32]");
+    }
+
+    #[test]
+    fn test_v3_div_X() {
+        assert_eq!(format!("{}", v3(1.,2., 4)/4), "[0.25, 0.5, 1]");
+        assert_eq!(format!("{}", v3(1.,2., 4)/0.5), "[2, 4, 8]");
     }
 
     #[test]

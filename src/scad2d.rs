@@ -180,6 +180,15 @@ impl D2 {
         }
     }
 
+    pub fn translate_x<IX: Into<X>>(self, x: IX) -> D2 {
+        D2::Translate(v2(x,0), Box::new(self))
+    }
+
+    pub fn translate_y<IX: Into<X>>(self, y: IX) -> D2 {
+        D2::Translate(v2(0,y), Box::new(self))
+    }
+
+
     pub fn mirror(&self, xy: XY) -> D2 {
         D2::Mirror(xy, Box::new(self.clone()))
     }
@@ -316,11 +325,6 @@ mod test {
     #[test]
     fn test_circle() {
         assert_eq!(C5.scad(), "circle(d = 5);");
-    }
-
-    #[test]
-    fn test_cylinder() {
-        assert_eq!(D3::cylinder(10.0, 5).scad(), "cylinder(h = 10, r = 5);");
     }
 
     #[test]

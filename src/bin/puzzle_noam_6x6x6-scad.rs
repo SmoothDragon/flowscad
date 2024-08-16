@@ -3,9 +3,9 @@ use flowscad::*;
 
 
 fn main() {
-    let ll = 8.;
-    let bevel = ll/10.;
-    let tl = 8.;
+    let ll = 11.;
+    let bevel = 0.75;
+    let tl = 11.;
     let gap = 0.1;
     let mut piece = Vec::new();
     piece.push(D3::beveled_cube_block( (4, 4, 4), ll, bevel, gap));

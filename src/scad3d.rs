@@ -82,7 +82,7 @@ impl SCAD for D3 {
             D3::Cube(size) => format!("cube(size = {});", size),
             D3::Cuboid(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
             D3::Sphere(radius) => format!("sphere(r = {});", radius),
-            D3::Cylinder(h, r) => format!("cylinder(h = {}, r = {});", h, r),
+            D3::Cylinder(h, d) => format!("cylinder(h = {}, d = {});", h, d),
             D3::Polyhedron(points, faces) => format!("polyhedron(points = [{}], faces = {:?});", 
                 points.iter().map(|xyz| format!("{}", xyz)).collect::<Vec<_>>().join(", "),
                 faces),
@@ -132,6 +132,15 @@ impl D3 {
         D3::Sphere(radius.into())
     }
 
+    /// Center an object, if we know how
+    pub fn center(self) -> D3 {
+        match self {
+            D3::Cylinder(h, _d) => self.translate(v3(0,0,-h/2)),
+            D3::Cube(x) => self.translate(-v3(x,x,x)/2),
+            D3::Cuboid(xyz) => self.translate(-xyz/2),
+            _ => self,
+        }
+    }
 
     /// Create a polyhedron from an array of vertices.
     // pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
@@ -222,13 +231,33 @@ impl D3 {
         D3::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
-    /// Scale in `x` and `y` directions.
+    /// Scale in `x`, `y` and `z` directions.
     pub fn scale3(self, xyz: XYZ) -> D3 {
         D3::Scale3(xyz, Box::new(self))
     }
 
-    pub fn translate(self, xyz: XYZ) -> D3 {
-        D3::Translate(xyz, Box::new(self))
+    pub fn translate<IXYZ: Into<XYZ>>(&self, xyz: IXYZ) -> D3 {
+        // TODO: Is clone needed here?
+        match self {
+            D3::Translate(v, d3) => D3::Translate(*v+xyz.into(), d3.clone()),
+            _ => D3::Translate(xyz.into(), Box::new(self.clone())),
+        }
+    }
+
+    // pub fn translate(self, xyz: XYZ) -> D3 {
+        // D3::Translate(xyz, Box::new(self))
+    // }
+
+    pub fn translate_x<T: Into<X>>(self, x: T) -> D3 {
+        D3::Translate(v3(x,0,0), Box::new(self))
+    }
+
+    pub fn translate_y<T: Into<X>>(self, y: T) -> D3 {
+        D3::Translate(v3(0,y,0), Box::new(self))
+    }
+
+    pub fn translate_z<T: Into<X>>(self, z: T) -> D3 {
+        D3::Translate(v3(0,0,z), Box::new(self))
     }
 
 
@@ -247,8 +276,8 @@ impl D3 {
 
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder<H: Into<X>, R: Into<X>>(h: H, r:R) -> D3 {
-        D3::Cylinder(h.into(), r.into())
+    pub fn cylinder<H: Into<X>, D: Into<X>>(h: H, d:D) -> D3 {
+        D3::Cylinder(h.into(), d.into())
     }
 
     pub fn add(self, other: D3) -> D3 {
@@ -376,28 +405,6 @@ impl D3 {
             ]))
     }
 
-    /*
-    pub fn truncated_octahedron(r: f64) -> D3 {
-        /// Create a truncated ocatahedron with edge length `l_edge` centered at the origin
-        /// Create a truncated ocatahedron centered at the origin.
-        /// `r_square` equals distance from origin to center of square face.
-        // let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
-        let r_square = r; // r.into() TODO
-        let l_edge = 2.0_f64.powf(0.5) / r_square;  // height of truncated octahedron between square faces
-        D3::Hull(Box::new(vec![
-            D3::cuboid(v3(l_edge, l_edge, 2.0*r_square))
-                .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
-                .rotate(v3(0., 0., 45.)),
-            D3::cuboid(v3(l_edge, 2.*r_square, l_edge))
-                .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
-                .rotate(v3(0., 45., 0.)),
-            D3::cuboid(v3(2.*r_square, l_edge, l_edge))
-                .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
-                .rotate(v3(45, 0, 0)),
-            ]))
-    }
-    */
-
 }
 
 impl std::ops::Add<D3> for D3 {
@@ -431,12 +438,36 @@ mod test {
 
     #[test]
     fn test_cylinder() {
-        assert_eq!(D3::cylinder(10.0, 5).scad(), "cylinder(h = 10, r = 5);");
+        assert_eq!(D3::cylinder(10.0, 5).scad(), "cylinder(h = 10, d = 5);");
+    }
+
+    #[test]
+    fn test_cylinder_center() {
+        assert_eq!(D3::cylinder(8.0, 5).center().scad(), 
+                   "translate(v = [0, 0, -4]) {\n  cylinder(h = 8, d = 5);\n}");
     }
 
     #[test]
     fn test_cube() {
         assert_eq!(D3::cube(9).scad(), "cube(size = 9);");
+    }
+
+    #[test]
+    fn test_cube_center() {
+        assert_eq!(D3::cube(9).center().scad(), "translate(v = [-4.5, -4.5, -4.5]) {\n  cube(size = 9);\n}");
+
+    }
+
+    #[test]
+    fn test_cuboid() {
+        assert_eq!(D3::cuboid(v3(1,2,3)).scad(),
+                   "cube(size = [1, 2, 3]);");
+    }
+
+    #[test]
+    fn test_cuboid_center() {
+        assert_eq!(D3::cuboid(v3(1,2,3)).center().scad(), 
+                   "translate(v = [-0.5, -1, -1.5]) {\n  cube(size = [1, 2, 3]);\n}");
     }
 
     #[test]

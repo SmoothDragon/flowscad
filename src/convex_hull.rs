@@ -1,8 +1,6 @@
 use std::io::{BufRead, Write};
 use std::process::{Command, Stdio};
 
-use anyhow::Result;
-
 /* QHull input and output description
 Generic input for `qhull` is a text file with lines as:
 dim:uint
@@ -111,12 +109,43 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
     (vertices, faces)
 }
 
-pub fn main() -> Result<()> {
-    let vertices =  [  // Cuboctahedron
-        [1.0,1.0,0.0], [-1.0,1.0,0.0],[-1.0,-1.0,0.0],[1.0,-1.0,0.0],  // point in xy-plane
-        [1.0,0.0,1.0], [-1.0,0.0,1.0],[-1.0,0.0,-1.0],[1.0,0.0,-1.0],  // point in xz-plane
-        [0.0,1.0,1.0], [0.0,-1.0,1.0],[0.0,-1.0,-1.0],[0.0,1.0,-1.0],  // point in yz-plane
-        ];
-    println!("{:?}", convex_hull_3d(vertices.to_vec()));
-    Ok(())
+/*
+pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
+    let points_text = points.iter()
+        .map(|v3| format!("{} {} {}\n", v3[0], v3[1], v3[2]))
+        .collect::<String>();
+    let mut qhull = Command::new("qhull")
+        .arg("o")
+        .stdin(Stdio::piped())
+        .stdout(Stdio::piped())
+        .spawn()
+        .expect("Failed to spawn qhull process");
+    let points_data = format!("3\n{}\n{}\n", points.len(), points_text); 
+
+    let mut stdin = qhull.stdin.take().expect("Failed to open stdin");
+    std::thread::spawn(move || {
+        stdin.write_all(points_data.as_bytes()).expect("Failed to write to stdin");
+    });
+
+    let output = qhull.wait_with_output().expect("Failed to read stdout");
+    let mut lines = output.stdout.lines();
+    let _dim: u32 = lines.next().unwrap().unwrap().parse::<u32>().unwrap();
+    let binding = lines.next().unwrap().unwrap();
+    let vfe = binding.split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
+    let vertices = (0..vfe[0])
+        .map(|_| { let binding = lines.next().unwrap().unwrap();
+            TryInto::<[f64; 3]>::try_into(
+                binding.split_whitespace()
+                .map(|x| x.parse::<f64>().unwrap())
+                .collect::<Vec<f64>>()
+            ).unwrap()
+        }).collect::<Vec<_>>();
+    let faces = (0..vfe[1])
+        .map(|_| { let binding = lines.next().unwrap().unwrap();
+            binding.split_whitespace().skip(1)
+                .map(|x| x.parse::<u32>().unwrap())
+                .collect::<Vec<u32>>()
+        }).collect::<Vec<_>>();
+    (vertices, faces)
 }
+*/
