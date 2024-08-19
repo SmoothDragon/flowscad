@@ -57,6 +57,7 @@ pub enum D2 {
     Circle(X),
     Square(X),
     Rectangle(XY),
+    RoundedRectangle(XY, X),
     Polygon(Box<Vec<XY>>),
     Color(ColorEnum, Box<D2>),
     Rotate(X, Box<D2>),
@@ -91,11 +92,17 @@ impl D2 {
         D2::Rectangle(xy.into())
     }
 
+    /// Create a rounded rectangle with lower left corner at the origin.
+    pub fn rounded_rectangle<IX: Into<X>, IXY: Into<XY>>(ixy: IXY, into_radius: IX) -> D2 {
+        D2::RoundedRectangle(ixy.into(), into_radius.into())
+    }
+
     /// Center an object, if we know how
     pub fn center(self) -> D2 {
         match self {
             D2::Square(s) => self.translate(-v2(s,s)/2),
             D2::Rectangle(XY(x,y)) => self.translate(-v2(x,y)/2),
+            D2::RoundedRectangle(XY(x,y), X(_)) => self.translate(-v2(x,y)/2),
             _ => self,
         }
     }
@@ -292,6 +299,13 @@ impl SCAD for D2 {
             D2::Circle(diameter) => format!("circle(d = {});", diameter),
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
+            D2::RoundedRectangle(XY(x,y), r) => format!("{};",
+                D2::Circle(2 * *r)
+                    .add_map(move |shape| shape.translate_x(*x - 2 * *r))
+                    .add_map(move |shape| shape.translate_y(*y - 2 * *r))
+                    .hull()
+                    .translate(v2(*r,*r))
+                ),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
                 points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
@@ -344,6 +358,42 @@ mod test {
     #[test]
     fn test_square() {
         assert_eq!(S9.scad(), "square(size = 9);");
+    }
+
+    #[test]
+    fn test_square_center() {
+        assert_eq!(D2::square(9).center().scad(),
+            "translate(v = [-4.5, -4.5]) {\n  square(size = 9);\n}"
+            );
+    }
+
+    #[test]
+    fn test_rectangle() {
+        assert_eq!(D2::rectangle( (5,9.0) ).scad(),
+          "square(size = [5, 9]);"
+          );
+    }
+
+    #[test]
+    fn test_rectangle_center() {
+        assert_eq!(D2::rectangle( (5,9.0) ).center().scad(),
+          "translate(v = [-2.5, -4.5]) {\n  square(size = [5, 9]);\n}"
+          );
+    }
+
+    #[test]
+    fn test_rounded_rectangle() {
+        assert_eq!(D2::rounded_rectangle( (5,9.0) , 2.).scad(),
+            "translate(v = [2, 2]) {\n  hull() {\n    circle(d = 4);\n    translate(v = [1, 0]) {\n      circle(d = 4);\n    }\n    translate(v = [0, 5]) {\n      union() {\n        circle(d = 4);\n        translate(v = [1, 0]) {\n          circle(d = 4);\n        }\n      }\n    }\n  }\n};"
+          );
+    }
+
+    #[test]
+    fn test_rounded_rectangle_center() {
+        assert_eq!(D2::rounded_rectangle( (5,9.0), 2 ).center().scad(),
+            "translate(v = [-2.5, -4.5]) {\n  translate(v = [2, 2]) {\n    hull() {\n      circle(d = 4);\n      translate(v = [1, 0]) {\n        circle(d = 4);\n      }\n      translate(v = [0, 5]) {\n        union() {\n          circle(d = 4);\n          translate(v = [1, 0]) {\n            circle(d = 4);\n          }\n        }\n      }\n    }\n  };\n}"
+
+        );
     }
 
     #[test]
