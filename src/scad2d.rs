@@ -82,6 +82,11 @@ impl D2 {
         D2::Circle(diameter.into())
     }
 
+    /// Create a circle of `radius` centered at the origin.
+    pub fn circle_r<IX: Into<X>>(radius: IX) -> D2 {
+        D2::Circle(2*radius.into())
+    }
+
     /// Create a square with side length `side` with lower left corner at the origin.
     pub fn square<T: Into<X>>(side: T) -> D2 {
         D2::Square(side.into())
@@ -187,6 +192,16 @@ impl D2 {
 
     pub fn polygon(points: Vec<XY>) -> D2 {
         D2::Polygon(Box::new(points))
+    }
+
+    pub fn rounded_regular_polygon<IX: Into<X>, IR: Into<X>>(num_sides: u32, radius: IX, r_corner: IR) -> D2 {
+        let r: X = radius.into();
+        let r_c: X = r_corner.into();
+        let n: X = num_sides.into();
+        D2::circle_r(r_c)
+            .translate_x(r - r_c)
+            .iter_rotate(360/n, num_sides)
+            .hull()
     }
 
     pub fn polygon2<IXY: Into<XY> + Clone>(points: Vec<IXY>) -> D2 {
@@ -564,6 +579,12 @@ mod test {
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
         assert_eq!(D2::polygon2(vec![(0,0), (1, 0), (0, 1)]).scad(),
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+    }
+
+    #[test]
+    fn test_rounded_regular_polygon() {
+        assert_eq!(D2::rounded_regular_polygon(5, 10, 1).scad(),
+            "hull() {\n  rotate(0) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(72) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(144) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(216) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(288) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n}");
     }
 
 }
