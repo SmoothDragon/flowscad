@@ -32,6 +32,7 @@ pub enum D3 {
     Scale(X, Box<D3>),
     Scale3(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
+    Mirror(XYZ, Box<D3>),
     LinearExtrude(X, Box<D2>),
     RotateExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
@@ -95,6 +96,7 @@ impl SCAD for D3 {
                 , shape.indent()),
             D3::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, shape.indent()),
             D3::Scale3(v, shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.0, v.1, v.2, shape.indent()),
+            D3::Mirror(XYZ(x,y,z), shape) => format!("mirror(v = [{}, {}, {}]) {{\n  {}\n}}", x, y, z, shape.indent()),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
                 v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -228,6 +230,10 @@ impl D3 {
         D3::Scale3(xyz, Box::new(self))
     }
 
+    pub fn mirror<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ) -> D3 {
+        D3::Mirror(ixyz.into(), Box::new(self.clone()))
+    }
+
     pub fn translate<IXYZ: Into<XYZ>>(&self, xyz: IXYZ) -> D3 {
         // TODO: Is clone needed here?
         match self {
@@ -321,7 +327,8 @@ impl D3 {
     }
 
 
-    pub fn iter_rotate<'a>(&'a self, theta: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+    pub fn iter_rotate<'a, IXYZ: Into<XYZ>>(&'a self, itheta: IXYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+        let theta = itheta.into();
         (0..n).map(move |ii| self.clone().rotate(v3(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
     }
 

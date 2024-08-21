@@ -197,7 +197,6 @@ impl<IX: Into<X>> std::ops::Mul<IX> for XY {
     type Output = XY;
     fn mul(self, other: IX) -> Self::Output {
         let y: f32 = other.into().0;
-        // v2(self.0.x * other.clone().into().0, self.0.y * other.into().0)
         v2(self.0 * y, self.1 * y)
     }
 }
@@ -284,18 +283,36 @@ impl<IX: Into<X>, IY: Into<X>, IZ: Into<X>> From<(IX, IY, IZ)> for XYZ {
     }
 }
 
-impl std::ops::Mul<f32> for XYZ {
+impl<IX: Into<X>> std::ops::Mul<IX> for XYZ {
     type Output = XYZ;
-    fn mul(self, rhs: f32) -> Self::Output {
-        v3(self.0 * rhs, self.1 * rhs, self.2 * rhs)
+    fn mul(self, other: IX) -> Self::Output {
+        let d = other.into().0;
+        XYZ(self.0 * d, self.1 * d, self.2 * d)
     }
 }
 
+/// Generalized multiplication on the left is not currently possible
+/// Each type must be specified individually
+/// TODO: This should become a macro
 
 impl std::ops::Mul<XYZ> for f32 {
     type Output = XYZ;
     fn mul(self, rhs: XYZ) -> Self::Output {
         v3(rhs.0 * self, rhs.1 * self, rhs.2 * self)
+    }
+}
+
+impl std::ops::Mul<XYZ> for i32 {
+    type Output = XYZ;
+    fn mul(self, rhs: XYZ) -> Self::Output {
+        v3(rhs.0 * self as f32, rhs.1 * self as f32, rhs.2 * self as f32)
+    }
+}
+
+impl std::ops::Mul<XYZ> for X {
+    type Output = XYZ;
+    fn mul(self, rhs: XYZ) -> Self::Output {
+        v3(rhs.0 * self.0, rhs.1 * self.0, rhs.2 * self.0)
     }
 }
 
@@ -306,6 +323,7 @@ impl<IX: Into<X>> std::ops::Div<IX> for XYZ {
         XYZ(self.0 / d, self.1 / d, self.2 / d)
     }
 }
+
 
 #[cfg(test)]
 mod test {
