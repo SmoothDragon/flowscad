@@ -16,6 +16,7 @@ fn main() {
         .translate(v3(0,6,0)*tl)
         );
     piece.push(D3::beveled_cube_block( (4, 2, 1), ll, bevel, gap)
+        .translate(v3(4,0,0)*tl)
         );
     piece.push(D3::beveled_cube_block( (4, 2, 1), ll, bevel, gap)
         .translate(v3(4,3,0)*tl)
@@ -23,10 +24,11 @@ fn main() {
     piece.push(D3::beveled_cube_block( (4, 2, 1), ll, bevel, gap)
         .translate(v3(4,6,0)*tl)
         );
-    piece.push(D3::beveled_box( v3(5.5,5.5,5.25)*ll, 3)
+    piece.push(D3::beveled_box( v3(5.5,5.5,5.25)*ll, 2)
         .difference(D3::cube(5.0*ll)
-            .translate( v3(.25,.25,.25001)*ll )
+            .translate( v3(0.25,0.25,0.25001)*ll )
             )
+        .translate( v3(-6,0,0)*ll )
         );
 
     let result = piece.clone().into_iter().union();
