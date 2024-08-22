@@ -1,6 +1,4 @@
-use std::fs;
 use flowscad::*;
-
 
 fn main() {
     let ll = 11.;

@@ -37,7 +37,7 @@ fn main() -> Result<()> {
     println!("{}", String::from_utf8_lossy(&output.stdout));
     let mut lines = output.stdout.lines();
     // let dim: u32 = lines.next().unwrap().unwrap().parse::<u32>().unwrap();
-    let dim: u32 = lines.next().unwrap()?.parse::<u32>()?;
+    let _dim: u32 = lines.next().unwrap()?.parse::<u32>()?;
     let binding = lines.next().unwrap()?;
     let vfe = binding.split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
     let vertices = (0..vfe[0])

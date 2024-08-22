@@ -23,7 +23,7 @@ fn main() {
     // let r_hexagon = 0.75 * 3.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between hexagonal faces
     // let r_square = 10.;
     // let to = D3::truncated_octahedron(l_edge);
-    let gap = 0.1;
+    // let gap = 0.1;
     let base_hex = D3::truncated_octahedron(2.2*r_square)
         .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/3.14159, 30))
         .add_map(move |x| x.rotate(v3(0,0,60)))

@@ -375,7 +375,7 @@ mod test {
     }
 
     #[test]
-    fn test_v3_div_X() {
+    fn test_v3_div_x() {
         assert_eq!(format!("{}", v3(1.,2., 4)/4), "[0.25, 0.5, 1]");
         assert_eq!(format!("{}", v3(1.,2., 4)/0.5), "[2, 4, 8]");
     }
