@@ -192,6 +192,12 @@ impl<IX: Into<X>, IY: Into<X>> From<(IX,IY)> for XY {
     }
 }
 
+impl From<[f64; 2]> for XY {
+    fn from(xy: [f64; 2]) -> XY {
+        v2(xy[0], xy[1])
+    }
+}
+
 /// Generalized multiplication on the right is possible
 impl<IX: Into<X>> std::ops::Mul<IX> for XY {
     type Output = XY;

@@ -194,6 +194,21 @@ impl D2 {
         D2::Polygon(Box::new(points))
     }
 
+    /// Create a polygon from convex hull of vertices.
+    pub fn convex_hull<T: Into<XY>, I: IntoIterator<Item=T>>(points: I) -> D2 {
+        let vertices = points.into_iter().map(|w| {
+            let v = w.into(); [v.0 as f64, v.1 as f64]
+        }).collect::<Vec<[f64; 2]>>();
+        let points = convex_hull_2d(vertices);
+        D2::Polygon(
+            Box::new(
+                points.into_iter()
+                .map(|p| Into::<XY>::into(p))
+                .collect::<Vec<XY>>()
+                )
+            )
+    }
+
     pub fn rounded_regular_polygon<IX: Into<X>, IR: Into<X>>(num_sides: u32, radius: IX, r_corner: IR) -> D2 {
         let r: X = radius.into();
         let r_c: X = r_corner.into();
@@ -579,6 +594,20 @@ mod test {
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
         assert_eq!(D2::polygon2(vec![(0,0), (1, 0), (0, 1)]).scad(),
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+    }
+
+    #[test]
+    fn test_convex_hull() {
+        assert_eq!(D2::convex_hull(vec![v2(0.,0.), v2(1., 0.), v2(0., 1.)]).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+        assert_eq!(D2::convex_hull(vec![v2(0.,0.), v2(0., 1.), v2(1., 0.)]).scad(),
+            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
+        assert_eq!(D2::convex_hull(vec![
+            v2(0.,0.), v2(0., 1.), v2(1., 0.),
+            v2(2.,0.), v2(2., 1.), v2(1, 1),
+            v2(0.,2.), v2(2., 2.), v2(1., 0.)
+        ]).scad(),
+            "polygon(points = [ [0, 0], [2, 0], [2, 2], [0, 2] ]);");
     }
 
     #[test]
