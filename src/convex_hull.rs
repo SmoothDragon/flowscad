@@ -109,18 +109,17 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
     (vertices, faces)
 }
 
-/*
-pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
-    let points_text = points.iter()
-        .map(|v3| format!("{} {} {}\n", v3[0], v3[1], v3[2]))
+pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> Vec<[f64; 2]> {
+    let points_text = points.clone().iter()
+        .map(|v2| format!("{} {}\n", v2[0], v2[1]))
         .collect::<String>();
     let mut qhull = Command::new("qhull")
-        .arg("o")
+        .arg("Fx")
         .stdin(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
         .expect("Failed to spawn qhull process");
-    let points_data = format!("3\n{}\n{}\n", points.len(), points_text); 
+    let points_data = format!("2\n{}\n{}\n", points.len(), points_text); 
 
     let mut stdin = qhull.stdin.take().expect("Failed to open stdin");
     std::thread::spawn(move || {
@@ -129,23 +128,21 @@ pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
 
     let output = qhull.wait_with_output().expect("Failed to read stdout");
     let mut lines = output.stdout.lines();
-    let _dim: u32 = lines.next().unwrap().unwrap().parse::<u32>().unwrap();
-    let binding = lines.next().unwrap().unwrap();
-    let vfe = binding.split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
-    let vertices = (0..vfe[0])
-        .map(|_| { let binding = lines.next().unwrap().unwrap();
-            TryInto::<[f64; 3]>::try_into(
-                binding.split_whitespace()
-                .map(|x| x.parse::<f64>().unwrap())
-                .collect::<Vec<f64>>()
-            ).unwrap()
-        }).collect::<Vec<_>>();
-    let faces = (0..vfe[1])
-        .map(|_| { let binding = lines.next().unwrap().unwrap();
-            binding.split_whitespace().skip(1)
-                .map(|x| x.parse::<u32>().unwrap())
-                .collect::<Vec<u32>>()
-        }).collect::<Vec<_>>();
-    (vertices, faces)
+    let num_points: usize = lines.next().unwrap().unwrap().parse::<usize>().unwrap();
+    (0..num_points)
+        .map(|_| { let binding = lines.next().unwrap().unwrap().parse::<usize>().unwrap();
+            points[binding].clone()
+        }).collect::<Vec<_>>()
 }
-*/
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_convex_hull_2d() {
+        assert_eq!(convex_hull_2d(vec![[0.,0.], [2.,0.], [1.,0.], [0.,2.], [2.,2.], [1.,1.]]),
+            vec![[0.0, 0.0], [2.0, 0.0], [2.0, 2.0], [0.0, 2.0]]);
+    }
+}
+
