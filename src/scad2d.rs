@@ -209,6 +209,17 @@ impl D2 {
             )
     }
 
+    pub fn regular_polygon<IX: Into<X>>(num_sides: u32, i_radius: IX) -> D2 {
+        let r: XY = v2(i_radius.into(), 0);
+        let theta: X = 360 / Into::<X>::into(num_sides);
+        D2::convex_hull(
+            (0..num_sides)
+            .map(|ii| Into::<[f32; 2]>::into(r.rotate_deg(ii * theta)))
+            .collect::<Vec<[f32; 2]>>()
+            )
+    }
+
+
     pub fn rounded_regular_polygon<IX: Into<X>, IR: Into<X>>(num_sides: u32, radius: IX, r_corner: IR) -> D2 {
         let r: X = radius.into();
         let r_c: X = r_corner.into();
@@ -608,6 +619,12 @@ mod test {
             v2(0.,2.), v2(2., 2.), v2(1., 0.)
         ]).scad(),
             "polygon(points = [ [0, 0], [2, 0], [2, 2], [0, 2] ]);");
+    }
+
+    #[test]
+    fn test_regular_polygon() {
+        assert_eq!(D2::regular_polygon(4, 10).scad(),
+            "polygon(points = [ [-0.0000004371139, 10], [-10, -0.0000008742278], [0.00000011924881, -10], [10, 0] ]);");
     }
 
     #[test]

@@ -123,6 +123,13 @@ impl std::ops::Mul<X> for i32 {
     }
 }
 
+impl std::ops::Mul<X> for u32 {
+    type Output = X;
+    fn mul(self, other: X) -> X {
+        X((self as f32) * other.0)
+    }
+}
+
 impl std::ops::Div<X> for f32 {
     type Output = X;
     fn div(self, other: X) -> X {
@@ -131,6 +138,13 @@ impl std::ops::Div<X> for f32 {
 }
 
 impl std::ops::Div<X> for i32 {
+    type Output = X;
+    fn div(self, other: X) -> X {
+        X((self as f32) / other.0)
+    }
+}
+
+impl std::ops::Div<X> for u32 {
     type Output = X;
     fn div(self, other: X) -> X {
         X((self as f32) / other.0)
@@ -169,6 +183,15 @@ impl std::ops::Add<X> for i32 {
 #[derive(Debug, Clone, Copy, PartialEq, Add, Neg)]
 pub struct XY(pub f32, pub f32); 
 
+impl XY {
+    pub fn rotate_deg<IX: Into<X>>(self, i_theta: IX) -> Self {
+        let theta = i_theta.into();
+        let cos_theta = (theta.0*std::f32::consts::PI/180.0).cos();
+        let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
+        XY(self.0 * cos_theta - self.1 * sin_theta, self.0 * sin_theta + self.1 * cos_theta)
+    }
+}
+
 impl std::fmt::Display for XY {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "{}", format!("[{}, {}]", &self.0, &self.1))
@@ -195,6 +218,12 @@ impl<IX: Into<X>, IY: Into<X>> From<(IX,IY)> for XY {
 impl From<[f64; 2]> for XY {
     fn from(xy: [f64; 2]) -> XY {
         v2(xy[0], xy[1])
+    }
+}
+
+impl From<[f32; 2]> for XY {
+    fn from(xy: [f32; 2]) -> Self {
+        Self(xy[0], xy[1])
     }
 }
 
@@ -391,6 +420,12 @@ mod test {
         assert_eq!(XY::from( (5_i32, 10_i32) ), v2(5., 10.));
         assert_eq!(XY::from( (5_i32, 10_u64) ), v2(5., 10.));
         assert_eq!(XY::from( (5.0_f32, 10_u64) ), v2(5., 10.));
+    }
+
+    #[test]
+    fn test_rotate_deg() {
+        assert_eq!(v2(1,0).rotate_deg(90), 
+                XY(-4.371139e-8, 1.0));
     }
 
 }
