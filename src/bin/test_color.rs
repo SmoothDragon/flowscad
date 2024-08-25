@@ -8,8 +8,8 @@ use flowscad::*;
 use anyhow::Result;
 
 fn main() -> Result<()> {
-    let e = D2::circle(4.);
-    let f = D2::circle(10.)
+    let e = D2::circle_d(4.);
+    let f = D2::circle_d(10.)
         .add(e)
         .translate(v2(4.,5.))
         .scale2(v2(3.,2.))
