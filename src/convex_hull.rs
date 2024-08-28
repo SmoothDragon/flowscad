@@ -131,7 +131,7 @@ pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> Vec<[f64; 2]> {
     let num_points: usize = lines.next().unwrap().unwrap().parse::<usize>().unwrap();
     (0..num_points)
         .map(|_| { let binding = lines.next().unwrap().unwrap().parse::<usize>().unwrap();
-            points[binding].clone()
+            points[binding]
         }).collect::<Vec<_>>()
 }
 

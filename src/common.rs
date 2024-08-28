@@ -10,10 +10,10 @@ pub trait SCAD {
 
 /// Methods for creating an SCAD object from an iterator of SCAD objects.
 pub trait DIterator<T> : Iterator<Item=T> {
-    fn hull(self: Self) -> T where Self: Iterator<Item = T>;
-    fn union(self: Self) -> T where Self: Iterator<Item = T>;
-    fn intersection(self: Self) -> T where Self: Iterator<Item = T>;
-    fn minkowski(self: Self) -> T where Self: Iterator<Item = T>;
+    fn hull(self) -> T where Self: Iterator<Item = T>;
+    fn union(self) -> T where Self: Iterator<Item = T>;
+    fn intersection(self) -> T where Self: Iterator<Item = T>;
+    fn minkowski(self) -> T where Self: Iterator<Item = T>;
 }
 
 #[derive(Clone, Debug)]
@@ -25,11 +25,11 @@ pub enum ColorEnum {
 
 
 pub trait PairedIterator<T>: IntoIterator<Item = T> {
-    fn pairs(self: Self) -> impl Iterator<Item = (T, T)> where Self: IntoIterator<Item = T>;
+    fn pairs(self) -> impl Iterator<Item = (T, T)> where Self: IntoIterator<Item = T>;
 }
 
 impl<T: Clone, I: IntoIterator<Item=T>> PairedIterator<T> for I {  
-    fn pairs(self: Self) -> impl Iterator<Item = (I::Item, I::Item)> 
+    fn pairs(self) -> impl Iterator<Item = (I::Item, I::Item)> 
     where 
         Self: IntoIterator<Item = T>
     {

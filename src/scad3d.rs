@@ -1,20 +1,20 @@
 use crate::*;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
-    fn hull(self: Self) -> D3 {
+    fn hull(self) -> D3 {
         D3::Hull(Box::new(self.collect::<Vec<D3>>()))
         // D2::Join("hull", Box::new(self.collect::<Vec<D2>>()))
     }
 
-    fn union(self: Self) -> D3 {
+    fn union(self) -> D3 {
         D3::Union(Box::new(self.collect::<Vec<D3>>()))
     }
 
-    fn intersection(self: Self) -> D3 {
+    fn intersection(self) -> D3 {
         D3::Intersection(Box::new(self.collect::<Vec<D3>>()))
     }
 
-    fn minkowski(self: Self) -> D3 {
+    fn minkowski(self) -> D3 {
         D3::Minkowski(Box::new(self.collect::<Vec<D3>>()))
     }
 }
@@ -46,7 +46,7 @@ pub enum D3 {
 
 
 pub fn indent_d3(shape: &D3) -> String {
-    format!("{}", shape).replace("\n", "\n  ")
+    format!("{}", shape).replace('\n', "\n  ")
 }
 
 impl std::fmt::Display for D3 {
@@ -98,22 +98,22 @@ impl SCAD for D3 {
             D3::Scale3(v, shape) => format!("scale(v = [{}, {}, {}]) {{\n  {}\n}}", v.0, v.1, v.2, shape.indent()),
             D3::Mirror(XYZ(x,y,z), shape) => format!("mirror(v = [{}, {}, {}]) {{\n  {}\n}}", x, y, z, shape.indent()),
             D3::Union(v) => format!( "union() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| indent_d3(x).to_string()).collect::<Vec<_>>().join("\n  ")),
             D3::Hull(v) => format!("hull() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| indent_d3(x).to_string()).collect::<Vec<_>>().join("\n  ")),
             D3::Intersection(v) => format!("intersection() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| indent_d3(x).to_string()).collect::<Vec<_>>().join("\n  ")),
             D3::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
-                v.iter().map(|x| format!("{}", indent_d3(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| indent_d3(x).to_string()).collect::<Vec<_>>().join("\n  ")),
             D3::Translate(xyz, shape) => format!("translate(v = [{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
             D3::Rotate(xyz, shape) => format!("rotate([{}, {}, {}]) {{\n  {}\n}}", xyz.0, xyz.1, xyz.2, shape.indent()),
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
             D3::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
-                v.iter().map(|x| format!("{}", x.indent())).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| x.indent().to_string()).collect::<Vec<_>>().join("\n  ")),
         }
     }
     fn indent(&self) -> String {
-        self.scad().replace("\n", "\n  ")
+        self.scad().replace('\n', "\n  ")
     }
 
 }
@@ -153,7 +153,7 @@ impl D3 {
         D3::Polyhedron(
             Box::new(
                 vert.into_iter()
-                .map(|w| Into::<XYZ>::into(w))
+                .map(Into::<XYZ>::into)
                 .collect::<Vec<XYZ>>()
                 ),
             Box::new(face)
@@ -259,7 +259,7 @@ impl D3 {
     }
 
 
-    pub fn iter_translate<'a>(&'a self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+    pub fn iter_translate(&self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
         (0..n).map(move |ii| self.clone().translate(v3(xyz.0 * ii as f32, xyz.1 * ii as f32, xyz.2 * ii as f32)))
     }
 
@@ -327,7 +327,7 @@ impl D3 {
     }
 
 
-    pub fn iter_rotate<'a, IXYZ: Into<XYZ>>(&'a self, itheta: IXYZ, n: u32) -> impl Iterator<Item = D3> + 'a {
+    pub fn iter_rotate<IXYZ: Into<XYZ>>(&self, itheta: IXYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
         let theta = itheta.into();
         (0..n).map(move |ii| self.clone().rotate(v3(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
     }
