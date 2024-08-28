@@ -2,10 +2,10 @@ use anyhow::Result;
 use flowscad::*;
 
 fn invertible_noam_bubble(r: f32) -> D3 {
-    D2::circle(r)
+    D2::circle_r(r)
         .intersection(D2::half_plane(Aim::N))
-        .add(D2::circle(r/3.0).translate( (r/3.0,0) ))
-        .add(D2::circle(r/3.0).translate( (-r/3.0,0) ))
+        .add(D2::circle_r(r/3.0).translate( (r/3.0,0) ))
+        .add(D2::circle_r(r/3.0).translate( (-r/3.0,0) ))
         .hull()
         .linear_extrude(8)
 }

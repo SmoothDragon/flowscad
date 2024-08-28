@@ -78,7 +78,7 @@ pub fn indent(shape: &D2) -> String {
 }
 impl D2 {
     /// Create a circle of `diameter` centered at the origin.
-    pub fn circle<T: Into<X>>(diameter: T) -> D2 {
+    pub fn circle_d<T: Into<X>>(diameter: T) -> D2 {
         D2::Circle(diameter.into())
     }
 
@@ -139,12 +139,12 @@ impl D2 {
     pub fn half_plane(aim: Aim) -> D2 {
         match aim {
             Aim::N => D2::square(MAX2).translate(v2(-MAX2/2., 0.)),
-            Aim::S => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
-            Aim::E => D2::square(MAX).translate(v2(0., -MAX/2.)),
-            Aim::W => D2::square(MAX).translate(v2(-MAX, -MAX/2.)),
-            Aim::U => D2::square(MAX).translate(v2(-MAX/2., 0.)),
-            Aim::D => D2::square(MAX).translate(v2(-MAX/2., -MAX)),
-            // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX)).translate(XY(0., -MAX/2.)).rotate(*theta),
+            Aim::S => D2::square(MAX2).translate(v2(-MAX2/2., -MAX2)),
+            Aim::E => D2::square(MAX2).translate(v2(0., -MAX2/2.)),
+            Aim::W => D2::square(MAX2).translate(v2(-MAX2, -MAX2/2.)),
+            Aim::U => D2::square(MAX2).translate(v2(-MAX2/2., 0.)),
+            Aim::D => D2::square(MAX2).translate(v2(-MAX2/2., -MAX2)),
+            // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX2)).translate(XY(0., -MAX2/2.)).rotate(*theta),
             // Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
             }
     }
@@ -341,7 +341,7 @@ impl SCAD for D2 {
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             D2::RoundedRectangle(XY(x,y), r) => format!("{};",
-                D2::Circle(2 * *r)
+                D2::circle_r(*r)
                     .add_map(move |shape| shape.translate_x(*x - 2 * *r))
                     .add_map(move |shape| shape.translate_y(*y - 2 * *r))
                     .hull()
@@ -386,9 +386,9 @@ mod test {
     use super::*;
     use lazy_static::lazy_static;
 
-    lazy_static!{ static ref C5: D2 = D2::circle(5); }
-    lazy_static!{ static ref C7: D2 = D2::circle(7); }
-    lazy_static!{ static ref C8: D2 = D2::circle(8.0); }
+    lazy_static!{ static ref C5: D2 = D2::circle_d(5); }
+    lazy_static!{ static ref C7: D2 = D2::circle_d(7); }
+    lazy_static!{ static ref C8: D2 = D2::circle_d(8.0); }
     lazy_static!{ static ref S9: D2 = D2::square(9.0); }
 
     #[test]
@@ -439,13 +439,13 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(D2::circle(5).add(D2::square(9)).scad(),
+        assert_eq!(D2::circle_d(5).add(D2::square(9)).scad(),
         "union() {\n  circle(d = 5);\n  square(size = 9);\n}");
     }
 
     #[test]
     fn test_color() {
-        assert_eq!(D2::circle(7_i32).add(D2::square(9)).color(ColorEnum::Red).scad(),
+        assert_eq!(D2::circle_d(7_i32).add(D2::square(9)).color(ColorEnum::Red).scad(),
         "color(\"red\") {\n  union() {\n    circle(d = 7);\n    square(size = 9);\n  }\n}"
         );
     }
@@ -487,21 +487,21 @@ mod test {
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(20, 4).union().add(D2::circle(5)).scad(),
+        assert_eq!(S9.iter_rotate(20, 4).union().add(D2::circle_d(5)).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(d = 5);\n}"
         );
     }
 
     #[test]
     fn test_d2_add_op() {
-        assert_eq!((D2::square(9) + D2::circle(5)).scad(),
+        assert_eq!((D2::square(9) + D2::circle_d(5)).scad(),
             "union() {\n  square(size = 9);\n  circle(d = 5);\n}"
         );
     }
 
     #[test]
     fn test_d2_sub_op() {
-        assert_eq!((D2::square(9) - D2::circle(5)).scad(),
+        assert_eq!((D2::square(9) - D2::circle_d(5)).scad(),
             "difference() {\n  square(size = 9);\n  circle(d = 5);\n}"
         );
     }

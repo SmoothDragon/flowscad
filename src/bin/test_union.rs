@@ -8,7 +8,7 @@ use anyhow::Result;
 use flowscad::*;
 
 fn main() -> Result<()> {
-    let e = D2::circle(4);
+    let e = D2::circle_d(4);
     // let f = e.iter_translate(1.,2.,10) .collect::<Vec<_>>() ;
     // let g = D2::Union(RefCell::new(f));
     // let g = e.iter_translate(XY(1.,2.),10).sum::<D2>();
