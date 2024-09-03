@@ -1,10 +1,11 @@
 use std::ops::*;
+use std::cmp::*;
 
 use derive_more::*;
 
 pub const PI: X = X(std::f32::consts::PI);
 
-#[derive(Clone, Copy, PartialEq, Neg)]
+#[derive(Clone, Copy, PartialEq, PartialOrd, Neg)]
 pub struct X(pub f32);
 
 impl X {
@@ -80,6 +81,14 @@ impl From<f64> for X {
         X(f as f32)
     }
 }
+
+// TODO: Fix ordering
+// impl<IX: Into<X>> std::cmp::PartialOrd<IX> for X {
+    // type Output = bool;
+    // fn partial_cmp(&self, other: &IX) -> Option<std::cmp::Ordering> {
+        // Some(self.0.cmp(&other.into().0))
+    // }
+// }
 
 impl<IX: Into<X>> std::ops::Mul<IX> for X {
     type Output = X;

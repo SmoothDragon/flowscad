@@ -46,7 +46,7 @@ impl std::ops::Sub<D2> for D2 {
 #[derive(Clone, Debug)]
 pub enum Aim {
     N, S, E, W,
-    U, D, 
+    U, D,
     // L, R,
     // Angle(X),
 }
@@ -102,12 +102,43 @@ impl D2 {
         D2::RoundedRectangle(ixy.into(), into_radius.into())
     }
 
+    pub fn sector<IR: Into<X>, IT: Into<X>>(i_r: IR, i_theta: IT) -> D2 {
+        let r = i_r.into();
+        let theta = i_theta.into();
+        if r < X(180.0) {
+            D2::half_plane(Aim::S)
+                .rotate(theta)
+                .intersection(D2::half_plane(Aim::N))
+                .intersection(D2::circle_r(r))
+        } else {
+            D2::half_plane(Aim::S)
+                .rotate(theta)
+                .add(D2::half_plane(Aim::N))
+                .intersection(D2::circle_r(r))
+        }
+    }
+
     /// Center an object, if we know how
     pub fn center(self) -> D2 {
         match self {
             D2::Square(s) => self.translate(-v2(s,s)/2),
             D2::Rectangle(XY(x,y)) => self.translate(-v2(x,y)/2),
             D2::RoundedRectangle(XY(x,y), X(_)) => self.translate(-v2(x,y)/2),
+            _ => self,
+        }
+    }
+
+    /// Round an object, if we know how
+    pub fn round<IX: Into<X>>(self, ir: IX) -> D2 {
+        let r = ir.into();
+        match self {
+            D2::Rectangle(XY(x,y)) =>
+                D2::circle_r(r)
+                    .add_map(move |shape| shape.translate_x(x - 2 * r))
+                    .add_map(move |shape| shape.translate_y(y - 2 * r))
+                    .hull()
+                    .translate(v2(r,r))
+                ,
             _ => self,
         }
     }
@@ -145,7 +176,6 @@ impl D2 {
             Aim::U => D2::square(MAX2).translate(v2(-MAX2/2., 0.)),
             Aim::D => D2::square(MAX2).translate(v2(-MAX2/2., -MAX2)),
             // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX2)).translate(XY(0., -MAX2/2.)).rotate(*theta),
-            // Aim::Angle(theta) => D2::HalfPlane(Aim::E).rotate(*theta),
             }
     }
 
@@ -313,7 +343,7 @@ impl D2 {
 
 impl std::iter::Sum for D2 {
     fn sum<I>(iter: I) -> Self
-      where 
+      where
         I: Iterator<Item = Self>
     {
         D2::Join("union", Box::new(iter.collect::<Vec<Self>>()))
@@ -322,7 +352,7 @@ impl std::iter::Sum for D2 {
 
 impl std::iter::Product for D2 {
     fn product<I>(iter: I) -> Self
-      where 
+      where
         I: Iterator<Item = Self>
     {
         D2::Join("intersection", Box::new(iter.collect::<Vec<Self>>()))
@@ -349,7 +379,7 @@ impl SCAD for D2 {
                 ),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
                 points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
-            D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
+            D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}",
                 match color {
                     ColorEnum::Blue => "\"blue\"",
                     ColorEnum::Green => "\"green\"",
@@ -631,6 +661,12 @@ mod test {
     fn test_rounded_regular_polygon() {
         assert_eq!(D2::rounded_regular_polygon(5, 10, 1).scad(),
             "hull() {\n  rotate(0) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(72) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(144) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(216) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n  rotate(288) {\n    translate(v = [9, 0]) {\n      circle(d = 2);\n    }\n  }\n}");
+    }
+
+    #[test]
+    fn test_sector() {
+        assert_eq!(D2::sector(10, 30).scad(),
+            "intersection() {\n  rotate(30) {\n    translate(v = [-500, -1000]) {\n      square(size = 1000);\n    }\n  }\n  translate(v = [-500, 0]) {\n    square(size = 1000);\n  }\n  circle(d = 20);\n}");
     }
 
 }
