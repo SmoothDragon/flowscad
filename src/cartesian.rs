@@ -72,7 +72,7 @@ impl From<i64> for X {
 
 impl From<f32> for X {
     fn from(f: f32) -> X {
-        X(f as f32)
+        X(f)
     }
 }
 
@@ -251,7 +251,7 @@ impl<IX: Into<X>> std::ops::Mul<IX> for XY {
 impl std::ops::Mul<XY> for f32 {
     type Output = XY;
     fn mul(self, rhs: XY) -> Self::Output {
-        v2(rhs.0 * self as f32, rhs.1 * self as f32)
+        v2(rhs.0 * self, rhs.1 * self)
     }
 }
 

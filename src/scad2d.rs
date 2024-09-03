@@ -6,22 +6,22 @@ use crate::*;
 pub const MAX2: f32 = 1000.;
 
 impl<T: Iterator<Item=D2>> DIterator<D2> for T {
-    fn hull(self: Self) -> D2 {
+    fn hull(self) -> D2 {
         // D2::Hull(Box::new(self.collect::<Vec<D2>>()))
         D2::Join("hull", Box::new(self.collect::<Vec<D2>>()))
     }
 
-    fn union(self: Self) -> D2 {
+    fn union(self) -> D2 {
         // D2::Union(Box::new(self.collect::<Vec<D2>>()))
         D2::Join("union", Box::new(self.collect::<Vec<D2>>()))
     }
 
-    fn intersection(self: Self) -> D2 {
+    fn intersection(self) -> D2 {
         // D2::Intersection(Box::new(self.collect::<Vec<D2>>()))
         D2::Join("intersection", Box::new(self.collect::<Vec<D2>>()))
     }
 
-    fn minkowski(self: Self) -> D2 {
+    fn minkowski(self) -> D2 {
         // D2::Minkowski(Box::new(self.collect::<Vec<D2>>()))
         D2::Join("minkowski", Box::new(self.collect::<Vec<D2>>()))
     }
@@ -74,7 +74,7 @@ pub enum D2 {
 }
 
 pub fn indent(shape: &D2) -> String {
-    format!("{}", shape).replace("\n", "\n  ")
+    format!("{}", shape).replace('\n', "\n  ")
 }
 impl D2 {
     /// Create a circle of `diameter` centered at the origin.
@@ -233,7 +233,7 @@ impl D2 {
         D2::Polygon(
             Box::new(
                 points.into_iter()
-                .map(|p| Into::<XY>::into(p))
+                .map(Into::<XY>::into)
                 .collect::<Vec<XY>>()
                 )
             )
@@ -285,7 +285,7 @@ impl D2 {
         D2::Mirror(xy, Box::new(self.clone()))
     }
 
-    pub fn iter_translate<'a>(&'a self, xy: XY, n: u32) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_translate(&self, xy: XY, n: u32) -> impl Iterator<Item = D2> + '_ {
         (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32)))
     }
 
@@ -296,17 +296,17 @@ impl D2 {
         }
     }
 
-    pub fn iter_rotate<'a, IX: Into<X>>(&'a self, theta: IX, n: u32) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_rotate<IX: Into<X>>(&self, theta: IX, n: u32) -> impl Iterator<Item = D2> + '_ {
         let angle = theta.into();
         // (0..n).map(move |ii| self.rotate(theta.into() * <u32 as Into<X>>::ii.into()))
         (0..n).map(move |ii| self.rotate(angle * ii as f32))
     }
 
-    pub fn iter_rotate_equal<'a>(&'a self, n: u32) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_rotate_equal(&self, n: u32) -> impl Iterator<Item = D2> + '_ {
         (0..n).map(move |ii| self.rotate(360./(n as f64) * ii as f64))
     }
 
-    pub fn iter_square_edge<'a, D: Into<X>>(&'a self, d: D) -> impl Iterator<Item = D2> + 'a {
+    pub fn iter_square_edge<D: Into<X>>(&self, d: D) -> impl Iterator<Item = D2> + '_ {
         let shift = d.into();
         vec![v2(shift, 0.), v2(0., shift), v2(-shift, 0.), v2(0., -shift)]
             .into_iter()
@@ -401,12 +401,12 @@ impl SCAD for D2 {
             // D2::Minkowski(v) => format!("minkowski() {{\n  {}\n}}",
                 // v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
             D2::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
-                v.iter().map(|x| format!("{}", indent(x))).collect::<Vec<_>>().join("\n  ")),
+                v.iter().map(|x| indent(x).to_string()).collect::<Vec<_>>().join("\n  ")),
             D2::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent(shape1), indent(shape2)),
         }
     }
     fn indent(&self) -> String {
-        self.scad().replace("\n", "\n  ")
+        self.scad().replace('\n', "\n  ")
     }
 
 }
