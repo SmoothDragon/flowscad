@@ -70,6 +70,7 @@ pub enum D2 {
     // Union(Box<Vec<D2>>),
     // Minkowski(Box<Vec<D2>>),
     Join(&'static str, Box<Vec<D2>>),
+    Svg(String),
     Difference(Box<D2>, Box<D2>),
 }
 
@@ -116,6 +117,10 @@ impl D2 {
                 .add(D2::half_plane(Aim::N))
                 .intersection(D2::circle_r(r))
         }
+    }
+
+    pub fn from_svg(filename: &str) -> D2 {
+        D2::Svg(filename.to_string())
     }
 
     /// Center an object, if we know how
@@ -386,6 +391,7 @@ impl SCAD for D2 {
                     ColorEnum::Red => "\"red\"",
                 }
                 , indent(shape)),
+            D2::Svg(filename) => format!("import(\"{}\", center=true);", filename),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),

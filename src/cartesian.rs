@@ -12,12 +12,28 @@ impl X {
     /// Positive X MAX is lower since it is used for super large objects that could be shifted or rotated.
     pub const MAX: X = X(f32::MAX/1000.0);
 
+    pub fn acos(self) -> Self {
+        X(self.0.acos())
+    }
+
+    pub fn asin(self) -> Self {
+        X(self.0.asin())
+    }
+
     pub fn atan(self) -> Self {
         X(self.0.atan())
     }
 
     pub fn cos(self) -> Self {
         X(self.0.cos())
+    }
+
+    pub fn sin(self) -> Self {
+        X(self.0.sin())
+    }
+
+    pub fn tan(self) -> Self {
+        X(self.0.tan())
     }
 }
 
@@ -72,7 +88,7 @@ impl From<i64> for X {
 
 impl From<f32> for X {
     fn from(f: f32) -> X {
-        X(f)
+        X(f as f32)
     }
 }
 
@@ -251,7 +267,7 @@ impl<IX: Into<X>> std::ops::Mul<IX> for XY {
 impl std::ops::Mul<XY> for f32 {
     type Output = XY;
     fn mul(self, rhs: XY) -> Self::Output {
-        v2(rhs.0 * self, rhs.1 * self)
+        v2(rhs.0 * self as f32, rhs.1 * self as f32)
     }
 }
 
