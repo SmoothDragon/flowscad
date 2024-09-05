@@ -65,6 +65,9 @@ pub enum D2 {
     Scale2(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
+    OffsetRadius(X, Box<D2>),
+    OffsetDelta(X, Box<D2>),
+    OffsetChamfer(X, Box<D2>),
     // Hull(Box<Vec<D2>>),
     // Intersection(Box<Vec<D2>>),
     // Union(Box<Vec<D2>>),
@@ -146,6 +149,18 @@ impl D2 {
                 ,
             _ => self,
         }
+    }
+
+    pub fn offset_radius<IX: Into<X>>(self, ix: IX) -> D2 {
+        D2::OffsetRadius(ix.into(), Box::new(self))
+    }
+
+    pub fn offset_delta<IX: Into<X>>(self, ix: IX) -> D2 {
+        D2::OffsetDelta(ix.into(), Box::new(self))
+    }
+
+    pub fn offset_chamfer<IX: Into<X>>(self, ix: IX) -> D2 {
+        D2::OffsetChamfer(ix.into(), Box::new(self))
     }
 
 
@@ -394,7 +409,9 @@ impl SCAD for D2 {
             D2::Svg(filename) => format!("import(\"{}\", center=true);", filename),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
-            // D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::OffsetRadius(X(x), shape) => format!("offset(r = {}) {{\n  {}\n}}", x, indent(shape)),
+            D2::OffsetDelta(X(x), shape) => format!("offset(delta = {}) {{\n  {}\n}}", x, indent(shape)),
+            D2::OffsetChamfer(X(x), shape) => format!("offset(delta = {}, chamfer=true) {{\n  {}\n}}", x, indent(shape)),
             D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
             D2::Scale2(XY(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
