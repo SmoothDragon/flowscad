@@ -9,7 +9,7 @@ fn main() -> Result<()> {
     let h_gear = X(10.);
     let result = (0..layers).
         map(|x| gear.clone()
-            .offset_radius(-h_layer*x)
+            .offset_chamfer(-h_layer*x*0.7)
             .linear_extrude(h_layer)
             .translate_z(h_layer*x)
             )
