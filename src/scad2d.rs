@@ -151,6 +151,8 @@ impl D2 {
         }
     }
 
+    /// Offset shape by circle of radius `r`.
+    /// If `r` is positive, equivalent to Minkowski sum with circle of radius `r`.
     pub fn offset_radius<IX: Into<X>>(self, ix: IX) -> D2 {
         D2::OffsetRadius(ix.into(), Box::new(self))
     }
@@ -446,7 +448,8 @@ mod test {
 
     #[test]
     fn test_circle() {
-        assert_eq!(C5.scad(), "circle(d = 5);");
+        assert_eq!(D2::circle_d(5).scad(), "circle(d = 5);");
+        assert_eq!(D2::circle_r(5).scad(), "circle(d = 10);");
     }
 
     #[test]

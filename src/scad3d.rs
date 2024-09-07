@@ -144,6 +144,16 @@ impl D3 {
         }
     }
 
+    /// Offset shape by circle of radius `r`.
+    /// If `r` is positive, equivalent to Minkowski sum with circle of radius `r`.
+    pub fn fillet_radius<R: Into<X>>(self, ir: R) -> D3 {
+        let r = ir.into();
+        self.minkowski(D3::sphere(r))
+            .invert(1000.)
+            .minkowski(D3::sphere(r))
+            .invert(1000.)
+    }
+
     /// Create a polyhedron from convex hull of vertices.
     pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
         let vertices = points.into_iter().map(|w| {
@@ -284,9 +294,25 @@ impl D3 {
         self.rotate( (0,0,theta) )
     }
 
-    /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder<H: Into<X>, D: Into<X>>(h: H, d:D) -> D3 {
+    /// Create a cylinder of height `h` and diameter `d` centered above the XY plane.
+    pub fn cylinder_d<H: Into<X>, D: Into<X>>(h: H, d:D) -> D3 {
         D3::Cylinder(h.into(), d.into())
+    }
+
+    /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
+    pub fn cylinder_r<H: Into<X>, R: Into<X>>(h: H, r:R) -> D3 {
+        D3::Cylinder(h.into(), 2*r.into())
+    }
+
+    /// Chamfered cylinder
+    pub fn chamfer_cylinder_d<H: Into<X>, D: Into<X>, C: Into<X>>(ih: H, id:D, ic:C) -> D3 {
+        let h = ih.into();
+        let d = id.into();
+        let c = ic.into();
+        D3::cylinder_d(h-2*c, d)
+            .translate_z(c)
+            .add(D3::cylinder_d(h, d-2*c))
+            .hull()
     }
 
     pub fn add(self, other: D3) -> D3 {
@@ -448,12 +474,13 @@ mod test {
 
     #[test]
     fn test_cylinder() {
-        assert_eq!(D3::cylinder(10.0, 5).scad(), "cylinder(h = 10, d = 5);");
+        assert_eq!(D3::cylinder_d(10.0, 5).scad(), "cylinder(h = 10, d = 5);");
+        assert_eq!(D3::cylinder_r(10.0, 5).scad(), "cylinder(h = 10, d = 10);");
     }
 
     #[test]
     fn test_cylinder_center() {
-        assert_eq!(D3::cylinder(8.0, 5).center().scad(), 
+        assert_eq!(D3::cylinder_d(8.0, 5).center().scad(), 
                    "translate(v = [0, 0, -4]) {\n  cylinder(h = 8, d = 5);\n}");
     }
 

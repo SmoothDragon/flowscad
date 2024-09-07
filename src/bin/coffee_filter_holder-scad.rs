@@ -9,10 +9,10 @@ fn main() {
     let r_outer = 37.;
     let h_rim = 100;
      
-    let holder = D3::cylinder(h_rim, r_inner)
+    let holder = D3::cylinder_r(h_rim, r_inner)
         .rotate(v3(30., 0., 30.))
         .translate(v3(r_outer, 0, -10))
-        .add(D3::cylinder(h_rim, r_inner))
+        .add(D3::cylinder_r(h_rim, r_inner))
         .hull()
         .iter_rotate(v3(0.,0.,15.), 24)
         .union()

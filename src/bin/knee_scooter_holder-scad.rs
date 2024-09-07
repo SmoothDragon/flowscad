@@ -23,10 +23,10 @@ fn main() {
         .hull()
         ;
 
-    let holder = D3::cylinder(w_top_bar, d_top_bar+2.0*h_band).center() // Outer top bar
+    let holder = D3::cylinder_d(w_top_bar, d_top_bar+2.0*h_band).center() // Outer top bar
         .rotate_x(90)
         .add( // Outer vertical
-            D3::cylinder(h_post_drop, d_top_bar+2.0*h_band).center()
+            D3::cylinder_d(h_post_drop, d_top_bar+2.0*h_band).center()
             .translate_z(-h_post_drop/2.0)
             )
         .add( // horizontal extension of vertical bar
@@ -45,15 +45,15 @@ fn main() {
              .rotate_y(120)
              .translate(v3(d_top_bar/2.0,0,-h_post_drop_hook))
              )
-        .difference(D3::cylinder(h_post_drop+1.0, d_vert_bar).center()
+        .difference(D3::cylinder_d(h_post_drop+1.0, d_vert_bar).center()
             .translate_z(-h_post_drop/2.0)
             )
         .difference(
-            D3::cylinder(w_top_bar+1.0, d_top_bar).center()
+            D3::cylinder_d(w_top_bar+1.0, d_top_bar).center()
             .rotate_x(90)
             )
         .difference(
-            D3::cylinder(d_top_bar+3.0*h_band, h_post_hole).center()
+            D3::cylinder_d(d_top_bar+3.0*h_band, h_post_hole).center()
             .rotate_y(90)
             .translate_z(-h_post_hole_center)
             )
