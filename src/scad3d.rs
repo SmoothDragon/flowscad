@@ -130,8 +130,13 @@ impl D3 {
     }
 
     /// Create a sphere with `radius` centered at the origin.
-    pub fn sphere<T: Into<X>>(radius: T) -> D3 {
+    pub fn sphere_r<T: Into<X>>(radius: T) -> D3 {
         D3::Sphere(radius.into())
+    }
+
+    /// Create a sphere with `diameter` centered at the origin.
+    pub fn sphere_d<T: Into<X>>(diameter: T) -> D3 {
+        D3::Sphere(diameter.into()/2)
     }
 
     /// Center an object, if we know how
@@ -148,9 +153,9 @@ impl D3 {
     /// If `r` is positive, equivalent to Minkowski sum with circle of radius `r`.
     pub fn fillet_radius<R: Into<X>>(self, ir: R) -> D3 {
         let r = ir.into();
-        self.minkowski(D3::sphere(r))
+        self.minkowski(D3::sphere_r(r))
             .invert(1000.)
-            .minkowski(D3::sphere(r))
+            .minkowski(D3::sphere_r(r))
             .invert(1000.)
     }
 
@@ -222,8 +227,8 @@ impl D3 {
     }
 
     /// Create a spheroid with radii, `r1, r2, r3` centered at the origin.
-    pub fn spheroid(radii: XYZ) -> D3 {
-        D3::Sphere(X(1.0)).scale3(radii)
+    pub fn spheroid<IXYZ: Into<XYZ>>(radii: IXYZ) -> D3 {
+        D3::sphere_r(1).scale3(radii.into())
     }
 
     pub fn color(self, color_name: ColorEnum) -> D3 {
@@ -235,9 +240,14 @@ impl D3 {
         D3::Scale(scale_factor.into(), Box::new(self.clone()))
     }
 
+    pub fn scale_x<IX: Into<X>>(&self, scale_factor: IX) -> D3 {
+        self.clone().scale3( (scale_factor,1,1) )
+    }
+
+
     /// Scale in `x`, `y` and `z` directions.
-    pub fn scale3(self, xyz: XYZ) -> D3 {
-        D3::Scale3(xyz, Box::new(self))
+    pub fn scale3<IXYZ: Into<XYZ>>(self, xyz: IXYZ) -> D3 {
+        D3::Scale3(xyz.into(), Box::new(self))
     }
 
     pub fn mirror<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ) -> D3 {
@@ -321,11 +331,11 @@ impl D3 {
         let c = chamfer.into();
         let h = height.into();
 
-        let outer = D2::regular_polygon(6, d)
+        let outer = D2::regular_polygon(n, d)
             .linear_extrude(h- 2*c)
             .translate_z(c)
             ;
-        let inner = D2::regular_polygon(6, d - 2*c/3.0_f64.sqrt())
+        let inner = D2::regular_polygon(n, d - 2*c/3.0_f64.sqrt())
             .linear_extrude(h)
             ;
         (outer + inner).hull()
@@ -438,7 +448,7 @@ impl D3 {
         let side: X = i_side.into();
         D3::cube(side)
             .translate(v3(-side*0.5,-side*0.5,-side*0.5))
-            .intersection(D3::sphere(side * (1.0/3.0_f32.sqrt())))
+            .intersection(D3::sphere_r(side * (1.0/3.0_f32.sqrt())))
     }
 
     pub fn truncated_octahedron(l_edge: f64) -> D3 {
@@ -478,14 +488,11 @@ impl std::ops::Sub<D3> for D3 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use lazy_static::lazy_static;
-
-    lazy_static!{ static ref S5: D3 = D3::sphere(5); }
-    lazy_static!{ static ref C9: D3 = D3::cube(9.0); }
 
     #[test]
     fn test_sphere() {
-        assert_eq!(D3::sphere(5).scad(), "sphere(r = 5);");
+        assert_eq!(D3::sphere_r(5).scad(), "sphere(r = 5);");
+        assert_eq!(D3::sphere_d(5).scad(), "sphere(r = 2.5);");
     }
 
     #[test]
@@ -525,13 +532,13 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(D3::sphere(5).add(D3::cube(9)).scad(),
+        assert_eq!(D3::sphere_r(5).add(D3::cube(9)).scad(),
         "union() {\n  sphere(r = 5);\n  cube(size = 9);\n}");
     }
 
     #[test]
     fn test_color() {
-        assert_eq!(D3::sphere(7_i32).add(D3::cube(9)).color(ColorEnum::Red).scad(),
+        assert_eq!(D3::sphere_r(7_i32).add(D3::cube(9)).color(ColorEnum::Red).scad(),
         "color(\"red\") {\n  union() {\n    sphere(r = 7);\n    cube(size = 9);\n  }\n}"
         );
     }
@@ -633,6 +640,13 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_d3_sub_op() {
+        assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
+            "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
+        );
+    }
+
     /*
     #[test]
     fn test_add_map() {
@@ -664,15 +678,8 @@ mod test {
 
     #[test]
     fn test_d3_add_op() {
-        assert_eq!((D3::cube(9) + D3::sphere(5)).scad(),
+        assert_eq!((D3::cube(9) + D3::sphere_r(5)).scad(),
             "union() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
-        );
-    }
-
-    #[test]
-    fn test_d3_sub_op() {
-        assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
-            "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
         );
     }
 

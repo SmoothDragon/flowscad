@@ -564,7 +564,7 @@ mod test {
 
     #[test]
     fn test_d3_add_op() {
-        assert_eq!((D3::cube(9) + D3::sphere(5)).scad(),
+        assert_eq!((D3::cube(9) + D3::sphere_r(5)).scad(),
             "union() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
         );
     }

@@ -3,7 +3,7 @@ use anyhow::Result;
 
 
 fn main() -> Result<()> {
-    let d_peg = X(5.5);
+    let d_peg = X(5.6);
     let h_base = X(3.0);
     let h_peg = X(3.0);
     let inner_spread = X(29.4);
