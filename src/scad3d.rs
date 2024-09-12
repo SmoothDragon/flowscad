@@ -315,6 +315,22 @@ impl D3 {
             .hull()
     }
 
+    /// Chamfered regular polygon prism
+    pub fn chamfer_regular_polygon_prism<H: Into<X>, D: Into<X>, C: Into<X>>(n: u32, height: H, diameter:D, chamfer:C) -> D3 {
+        let d = diameter.into();
+        let c = chamfer.into();
+        let h = height.into();
+
+        let outer = D2::regular_polygon(6, d)
+            .linear_extrude(h- 2*c)
+            .translate_z(c)
+            ;
+        let inner = D2::regular_polygon(6, d - 2*c/3.0_f64.sqrt())
+            .linear_extrude(h)
+            ;
+        (outer + inner).hull()
+    }
+
     pub fn add(self, other: D3) -> D3 {
         match self { // Combine Unions if possible
             D3::Union(vec) => {
