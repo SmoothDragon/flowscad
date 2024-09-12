@@ -244,6 +244,13 @@ impl D3 {
         self.clone().scale3( (scale_factor,1,1) )
     }
 
+    pub fn scale_y<IX: Into<X>>(&self, scale_factor: IX) -> D3 {
+        self.clone().scale3( (1,scale_factor,1) )
+    }
+
+    pub fn scale_z<IX: Into<X>>(&self, scale_factor: IX) -> D3 {
+        self.clone().scale3( (1,1,scale_factor) )
+    }
 
     /// Scale in `x`, `y` and `z` directions.
     pub fn scale3<IXYZ: Into<XYZ>>(self, xyz: IXYZ) -> D3 {
@@ -644,6 +651,19 @@ mod test {
     fn test_d3_sub_op() {
         assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
             "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
+        );
+    }
+
+    #[test]
+    fn test_scale() {
+        assert_eq!(D3::cube(9).scale_x(5).scad(), 
+                   "scale(v = [5, 1, 1]) {\n  cube(size = 9);\n}"
+        );
+        assert_eq!(D3::cube(9).scale_y(5).scad(), 
+                   "scale(v = [1, 5, 1]) {\n  cube(size = 9);\n}"
+        );
+        assert_eq!(D3::cube(9).scale_z(5).scad(), 
+                   "scale(v = [1, 1, 5]) {\n  cube(size = 9);\n}"
         );
     }
 
