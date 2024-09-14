@@ -1,7 +1,15 @@
 [package]
 name = "flowscad"
+description = "2D graphic and 3D object design with a Rustic functional approach. SVG and OpenSCAD output."
+readme = "README.md"
 version = "0.1.0"
+authors = [ "Thomas G. Draper" ]
 edition = "2021"
+repository = "https://github.com/SmoothDragon/flowscad"
+license = "GNU Lesser General Public License v3.0 or later"
+keywords = ["scad", "svg", "graphics", "2D", "3D"]
+categories = ["graphics", "mathematics"]
+exclude = ["/src/bin"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -9,10 +17,5 @@ edition = "2021"
 anyhow = "1.0.86"
 derive_more = "0.99.18"
 itertools = "0.12.1"
-lazy_static = "1.4.0"
-nalgebra = "0.32.6"
-num-traits = "0.2.19"
 qhull = "0.3.1"
-typed_floats = "1.0.1"
-
 

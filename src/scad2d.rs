@@ -439,12 +439,6 @@ impl SCAD for D2 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use lazy_static::lazy_static;
-
-    lazy_static!{ static ref C5: D2 = D2::circle_d(5); }
-    lazy_static!{ static ref C7: D2 = D2::circle_d(7); }
-    lazy_static!{ static ref C8: D2 = D2::circle_d(8.0); }
-    lazy_static!{ static ref S9: D2 = D2::square(9.0); }
 
     #[test]
     fn test_circle() {
@@ -454,7 +448,7 @@ mod test {
 
     #[test]
     fn test_square() {
-        assert_eq!(S9.scad(), "square(size = 9);");
+        assert_eq!(D2::square(9).scad(), "square(size = 9);");
     }
 
     #[test]
@@ -508,42 +502,42 @@ mod test {
 
     #[test]
     fn test_iter_translate() {
-        assert_eq!(C5.iter_translate(v2(1.,2.),4).union().scad(),
+        assert_eq!(D2::circle_d(5).iter_translate(v2(1.,2.),4).union().scad(),
             "union() {\n  translate(v = [0, 0]) {\n    circle(d = 5);\n  }\n  translate(v = [1, 2]) {\n    circle(d = 5);\n  }\n  translate(v = [2, 4]) {\n    circle(d = 5);\n  }\n  translate(v = [3, 6]) {\n    circle(d = 5);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_rotate() {
-        assert_eq!(S9.iter_rotate(20, 4).sum::<D2>().scad(),
+        assert_eq!(D2::square(9).iter_rotate(20, 4).sum::<D2>().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_intersection() {
-        assert_eq!(S9.iter_rotate(20, 4).product::<D2>().scad(),
+        assert_eq!(D2::square(9).iter_rotate(20, 4).product::<D2>().scad(),
             "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_union() {
-        assert_eq!(S9.iter_rotate(20, 4).union().scad(),
+        assert_eq!(D2::square(9).iter_rotate(20, 4).union().scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_add_map() {
-        assert_eq!(S9.iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
+        assert_eq!(D2::square(9).iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  mirror(v = [1, 0]) {\n    union() {\n      rotate(0) {\n        square(size = 9);\n      }\n      rotate(20) {\n        square(size = 9);\n      }\n      rotate(40) {\n        square(size = 9);\n      }\n      rotate(60) {\n        square(size = 9);\n      }\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(20, 4).union().add(D2::circle_d(5)).scad(),
+        assert_eq!(D2::square(9).iter_rotate(20, 4).union().add(D2::circle_d(5)).scad(),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(d = 5);\n}"
         );
     }
@@ -578,56 +572,56 @@ mod test {
 
     #[test]
     fn test_iter_hull() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).hull()),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).hull()),
             "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_minkowski() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).minkowski()),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).minkowski()),
             "minkowski() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_union() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).union()),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).union()),
             "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_intersection() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection()),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).intersection()),
             "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_linear_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection().linear_extrude(10)),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).intersection().linear_extrude(10)),
             "linear_extrude(height = 10) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_rotate_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection().rotate_extrude(180)),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).intersection().rotate_extrude(180)),
             "rotate_extrude(angle = 180) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_rotate_rotate() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).map(move |x| x.rotate(10)).hull()),
+        assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).map(move |x| x.rotate(10)).hull()),
             "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_translate_translate() {
-        assert_eq!(C5.iter_translate(v2(1.,2.),4).map(move |x| x.translate(v2(-1., -1.))).union().scad(),
+        assert_eq!(D2::circle_d(5).iter_translate(v2(1.,2.),4).map(move |x| x.translate(v2(-1., -1.))).union().scad(),
             "union() {\n  translate(v = [-1, -1]) {\n    circle(d = 5);\n  }\n  translate(v = [0, 1]) {\n    circle(d = 5);\n  }\n  translate(v = [1, 3]) {\n    circle(d = 5);\n  }\n  translate(v = [2, 5]) {\n    circle(d = 5);\n  }\n}"
         );
     }
