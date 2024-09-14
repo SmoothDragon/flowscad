@@ -174,36 +174,6 @@ impl D3 {
             Box::new(face)
             )
     }
-    /*
-    pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
-        let mut faces: Vec<Vec<u32>> = Vec::new();
-        let mut vertex: BTreeMap<u32, XYZ> = BTreeMap::new();
-        let vertex_iter = points.into_iter()
-            .map(|w| {let v = w.into(); [v.0 as f64, v.1 as f64, v.2 as f64]});
-        let qh = Qh::builder().compute(true).build_from_iter(vertex_iter).unwrap();
-
-        for face in qh.faces() {
-            let face_num = face.vertices().unwrap().iter()
-                .map(|v| {
-                    let v_id = v.id()-1;  // 1-indexed to 0-indexed
-                    vertex.entry(v_id)
-                        .or_insert_with(|| {
-                            let xyz =v.point();
-                            v3(xyz[0], xyz[1], xyz[2])
-                        });
-                    v_id
-                }).collect::<Vec<u32>>();
-            faces.push(face_num);
-        }
-        // Given the BTreeMap contains `n` distinct u32 entries,
-        // assert the first entry is `0` and the last entry is `n-1`.
-        // This proves all values `0..n` are present. 
-        assert!(*vertex.first_entry().unwrap().key() == 0);
-        assert!(*vertex.last_entry().unwrap().key() as usize == vertex.len()-1);
-        let vertices: Vec<XYZ> = vertex.into_values().collect();
-        D3::Polyhedron(Box::new(vertices), Box::new(faces))
-    }
-    */
 
     pub fn half_space(aim: Aim) -> D3 {
         match aim {
@@ -269,10 +239,6 @@ impl D3 {
         }
     }
 
-    // pub fn translate(self, xyz: XYZ) -> D3 {
-        // D3::Translate(xyz, Box::new(self))
-    // }
-
     pub fn translate_x<T: Into<X>>(self, x: T) -> D3 {
         D3::Translate(v3(x,0,0), Box::new(self))
     }
@@ -285,18 +251,17 @@ impl D3 {
         D3::Translate(v3(0,0,z), Box::new(self))
     }
 
-
-    pub fn iter_translate(&self, xyz: XYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
-        (0..n).map(move |ii| self.clone().translate(v3(xyz.0 * ii as f32, xyz.1 * ii as f32, xyz.2 * ii as f32)))
+    pub fn iter_translate<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
+        let xyz = ixyz.into();
+        (0..n).map(move |ii| self.clone().translate(xyz * ii))
     }
 
-    // pub fn iter_translate2<'a, X: Into<X> + 'a, Y: Into<X> + 'a, Z: Into<X> + 'a>(&'a self, x: X, y: Y, z: Z, n: u32) 
-        // -> impl Iterator<Item = D3> + 'a {
-        // (0..n).map(move |ii| self.clone().translate(x.clone().into(), y.clone().into(), z.clone().into()))
-    // }
 
-    pub fn rotate<IXYZ: Into<XYZ>>(&self, xyz: IXYZ) -> D3 {
-        D3::Rotate(xyz.into(), Box::new(self.clone()))
+    pub fn rotate<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ) -> D3 {
+        match self {
+            D3::Rotate(xyz, d3) => D3::Rotate(*xyz + ixyz.into(), d3.clone()),
+            _ => D3::Rotate(ixyz.into(), Box::new(self.clone())),
+        }
     }
 
     pub fn rotate_x<IX: Into<X>>(&self, theta: IX) -> D3 {
@@ -549,7 +514,6 @@ mod test {
         "color(\"red\") {\n  union() {\n    sphere(r = 7);\n    cube(size = 9);\n  }\n}"
         );
     }
-}
     #[test]
     fn test_iter_translate() {
         assert_eq!(D3::cube(3).iter_translate(v3(1.,2.,3.),4).union().scad(),
@@ -648,13 +612,6 @@ mod test {
     }
 
     #[test]
-    fn test_d3_sub_op() {
-        assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
-            "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
-        );
-    }
-
-    #[test]
     fn test_scale() {
         assert_eq!(D3::cube(9).scale_x(5).scad(), 
                    "scale(v = [5, 1, 1]) {\n  cube(size = 9);\n}"
@@ -667,32 +624,17 @@ mod test {
         );
     }
 
-    /*
     #[test]
     fn test_add_map() {
-        assert_eq!(D3::cube(9).iter_rotate(20, 4).union().add_map(|x| x.mirror(v2(1., 0.))).scad(),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  mirror(v = [1, 0]) {\n    union() {\n      rotate(0) {\n        square(size = 9);\n      }\n      rotate(20) {\n        square(size = 9);\n      }\n      rotate(40) {\n        square(size = 9);\n      }\n      rotate(60) {\n        square(size = 9);\n      }\n    }\n  }\n}"
+        assert_eq!(D3::cube(9).iter_rotate((10,20,30), 4).union().add_map(|x| x.mirror((1., 0., 0))).scad(),
+             "union() {\n  rotate([0, 0, 0]) {\n    cube(size = 9);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 9);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 9);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 9);\n  }\n  mirror(v = [1, 0, 0]) {\n    union() {\n      rotate([0, 0, 0]) {\n        cube(size = 9);\n      }\n      rotate([10, 20, 30]) {\n        cube(size = 9);\n      }\n      rotate([20, 40, 60]) {\n        cube(size = 9);\n      }\n      rotate([30, 60, 90]) {\n        cube(size = 9);\n      }\n    }\n  }\n}"
         );
     }
 
     #[test]
     fn test_union_union() {
-        assert_eq!(S9.iter_rotate(20, 4).union().add(D2::circle(5)).scad(),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n  circle(r = 5);\n}"
-        );
-    }
-
-    #[test]
-    fn test_d2_add_op() {
-        assert_eq!((D2::square(9) + D2::circle(5)).scad(),
-            "union() {\n  square(size = 9);\n  circle(r = 5);\n}"
-        );
-    }
-
-    #[test]
-    fn test_d2_sub_op() {
-        assert_eq!((D2::square(9) - D2::circle(5)).scad(),
-            "difference() {\n  square(size = 9);\n  circle(r = 5);\n}"
+        assert_eq!(D3::cube(9).iter_rotate((10,20,30), 4).union().add(D3::sphere_d(5)).scad(),
+        "union() {\n  rotate([0, 0, 0]) {\n    cube(size = 9);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 9);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 9);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 9);\n  }\n  sphere(r = 2.5);\n}"
         );
     }
 
@@ -704,73 +646,61 @@ mod test {
     }
 
     #[test]
+    fn test_d3_sub_op() {
+        assert_eq!((D3::cube(9) - D3::sphere_r(5)).scad(),
+            "difference() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
+        );
+        assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
+            "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
+        );
+    }
+
+
+    #[test]
     fn test_iter_hull() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).hull()),
-            "hull() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(5).iter_rotate((10,20,30.), 4).hull().scad(),
+            "hull() {\n  rotate([0, 0, 0]) {\n    cube(size = 5);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 5);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 5);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 5);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_minkowski() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).minkowski()),
-            "minkowski() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(4).iter_rotate((10,20,30), 4).minkowski().scad(),
+            "minkowski() {\n  rotate([0, 0, 0]) {\n    cube(size = 4);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 4);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 4);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 4);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_union() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).union()),
-            "union() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(4).iter_rotate((10,20,30), 4).union().scad(),
+            "union() {\n  rotate([0, 0, 0]) {\n    cube(size = 4);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 4);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 4);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 4);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_intersection() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection()),
-            "intersection() {\n  rotate(0) {\n    square(size = 9);\n  }\n  rotate(20) {\n    square(size = 9);\n  }\n  rotate(40) {\n    square(size = 9);\n  }\n  rotate(60) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(4).iter_rotate((10,20,30), 4).intersection().scad(),
+            "intersection() {\n  rotate([0, 0, 0]) {\n    cube(size = 4);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 4);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 4);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 4);\n  }\n}"
         );
     }
 
-    #[test]
-    fn test_linear_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection().linear_extrude(10)),
-            "linear_extrude(height = 10) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
-        );
-    }
 
-    #[test]
-    fn test_rotate_extrude() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).intersection().rotate_extrude(180)),
-            "rotate_extrude(angle = 180) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
-        );
-    }
 
     #[test]
     fn test_iter_rotate_rotate() {
-        assert_eq!(format!("{}", S9.iter_rotate(20, 4).map(move |x| x.rotate(10)).hull()),
-            "hull() {\n  rotate(10) {\n    square(size = 9);\n  }\n  rotate(30) {\n    square(size = 9);\n  }\n  rotate(50) {\n    square(size = 9);\n  }\n  rotate(70) {\n    square(size = 9);\n  }\n}"
+        assert_eq!(D3::cube(4).iter_rotate((1,2,3), 4).map(move |x| x.rotate((10,20,30))).hull().scad(),
+            "hull() {\n  rotate([10, 20, 30]) {\n    cube(size = 4);\n  }\n  rotate([11, 22, 33]) {\n    cube(size = 4);\n  }\n  rotate([12, 24, 36]) {\n    cube(size = 4);\n  }\n  rotate([13, 26, 39]) {\n    cube(size = 4);\n  }\n}"
+        );
+        assert_eq!(D3::cube(4).iter_rotate((1,2,3), 4).map(move |x| x.rotate_x(90)).hull().scad(),
+            "hull() {\n  rotate([90, 0, 0]) {\n    cube(size = 4);\n  }\n  rotate([91, 2, 3]) {\n    cube(size = 4);\n  }\n  rotate([92, 4, 6]) {\n    cube(size = 4);\n  }\n  rotate([93, 6, 9]) {\n    cube(size = 4);\n  }\n}"
         );
     }
 
     #[test]
     fn test_iter_translate_translate() {
-        assert_eq!(C5.iter_translate(v2(1.,2.),4).map(move |x| x.translate(v2(-1., -1.))).union().scad(),
-            "union() {\n  translate(v = [-1, -1]) {\n    circle(r = 5);\n  }\n  translate(v = [0, 1]) {\n    circle(r = 5);\n  }\n  translate(v = [1, 3]) {\n    circle(r = 5);\n  }\n  translate(v = [2, 5]) {\n    circle(r = 5);\n  }\n}"
+        assert_eq!(D3::cube(4).iter_translate((1,2,3), 4).map(move |x| x.translate((10,20,30))).hull().scad(),
+            "hull() {\n  translate(v = [10, 20, 30]) {\n    cube(size = 4);\n  }\n  translate(v = [11, 22, 33]) {\n    cube(size = 4);\n  }\n  translate(v = [12, 24, 36]) {\n    cube(size = 4);\n  }\n  translate(v = [13, 26, 39]) {\n    cube(size = 4);\n  }\n}"
         );
     }
 
-
-    #[test]
-    fn test_triangle() {
-        assert_eq!(D2::triangle(v2(0.,0.), v2(1., 0.), v2(0., 1.)).scad(),
-            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
-    }
-
-    #[test]
-    fn test_polygon() {
-        assert_eq!(D2::polygon(vec![v2(0.,0.), v2(1., 0.), v2(0., 1.)]).scad(),
-            "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
-    }
-
 }
-*/
