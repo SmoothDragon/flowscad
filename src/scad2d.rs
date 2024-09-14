@@ -58,6 +58,8 @@ pub enum D2 {
     Square(X),
     Rectangle(XY),
     RoundedRectangle(XY, X),
+    // Path(X, Box<Vex<XY>),
+    // Cycle(X, Box<Vex<XY>),
     Polygon(Box<Vec<XY>>),
     Color(ColorEnum, Box<D2>),
     Rotate(X, Box<D2>),
@@ -100,6 +102,24 @@ impl D2 {
     pub fn rectangle<IXY: Into<XY>>(xy: IXY) -> D2 {
         D2::Rectangle(xy.into())
     }
+
+    /// Create a line segment from (x0,y0) to (x1,y1) of width w
+    pub fn line<IXY0: Into<XY>, IXY1: Into<XY>, W: Into<X>>(ixy0: IXY0, ixy1: IXY1, iw: W) -> D2 {
+        let XY(x0, y0) = ixy0.into();
+        let XY(x1, y1) = ixy1.into();
+        let w = iw.into();
+        let angle = if x0 == x1 {
+            X(90.)
+        } else {
+            X(((y1-y0)/(x1-x0)).atan()*180.0/3.1415926)
+        };
+        let length = ((x1-x0).powf(2.0) + (y1-y0).powf(2.0)).powf(0.5);
+        D2::rectangle( (length, w) )
+            .translate_y(-w/2)
+            .rotate(angle)
+            .translate( if x0<x1 { XY(x0, y0) } else { XY(x1, y1) } )
+    }
+
 
     /// Create a rounded rectangle with lower left corner at the origin.
     pub fn rounded_rectangle<IX: Into<X>, IXY: Into<XY>>(ixy: IXY, into_radius: IX) -> D2 {
@@ -399,6 +419,8 @@ impl SCAD for D2 {
                     .hull()
                     .translate(v2(*r,*r))
                 ),
+            // D2::Path(width, points) => format!("polygon(points = [ {} ]);",
+                // points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
             D2::Polygon(points) => format!("polygon(points = [ {} ]);",
                 points.iter().map(|x| format!("{}", x)).collect::<Vec<_>>().join(", ")),
             D2::Color(color, shape) => format!("color({}) {{\n  {}\n}}",
@@ -462,6 +484,13 @@ mod test {
     fn test_rectangle() {
         assert_eq!(D2::rectangle( (5,9.0) ).scad(),
           "square(size = [5, 9]);"
+          );
+    }
+
+    #[test]
+    fn test_line() {
+        assert_eq!(D2::line( (0,0), (1,1), 1 ).scad(),
+            "translate(v = [0, 0]) {\n  rotate(45.000004) {\n    translate(v = [0, -0.5]) {\n      square(size = [1.4142135, 1]);\n    }\n  }\n}"
           );
     }
 

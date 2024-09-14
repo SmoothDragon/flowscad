@@ -35,6 +35,10 @@ impl X {
     pub fn tan(self) -> Self {
         X(self.0.tan())
     }
+
+    pub fn powf<IX: Into<X>>(self, exp: IX) -> Self {
+        Self(self.0.powf(exp.into().0))
+    }
 }
 
 impl std::fmt::Debug for X {
@@ -60,6 +64,12 @@ impl std::ops::SubAssign for X {
         *self = Self(self.0 - other.0);
     }
 }
+
+// impl std::ops::BitXor for X {
+    // fn bit_xor(&mut self, other: Self) {
+        // *self = Self(self.0.powf(other.0));
+    // }
+// }
 
 // TODO: Macro to replace all this?
 impl From<u32> for X {
