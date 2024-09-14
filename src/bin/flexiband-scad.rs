@@ -1,4 +1,9 @@
 use flowscad::*;
+use anyhow::Result;
+
+fn main() -> Result<()> {
+    Ok(())
+}
 
 /*
 
