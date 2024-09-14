@@ -1,10 +1,12 @@
 [package]
 name = "flowscad"
-description = "2D graphic and 3D object design with a Rustic functional approach. SVG and OpenSCAD output."
-readme = "README.md"
 version = "0.1.0"
 authors = [ "Thomas G. Draper" ]
 edition = "2021"
+rust-version = "1.81"
+description = "2D graphic and 3D object design with a Rustic functional approach. SVG and OpenSCAD output."
+documentation = "https://docs.rs/flowscad"
+readme = "README.md"
 repository = "https://github.com/SmoothDragon/flowscad"
 license = "GNU Lesser General Public License v3.0 or later"
 keywords = ["scad", "svg", "graphics", "2D", "3D"]
