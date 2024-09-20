@@ -1,6 +1,5 @@
 //! Create OpenSCAD files using Rust.
 
-
 use crate::*;
 
 pub const MAX2: f32 = 1000.;
@@ -59,8 +58,9 @@ pub enum D2 {
     Rectangle(XY),
     RoundedRectangle(XY, X),
     // Path(X, Box<Vex<XY>),
-    // Cycle(X, Box<Vex<XY>),
+    // Cycle(Box<Vex<XY>, X),
     Polygon(Box<Vec<XY>>),
+    Text(String),
     Color(ColorEnum, Box<D2>),
     Rotate(X, Box<D2>),
     Scale(X, Box<D2>),
@@ -83,6 +83,11 @@ pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace('\n', "\n  ")
 }
 impl D2 {
+    /// Create a circle using variable inputs centered at the origin.
+    // pub fn circle<T: Into<X>>(diameter: T) -> D2 {
+        // D2::Circle(diameter.into())
+    // }
+
     /// Create a circle of `diameter` centered at the origin.
     pub fn circle_d<T: Into<X>>(diameter: T) -> D2 {
         D2::Circle(diameter.into())
@@ -103,6 +108,10 @@ impl D2 {
         D2::Rectangle(xy.into())
     }
 
+    pub fn text(letters: String) -> D2 {
+        D2::Text(letters)
+    }
+
     /// Create a line segment from (x0,y0) to (x1,y1) of width w
     pub fn line<IXY0: Into<XY>, IXY1: Into<XY>, W: Into<X>>(ixy0: IXY0, ixy1: IXY1, iw: W) -> D2 {
         let XY(x0, y0) = ixy0.into();
@@ -120,6 +129,13 @@ impl D2 {
             .translate( if x0<x1 { XY(x0, y0) } else { XY(x1, y1) } )
     }
 
+    pub fn cycle<IX: Into<X>>(points: Vec<XY>, width: IX) -> D2 {
+        let w = width.into();
+        points.into_iter()
+            .pairs()
+            .map(|(a,b)| D2::line(a, b, w))
+            .union()
+    }
 
     /// Create a rounded rectangle with lower left corner at the origin.
     pub fn rounded_rectangle<IX: Into<X>, IXY: Into<XY>>(ixy: IXY, into_radius: IX) -> D2 {
@@ -412,6 +428,8 @@ impl SCAD for D2 {
             D2::Circle(diameter) => format!("circle(d = {});", diameter),
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
+            // D2::Text(letters) => format!("text(\"{}\", font=\"Liberation Sans\");", letters),
+            D2::Text(letters) => format!("text(\"{}\", font=\"B612 Mono\", halign=\"center\");", letters),
             D2::RoundedRectangle(XY(x,y), r) => format!("{};",
                 D2::circle_r(*r)
                     .add_map(move |shape| shape.translate_x(*x - 2 * *r))
