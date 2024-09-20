@@ -151,6 +151,13 @@ impl std::ops::Mul<X> for f32 {
     }
 }
 
+impl std::ops::Mul<X> for f64 {
+    type Output = X;
+    fn mul(self, other: X) -> X {
+        X(self as f32 * other.0)
+    }
+}
+
 impl std::ops::Mul<X> for i32 {
     type Output = X;
     fn mul(self, other: X) -> X {
@@ -193,6 +200,13 @@ impl std::ops::Sub<X> for f32 {
     }
 }
 
+impl std::ops::Sub<X> for f64 {
+    type Output = X;
+    fn sub(self, other: X) -> X {
+        X(self as f32 - other.0)
+    }
+}
+
 impl std::ops::Sub<X> for i32 {
     type Output = X;
     fn sub(self, other: X) -> X {
@@ -204,6 +218,13 @@ impl std::ops::Add<X> for f32 {
     type Output = X;
     fn add(self, other: X) -> X {
         X(self + other.0)
+    }
+}
+
+impl std::ops::Add<X> for f64 {
+    type Output = X;
+    fn add(self, other: X) -> X {
+        X((self as f32) + other.0)
     }
 }
 
