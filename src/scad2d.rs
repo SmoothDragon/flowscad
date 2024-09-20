@@ -429,7 +429,7 @@ impl SCAD for D2 {
             D2::Square(size) => format!("square(size = {});", size),
             D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
             // D2::Text(letters) => format!("text(\"{}\", font=\"Liberation Sans\");", letters),
-            D2::Text(letters) => format!("text(\"{}\", font=\"B612 Mono\", halign=\"center\");", letters),
+            D2::Text(letters) => format!("text(\"{}\", font=\"B612 Mono\", halign=\"center\", valign=\"center\");", letters),
             D2::RoundedRectangle(XY(x,y), r) => format!("{};",
                 D2::circle_r(*r)
                     .add_map(move |shape| shape.translate_x(*x - 2 * *r))
