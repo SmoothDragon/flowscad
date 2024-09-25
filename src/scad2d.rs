@@ -391,7 +391,11 @@ impl D2 {
     }
 
     pub fn linear_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
-        D3::LinearExtrude(x.into(), Box::new(self.clone()))
+        D3::LinearExtrude{height: x.into(), twist: X(0.), slices: 0, center: false, shape: Box::new(self.clone())}
+    }
+
+    pub fn linear_extrude_extra<IX: Into<X>, IT: Into<X>>(&self, height: IX, twist: IT, slices: u32) -> D3 {
+        D3::LinearExtrude{height: height.into(), twist: twist.into(), slices: slices, center: false, shape: Box::new(self.clone())}
     }
 
     pub fn rotate_extrude<IX: Into<X>>(&self, x: IX) -> D3 {

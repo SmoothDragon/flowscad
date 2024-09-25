@@ -26,14 +26,15 @@ pub enum D3 {
     Cuboid(XYZ),
     Color(ColorEnum, Box<D3>),
     Cylinder(X, X),
-    Sphere(X),
+    Sphere{radius: X},
     Polyhedron(Box<Vec<XYZ>>, Box<Vec<Vec<u32>>>),
     Translate(XYZ, Box<D3>),
     Scale(X, Box<D3>),
     Scale3(XYZ, Box<D3>),
     Rotate(XYZ, Box<D3>),
     Mirror(XYZ, Box<D3>),
-    LinearExtrude(X, Box<D2>),
+    // LinearExtrude(X, Box<D2>),
+    LinearExtrude{height: X, twist: X, slices: u32, center: bool, shape: Box<D2>},
     RotateExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
@@ -78,11 +79,12 @@ impl std::iter::Product for D3 {
 impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
-            D3::LinearExtrude(X(h), shape) => format!("linear_extrude(height = {}) {{\n  {}\n}}", h, indent(shape)),
+            D3::LinearExtrude{height, twist, slices, shape, center} => format!("linear_extrude(height = {}, twist = {}, slices = {}, center = {}) {{\n  {}\n}}", height, twist, slices, center, indent(shape)),
+            // D3::LinearExtrude{height: height, twist: twist, slices: slices, shape: shape} => format!("linear_extrude(height = {}, twist = {}, slices = {}) {{\n  {}\n}}", height, twist, slices, indent(shape)),
             D3::RotateExtrude(X(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
             D3::Cuboid(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
-            D3::Sphere(radius) => format!("sphere(r = {});", radius),
+            D3::Sphere{radius} => format!("sphere(r = {});", radius),
             D3::Cylinder(h, d) => format!("cylinder(h = {}, d = {});", h, d),
             D3::Polyhedron(points, faces) => format!("polyhedron(points = [{}], faces = {:?});", 
                 points.iter().map(|xyz| format!("{}", xyz)).collect::<Vec<_>>().join(", "),
@@ -131,12 +133,12 @@ impl D3 {
 
     /// Create a sphere with `radius` centered at the origin.
     pub fn sphere_r<T: Into<X>>(radius: T) -> D3 {
-        D3::Sphere(radius.into())
+        D3::Sphere{radius: radius.into()}
     }
 
     /// Create a sphere with `diameter` centered at the origin.
     pub fn sphere_d<T: Into<X>>(diameter: T) -> D3 {
-        D3::Sphere(diameter.into()/2)
+        D3::Sphere{radius: diameter.into()/2}
     }
 
     /// Center an object, if we know how
@@ -145,6 +147,8 @@ impl D3 {
             D3::Cylinder(h, _d) => self.translate(v3(0,0,-h/2)),
             D3::Cube(x) => self.translate(-v3(x,x,x)/2),
             D3::Cuboid(xyz) => self.translate(-xyz/2),
+            D3::LinearExtrude{height: h, twist: t, slices: s, center: c, shape: shape} 
+            => D3::LinearExtrude{height: h, twist: t, slices: s, center: true, shape: shape},
             _ => self,
         }
     }
