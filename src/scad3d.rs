@@ -259,7 +259,8 @@ impl D3 {
 
     pub fn rotate<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ) -> D3 {
         match self {
-            D3::Rotate(xyz, d3) => D3::Rotate(*xyz + ixyz.into(), d3.clone()),
+            // D3::Rotate(xyz, d3) => D3::Rotate(*xyz + ixyz.into(), d3.clone()),
+            // TODO: These don't commute
             _ => D3::Rotate(ixyz.into(), Box::new(self.clone())),
         }
     }
@@ -437,6 +438,12 @@ impl D3 {
                 .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
                 .rotate(v3(45, 0, 0)),
             ]))
+    }
+
+    pub fn octahedron(r: f64) -> D3 {
+        D3::convex_hull([
+            [1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]
+        ]).scale(r)
     }
 
 }
