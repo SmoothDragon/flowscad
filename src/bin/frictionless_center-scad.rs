@@ -20,7 +20,16 @@ fn main() -> Result<()> {
     let center = D3::chamfer_regular_polygon_prism(6, h_base+h_peg, 10, 1)
         .rotate((0,0,30))
         ;
-    let result = base + leg + center;
+    let counts = (1..=6)
+        .map(|x| D2::text(x.to_string())
+             .translate_y(-inner_spread/1.6)
+             .rotate(30+x*60))
+        .union()
+        .linear_extrude(10)
+        .translate_z(-h_peg/2)
+        .rotate_y(180)
+        ;
+    let result = base + leg + center - counts;
     println!("$fn=64;\n{}", &result);
     Ok(())
 }
