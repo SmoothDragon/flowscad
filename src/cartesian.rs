@@ -1,5 +1,5 @@
-use std::ops::*;
-use std::cmp::*;
+use core::ops::*;
+use core::cmp::*;
 
 use derive_more::*;
 
@@ -8,33 +8,52 @@ pub const PI: X = X(std::f32::consts::PI);
 #[derive(Clone, Copy, PartialEq, PartialOrd, Neg)]
 pub struct X(pub f32);
 
+macro_rules! generate_trig_functions_for_x {
+    ($trig_func: ident) => {
+        impl X {
+            pub fn $trig_func(self) -> Self {
+                Self(self.0.$trig_func())
+            }
+        }
+    };
+}
+
+/*
+macro_rules! generate_functions_for_x {
+    [$( $func: ident ),+] => {
+        impl X {
+            pub fn $($func,)*(self) -> Self {
+                Self(self.0.$($func,)*())
+            }
+        }
+    };
+}
+
+ macro_rules! polymorphic_constant {
+        ($name: ident = $lit: literal, [$( $numericType:ident ),+] ) => {
+            #[derive(Debug, Clone, Copy, Hash)]
+            #[allow(non_camel_case_types)]
+            struct $name<$($numericType,)*> {
+                $($numericType: $numericType,)*
+            }
+            static $name: $name::<$($numericType,)*> = $name::<$($numericType,)*> {
+                $($numericType: $lit,)*
+            };
+        };
+    }
+
+generate_functions_for_x![cos,sin];
+*/
+generate_trig_functions_for_x!(cos);
+generate_trig_functions_for_x!(sin);
+generate_trig_functions_for_x!(tan);
+generate_trig_functions_for_x!(acos);
+generate_trig_functions_for_x!(asin);
+generate_trig_functions_for_x!(atan);
+
 impl X {
     /// Positive X MAX is lower since it is used for super large objects that could be shifted or rotated.
     pub const MAX: X = X(f32::MAX/1000.0);
-
-    pub fn acos(self) -> Self {
-        X(self.0.acos())
-    }
-
-    pub fn asin(self) -> Self {
-        X(self.0.asin())
-    }
-
-    pub fn atan(self) -> Self {
-        X(self.0.atan())
-    }
-
-    pub fn cos(self) -> Self {
-        X(self.0.cos())
-    }
-
-    pub fn sin(self) -> Self {
-        X(self.0.sin())
-    }
-
-    pub fn tan(self) -> Self {
-        X(self.0.tan())
-    }
 
     pub fn powf<IX: Into<X>>(self, exp: IX) -> Self {
         Self(self.0.powf(exp.into().0))
@@ -423,6 +442,16 @@ mod test {
         assert_eq!(X(5.) * 2, X(10.));
         assert_eq!(2. * X(5.), X(10.));
         assert_eq!(2 * X(5.), X(10.));
+    }
+
+    #[test]
+    fn test_real_trig() {
+        assert_eq!(X(0.).cos(), X(1.));
+        assert_eq!(X(0.).sin(), X(0.));
+        assert_eq!(X(0.).tan(), X(0.));
+        assert_eq!(X(1.).acos(), X(0.));
+        assert_eq!(X(0.).asin(), X(0.));
+        assert_eq!(X(0.).atan(), X(0.));
     }
 
     #[test]
