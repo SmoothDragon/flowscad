@@ -1,3 +1,4 @@
+use core::ops::*;
 use crate::*;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
@@ -63,6 +64,12 @@ impl std::iter::Sum for D3 {
     {
         D3::Union(Box::new(iter.collect::<Vec<Self>>()))
         // D3::Join("union", Box::new(iter.collect::<Vec<Self>>()))
+    }
+}
+
+impl core::ops::AddAssign for D3 {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.clone() + other;
     }
 }
 

@@ -70,6 +70,6 @@ fn main() -> Result<()> {
         .center()
         .intersection(base)
         ;
-    println!("$fn=64;\n{}", &result);
+    println!("$fn=256;\n{}", &result);
     Ok(())
 }
