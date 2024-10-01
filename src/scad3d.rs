@@ -361,7 +361,11 @@ impl D3 {
     pub fn map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
         f(self)
     }
-
+/*
+    pub fn iter_map<'a, F>(&'a self, f: F, n: u32) -> impl Iterator<Item = D3> + '_ where F: Fn(D3, u32) + 'a -> D3 {
+        (0..n).map(move |ii| f(self.clone(), ii))
+    }
+*/
 
     pub fn iter_rotate<IXYZ: Into<XYZ>>(&self, itheta: IXYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
         let theta = itheta.into();
