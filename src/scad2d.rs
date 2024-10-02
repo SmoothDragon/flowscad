@@ -64,7 +64,7 @@ pub enum D2 {
     Color(ColorEnum, Box<D2>),
     Rotate(X, Box<D2>),
     Scale(X, Box<D2>),
-    Scale2(XY, Box<D2>),
+    ScaleXY(XY, Box<D2>),
     Translate(XY, Box<D2>),
     Mirror(XY, Box<D2>),
     OffsetRadius(X, Box<D2>),
@@ -386,8 +386,18 @@ impl D2 {
     }
 
     /// Scale in `x` and `y` directions.
-    pub fn scale2(self, xy: XY) -> D2 {
-        D2::Scale2(xy, Box::new(self))
+    pub fn scale_xy<IXY: Into<XY>>(self, xy: IXY) -> D2 {
+        D2::ScaleXY(xy.into(), Box::new(self))
+    }
+
+    /// Scale only in `x` direction.
+    pub fn scale_x<IX: Into<X>>(self, x: IX) -> D2 {
+        self.scale_xy( (x, 1) )
+    }
+
+    /// Scale only in `y` direction.
+    pub fn scale_y<IX: Into<X>>(self, y: IX) -> D2 {
+        self.scale_xy( (1, y) )
     }
 
     pub fn linear_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
@@ -460,7 +470,7 @@ impl SCAD for D2 {
             D2::OffsetChamfer(X(x), shape) => format!("offset(delta = {}, chamfer=true) {{\n  {}\n}}", x, indent(shape)),
             D2::Rotate(X(theta), shape) => format!("rotate({}) {{\n  {}\n}}", theta, indent(shape)),
             D2::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, indent(shape)),
-            D2::Scale2(XY(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
+            D2::ScaleXY(XY(x,y), shape) => format!("scale(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             // D2::Union(v) => format!( "union() {{\n  {}\n}}",
                 // v.iter().map(|x| x.indent()).collect::<Vec<_>>().join("\n  ")),
             // D2::Hull(v) => format!("hull() {{\n  {}\n}}",
@@ -652,7 +662,7 @@ mod test {
     #[test]
     fn test_linear_extrude() {
         assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).intersection().linear_extrude(10)),
-            "linear_extrude(height = 10) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
+  "linear_extrude(height = 10, twist = 0, slices = 0, center = false) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 

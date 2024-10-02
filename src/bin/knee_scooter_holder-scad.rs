@@ -7,9 +7,9 @@ fn main() {
     let h_band = 5.0;
     let d_top_outer = d_top_bar + 2.0*h_band;
     let d_vert_bar = 29.0;
-    let h_post_drop_hook = 65.0 - d_top_outer/2.0;
-    let h_post_drop = 115.0 - d_top_outer/2.0;
-    let h_post_hole_center = 104.0 - d_top_outer/2.0;
+    let h_post_drop_hook: X = 65.0 - d_top_outer/2.0;
+    let h_post_drop: X = 115.0 - d_top_outer/2.0;
+    let h_post_hole_center: X = 104.0 - d_top_outer/2.0;
     let h_post_hole = 10.0;
     let bevel = 10.0;
     let h_catch = 25.0;

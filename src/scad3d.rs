@@ -711,10 +711,10 @@ mod test {
     #[test]
     fn test_iter_rotate_rotate() {
         assert_eq!(D3::cube(4).iter_rotate((1,2,3), 4).map(move |x| x.rotate((10,20,30))).hull().scad(),
-            "hull() {\n  rotate([10, 20, 30]) {\n    cube(size = 4);\n  }\n  rotate([11, 22, 33]) {\n    cube(size = 4);\n  }\n  rotate([12, 24, 36]) {\n    cube(size = 4);\n  }\n  rotate([13, 26, 39]) {\n    cube(size = 4);\n  }\n}"
+            "hull() {\n  rotate([10, 20, 30]) {\n    rotate([0, 0, 0]) {\n      cube(size = 4);\n    }\n  }\n  rotate([10, 20, 30]) {\n    rotate([1, 2, 3]) {\n      cube(size = 4);\n    }\n  }\n  rotate([10, 20, 30]) {\n    rotate([2, 4, 6]) {\n      cube(size = 4);\n    }\n  }\n  rotate([10, 20, 30]) {\n    rotate([3, 6, 9]) {\n      cube(size = 4);\n    }\n  }\n}"
         );
         assert_eq!(D3::cube(4).iter_rotate((1,2,3), 4).map(move |x| x.rotate_x(90)).hull().scad(),
-            "hull() {\n  rotate([90, 0, 0]) {\n    cube(size = 4);\n  }\n  rotate([91, 2, 3]) {\n    cube(size = 4);\n  }\n  rotate([92, 4, 6]) {\n    cube(size = 4);\n  }\n  rotate([93, 6, 9]) {\n    cube(size = 4);\n  }\n}"
+          "hull() {\n  rotate([90, 0, 0]) {\n    rotate([0, 0, 0]) {\n      cube(size = 4);\n    }\n  }\n  rotate([90, 0, 0]) {\n    rotate([1, 2, 3]) {\n      cube(size = 4);\n    }\n  }\n  rotate([90, 0, 0]) {\n    rotate([2, 4, 6]) {\n      cube(size = 4);\n    }\n  }\n  rotate([90, 0, 0]) {\n    rotate([3, 6, 9]) {\n      cube(size = 4);\n    }\n  }\n}"
         );
     }
 
