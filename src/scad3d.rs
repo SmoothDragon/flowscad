@@ -154,8 +154,8 @@ impl D3 {
             D3::Cylinder(h, _d) => self.translate(v3(0,0,-h/2)),
             D3::Cube(x) => self.translate(-v3(x,x,x)/2),
             D3::Cuboid(xyz) => self.translate(-xyz/2),
-            D3::LinearExtrude{height: h, twist: t, slices: s, center: c, shape: shape} 
-            => D3::LinearExtrude{height: h, twist: t, slices: s, center: true, shape: shape},
+            D3::LinearExtrude{height: h, twist: t, slices, center: _, shape} 
+            => D3::LinearExtrude{height: h, twist: t, slices, center: true, shape},
             _ => self,
         }
     }

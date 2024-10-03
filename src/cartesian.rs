@@ -361,7 +361,7 @@ pub struct XYZ(pub f32, pub f32, pub f32);
 impl std::fmt::Display for XYZ {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         // write!(f, "{}", format!("{:?}", &self.0).replace(r"[[", r"[").replace("]]", "]"))
-        write!(f, "{}", format!("[{}, {}, {}]", &self.0, &self.1, &self.2))
+        write!(f, "[{}, {}, {}]", &self.0, &self.1, &self.2)
     }
 }
 

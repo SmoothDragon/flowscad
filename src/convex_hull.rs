@@ -1,5 +1,6 @@
 use std::io::{BufRead, Write};
 use std::process::{Command, Stdio};
+use std::fmt::Write as FmtWrite;
 
 /* QHull input and output description
 Generic input for `qhull` is a text file with lines as:
@@ -113,6 +114,17 @@ pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> Vec<[f64; 2]> {
     let points_text = points.clone().iter()
         .map(|v2| format!("{} {}\n", v2[0], v2[1]))
         .collect::<String>();
+        // .fold(String::new(), |mut output, v2| {
+            // let _ = write_fmt!(output, "{} {}\n", v2[0], v2[1]);
+            // output
+        // });
+
+// fn hex_encode(bytes: &[u8]) -> String {
+        // bytes.iter().fold(String::new(), |mut output, b| {
+                    // let _ = write!(output, "{b:02X}");
+                            // output
+                                    // })
+// }
     let mut qhull = Command::new("qhull")
         .arg("Fx")
         .stdin(Stdio::piped())
