@@ -364,6 +364,17 @@ impl D2 {
         (0..n).map(move |ii| self.rotate(360./(n as f64) * ii as f64))
     }
 
+    pub fn iter_cyclic(&self, n: u32) -> impl Iterator<Item = D2> + '_ {
+        (0..n).map(move |ii| self.rotate(360./(n as f64) * ii as f64))
+    }
+
+    pub fn iter_dihedral(&self, n: u32) -> impl Iterator<Item = D2> + '_ {
+        (0..n).flat_map(move |ii| { 
+            let obj = self.rotate(360./(n as f64) * ii as f64);
+            [obj.clone(), obj.mirror(XY(0.,1.))]
+            })
+    }
+
     pub fn iter_square_edge<D: Into<X>>(&self, d: D) -> impl Iterator<Item = D2> + '_ {
         let shift = d.into();
         vec![v2(shift, 0.), v2(0., shift), v2(-shift, 0.), v2(0., -shift)]
@@ -687,6 +698,12 @@ mod test {
         );
     }
 
+    #[test]
+    fn test_iter_dihedral() {
+        assert_eq!(D2::rectangle( (5,1) ).iter_dihedral(4).union().scad(),
+          "union() {\n  rotate(0) {\n    square(size = [5, 1]);\n  }\n  mirror(v = [0, 1]) {\n    rotate(0) {\n      square(size = [5, 1]);\n    }\n  }\n  rotate(90) {\n    square(size = [5, 1]);\n  }\n  mirror(v = [0, 1]) {\n    rotate(90) {\n      square(size = [5, 1]);\n    }\n  }\n  rotate(180) {\n    square(size = [5, 1]);\n  }\n  mirror(v = [0, 1]) {\n    rotate(180) {\n      square(size = [5, 1]);\n    }\n  }\n  rotate(270) {\n    square(size = [5, 1]);\n  }\n  mirror(v = [0, 1]) {\n    rotate(270) {\n      square(size = [5, 1]);\n    }\n  }\n}"
+        );
+    }
 
     #[test]
     fn test_triangle() {

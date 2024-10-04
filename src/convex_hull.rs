@@ -92,7 +92,10 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
     let mut lines = output.stdout.lines();
     let _dim: u32 = lines.next().unwrap().unwrap().parse::<u32>().unwrap();
     let binding = lines.next().unwrap().unwrap();
+    // Counts for vertices, faces, and edges
     let vfe = binding.split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
+
+    // Vertices have x,y,z coordinates => [f64; 3]
     let vertices = (0..vfe[0])
         .map(|_| { let binding = lines.next().unwrap().unwrap();
             TryInto::<[f64; 3]>::try_into(
@@ -101,11 +104,12 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
                 .collect::<Vec<f64>>()
             ).unwrap()
         }).collect::<Vec<_>>();
+    // # of vertices for a face is >= 3
     let faces = (0..vfe[1])
         .map(|_| { let binding = lines.next().unwrap().unwrap();
             binding.split_whitespace().skip(1)
                 .map(|x| x.parse::<u32>().unwrap())
-                .collect::<Vec<u32>>()
+                .collect::<Vec<u32>>()  // TODO: Check? Even though guaranteed by qhull?
         }).collect::<Vec<_>>();
     (vertices, faces)
 }
