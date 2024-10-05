@@ -85,7 +85,7 @@ fn main() -> Result<()> {
     // result += result.rotate( (180, 90, 0) )
         // .translate_y(-1)
         // .difference(D3::cube(100))
-        ;
+        // ;
     println!("$fn=256;\n{}", &result);
     Ok(())
 }

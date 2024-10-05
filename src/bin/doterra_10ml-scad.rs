@@ -62,7 +62,7 @@ fn main() -> Result<()> {
         ;
     let result = holder + bottle_hole;
     // let result = bottle_hole;
-    let result = (result.clone() + result.translate_z(-h_total+h_insert))
+    let result = result.clone() + result.translate_z(-h_total+h_insert)
         ;
         // .difference(D3::cube(1000))
         // ;

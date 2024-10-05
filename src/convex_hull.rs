@@ -73,8 +73,12 @@ Example output for octahedron:
 /// The bulk of the work here is creating the format expected and parsing the result.
 pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
     let points_text = points.iter()
-        .map(|v3| format!("{} {} {}\n", v3[0], v3[1], v3[2]))
-        .collect::<String>();
+        // .map(|v3| format!("{} {} {}\n", v3[0], v3[1], v3[2]))
+        // .collect::<String>();
+        .fold(String::new(), |mut output, v3| {
+            let _ = writeln!(output, "{} {} {}", v3[0], v3[1], v3[2]);
+            output
+        });
     let mut qhull = Command::new("qhull")
         .arg("o")
         .stdin(Stdio::piped())
@@ -116,19 +120,11 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
 
 pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> Vec<[f64; 2]> {
     let points_text = points.clone().iter()
-        .map(|v2| format!("{} {}\n", v2[0], v2[1]))
-        .collect::<String>();
-        // .fold(String::new(), |mut output, v2| {
-            // let _ = write_fmt!(output, "{} {}\n", v2[0], v2[1]);
-            // output
-        // });
+        .fold(String::new(), |mut output, v2| {
+            let _ = writeln!(output, "{} {}", v2[0], v2[1]);
+            output
+        });
 
-// fn hex_encode(bytes: &[u8]) -> String {
-        // bytes.iter().fold(String::new(), |mut output, b| {
-                    // let _ = write!(output, "{b:02X}");
-                            // output
-                                    // })
-// }
     let mut qhull = Command::new("qhull")
         .arg("Fx")
         .stdin(Stdio::piped())

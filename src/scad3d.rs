@@ -73,6 +73,30 @@ impl core::ops::AddAssign for D3 {
     }
 }
 
+impl core::ops::Add<D3> for D3 {
+    type Output = D3;
+
+    fn add(self, other: Self) -> Self {
+        match self { // Combine Unions if possible
+            D3::Union(vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D3::Union(vec)
+                },
+            _ => D3::Union(Box::new(vec![self, other])),
+        }
+    }
+}
+
+
+impl std::ops::Sub<D3> for D3 {
+    type Output = D3;
+
+    fn sub(self, other: D3) -> D3 {
+        self.difference(other)
+    }
+}
+
 impl std::iter::Product for D3 {
     fn product<I>(iter: I) -> Self
       where 
@@ -146,6 +170,12 @@ impl D3 {
     /// Create a sphere with `diameter` centered at the origin.
     pub fn sphere_d<T: Into<X>>(diameter: T) -> D3 {
         D3::Sphere{radius: diameter.into()/2}
+    }
+
+    /// Add (union) two objects
+    #[allow(clippy::should_implement_trait)]
+    pub fn add(self, other: D3) -> D3 {
+        self + other
     }
 
     /// Center an object, if we know how
@@ -269,11 +299,12 @@ impl D3 {
 
 
     pub fn rotate<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ) -> D3 {
-        match self {
+        D3::Rotate(ixyz.into(), Box::new(self.clone()))
+        // match self {
             // D3::Rotate(xyz, d3) => D3::Rotate(*xyz + ixyz.into(), d3.clone()),
             // TODO: These don't commute
-            _ => D3::Rotate(ixyz.into(), Box::new(self.clone())),
-        }
+            // _ => D3::Rotate(ixyz.into(), Box::new(self.clone())),
+        // }
     }
 
     pub fn rotate_x<IX: Into<X>>(&self, theta: IX) -> D3 {
@@ -323,17 +354,6 @@ impl D3 {
             .linear_extrude(h)
             ;
         (outer + inner).hull()
-    }
-
-    pub fn add(self, other: D3) -> D3 {
-        match self { // Combine Unions if possible
-            D3::Union(vec) => {
-                let mut vec = vec;
-                vec.push(other);
-                D3::Union(vec)
-                },
-            _ => D3::Union(Box::new(vec![self, other])),
-        }
     }
 
     pub fn difference(self, other: D3) -> D3 {
@@ -463,21 +483,6 @@ impl D3 {
 
 }
 
-impl std::ops::Add<D3> for D3 {
-    type Output = D3;
-
-    fn add(self, other: D3) -> D3 {
-        self.add(other)
-    }
-}
-
-impl std::ops::Sub<D3> for D3 {
-    type Output = D3;
-
-    fn sub(self, other: D3) -> D3 {
-        self.difference(other)
-    }
-}
 
 #[cfg(test)]
 mod test {

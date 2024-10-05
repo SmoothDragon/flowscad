@@ -1,4 +1,3 @@
-use std::fs;
 use flowscad::*;
 
 fn holding_cube_frame<IL: Into<X>, IW: Into<X>, IB: Into<X>, IG: Into<X>>

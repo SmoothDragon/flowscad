@@ -15,7 +15,7 @@ fn main() -> Result<()> {
     let stamp = D2::regular_polygon(6, 0.35*r_oct)
         .linear_extrude(40)
         ;
-    let l_edge = (r_oct/4.0);
+    let l_edge = r_oct/4.0;
     let id_hex = l_edge * 3.0_f64.sqrt() / 2.0;
     let target = D3::chamfer_regular_polygon_prism(6, 1, 0.5, 0.25)
         .add_map(|x| x.translate_x(l_edge))
@@ -38,7 +38,7 @@ fn main() -> Result<()> {
         .rotate( (0, -180.0+109.47, 240) )
         ;
 
-    let side4 = (target.clone() + target.clone().rotate_z(60) + target.clone().rotate_z(240))
+    let side4 = target.clone() + target.clone().rotate_z(60) + target.clone().rotate_z(240)
         ;
 
     let result = base - (side1 +side2 + side3 + side4);

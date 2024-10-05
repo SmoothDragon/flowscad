@@ -1,18 +1,6 @@
-use std::fs;
 use flowscad::*;
 
 
-fn holding_cube<IL: Into<X>, IW: Into<X>, IB: Into<X>, IG: Into<X>>(il_cube: IL, iw_wall: IW, ibevel: IB, igap: IG) -> D3 {
-    let bevel = ibevel.into();
-    let l = il_cube.into();
-    let w = iw_wall.into();
-    let gap = igap.into();
-    D3::beveled_box( v3(l+2*w, l+2*w, l+w), bevel)
-        .difference(D3::cube(l+2*gap)
-            .translate( (w-gap, w-gap, w-gap) )
-            )
-}
-    
 fn holding_cube_frame<IL: Into<X>, IW: Into<X>, IB: Into<X>, IG: Into<X>>
     (il_cube: IL, iw_wall: IW, ibevel: IB, igap: IG) -> D3 {
     let bevel = ibevel.into();

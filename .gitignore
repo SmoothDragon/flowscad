@@ -1,6 +1,5 @@
 # Vim
-*.swp
-*.swo
+*.sw*
 
 # Generated files
 *.scad

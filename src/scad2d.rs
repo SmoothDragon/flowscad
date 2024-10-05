@@ -217,6 +217,7 @@ impl D2 {
         D2::Difference(Box::new(self), Box::new(other))
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn sub(self, other: D2) -> D2 {
         D2::Difference(Box::new(self), Box::new(other))
     }
