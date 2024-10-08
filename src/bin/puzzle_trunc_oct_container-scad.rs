@@ -1,8 +1,5 @@
 use flowscad::*;
 
-
-
-
 fn main() {
     let l_edge = 8.;
     let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
@@ -21,7 +18,7 @@ fn main() {
         ;
     let container = D3::beveled_box(v3(6.*r_square, 6.*r_square, 6.*r_square), 10.*gap)
         .difference(result.clone())
-        .rotate(v3(45,-(2.0_f64.powf(-0.5)).atan()*180./3.14159,0))
+        .rotate(v3(45,-(2.0_f64.powf(-0.5)).atan()*180./PI,0))
         .translate(v3(0,0,-1.5*r_square))
         .intersection(D3::cube(1000).translate(v3(-500,-500,0)))
         // .difference(D3::cuboid(v3(8.*r_square, 7.*r_square, 6.*r_square)).translate(v3(r_square, 1.*r_square, 1.*r_square)))

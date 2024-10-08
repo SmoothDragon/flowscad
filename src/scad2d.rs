@@ -120,7 +120,7 @@ impl D2 {
         let angle = if x0 == x1 {
             X(90.)
         } else {
-            X(((y1-y0)/(x1-x0)).atan()*180.0/3.1415926)
+            ((y1-y0)/(x1-x0)).atan()*180.0/PI
         };
         let length = ((x1-x0).powf(2.0) + (y1-y0).powf(2.0)).powf(0.5);
         D2::rectangle( (length, w) )
@@ -202,6 +202,7 @@ impl D2 {
     }
 
 
+    #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: D2) -> D2 {
         match self { // Combine Unions if possible
             D2::Join("union", vec) => {
@@ -412,12 +413,15 @@ impl D2 {
         self.scale_xy( (1, y) )
     }
 
-    pub fn linear_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
-        D3::LinearExtrude{height: x.into(), twist: X(0.), slices: 0, center: false, shape: Box::new(self.clone())}
+    pub fn linear_extrude<IX: Into<X>>(&self, i_height: IX) -> D3 {
+        let height = i_height.into();
+        D3::LinearExtrude{height, twist: X(0.), slices: 0, center: false, shape: Box::new(self.clone())}
     }
 
-    pub fn linear_extrude_extra<IX: Into<X>, IT: Into<X>>(&self, height: IX, twist: IT, slices: u32) -> D3 {
-        D3::LinearExtrude{height: height.into(), twist: twist.into(), slices: slices, center: false, shape: Box::new(self.clone())}
+    pub fn linear_extrude_extra<IX: Into<X>, IT: Into<X>>(&self, i_height: IX, i_twist: IT, slices: u32) -> D3 {
+        let height = i_height.into();
+        let twist = i_twist.into();
+        D3::LinearExtrude{height, twist, slices, center: false, shape: Box::new(self.clone())}
     }
 
     pub fn rotate_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
@@ -534,7 +538,7 @@ mod test {
     #[test]
     fn test_line() {
         assert_eq!(D2::line( (0,0), (1,1), 1 ).scad(),
-            "translate(v = [0, 0]) {\n  rotate(45.000004) {\n    translate(v = [0, -0.5]) {\n      square(size = [1.4142135, 1]);\n    }\n  }\n}"
+            "translate(v = [0, 0]) {\n  rotate(45) {\n    translate(v = [0, -0.5]) {\n      square(size = [1.4142135, 1]);\n    }\n  }\n}"
           );
     }
 

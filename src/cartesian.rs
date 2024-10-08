@@ -198,6 +198,13 @@ impl std::ops::Div<X> for f32 {
     }
 }
 
+impl std::ops::Div<X> for f64 {
+    type Output = X;
+    fn div(self, other: X) -> X {
+        X(self as f32 / other.0)
+    }
+}
+
 impl std::ops::Div<X> for i32 {
     type Output = X;
     fn div(self, other: X) -> X {

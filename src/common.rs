@@ -1,6 +1,5 @@
 use itertools::Itertools;
 
-// pub use std::f32::consts::PI;
 pub const MAX: f32 = f32::MAX / 10000.;
 
 pub trait SCAD {
