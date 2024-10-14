@@ -26,19 +26,41 @@ impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     }
 }
 
-impl std::ops::Add<D2> for D2 {
+impl Add<D2> for D2 {
     type Output = D2;
 
     fn add(self, other: D2) -> D2 {
-        self.add(other)
+        match self { // Combine Unions if possible
+            D2::Join("union", vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Join("union", vec)
+                },
+            _ => D2::Join("union", Box::new(vec![self, other])),
+        }
     }
 }
 
-impl std::ops::Sub<D2> for D2 {
+impl Sub<D2> for D2 {
     type Output = D2;
 
     fn sub(self, other: D2) -> D2 {
-        self.difference(other)
+        D2::Difference(Box::new(self), Box::new(other))
+    }
+}
+
+impl BitAnd<D2> for D2 {
+    type Output = D2;
+
+    fn bitand(self, other: D2) -> D2 {
+        match self { // Combine intersections if possible
+            D2::Join("intersection", vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Join("intersection", vec)
+                },
+            _ => D2::Join("intersection", Box::new(vec![self, other])),
+        }
     }
 }
 
@@ -79,9 +101,22 @@ pub enum D2 {
     Difference(Box<D2>, Box<D2>),
 }
 
+// impl<Borrowed: ?Sized> std::borrow::Borrow<Borrowed> for D2 {  
+    // fn borrow(&self) -> &Self {
+        // self
+    // }
+// }
+
+// impl<'a> Borrow<MyTrait + 'a> for MyStruct {
+    // fn borrow(&self) -> &(MyTrait + 'a) {
+        // self
+    // }
+// }
+
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace('\n', "\n  ")
 }
+
 impl D2 {
     /// Create a circle using variable inputs centered at the origin.
     // pub fn circle<T: Into<X>>(diameter: T) -> D2 {
@@ -201,30 +236,8 @@ impl D2 {
         D2::OffsetChamfer(ix.into(), Box::new(self))
     }
 
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn add(self, other: D2) -> D2 {
-        match self { // Combine Unions if possible
-            D2::Join("union", vec) => {
-                let mut vec = vec;
-                vec.push(other);
-                D2::Join("union", vec)
-                },
-            _ => D2::Join("union", Box::new(vec![self, other])),
-        }
-    }
-
     pub fn difference(self, other: D2) -> D2 {
-        D2::Difference(Box::new(self), Box::new(other))
-    }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn sub(self, other: D2) -> D2 {
-        D2::Difference(Box::new(self), Box::new(other))
-    }
-
-    pub fn and(self, other: D2) -> D2 {
-        D2::intersection(self, other)
+        self - other
     }
 
     pub fn half_plane(aim: Aim) -> D2 {
@@ -251,14 +264,7 @@ impl D2 {
     }
 
     pub fn intersection(self, other: D2) -> D2 {
-        match self { // Combine intersections if possible
-            D2::Join("intersection", vec) => {
-                let mut vec = vec;
-                vec.push(other);
-                D2::Join("intersection", vec)
-                },
-            _ => D2::Join("intersection", Box::new(vec![self, other])),
-        }
+        self & other
     }
 
     pub fn minkowski(self, other: D2) -> D2 {
