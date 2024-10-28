@@ -58,6 +58,10 @@ impl X {
     pub fn powf<IX: Into<X>>(self, exp: IX) -> Self {
         Self(self.0.powf(exp.into().0))
     }
+
+    pub fn sqrt(self) -> Self {
+        Self(self.0.sqrt())
+    }
 }
 
 impl std::fmt::Debug for X {
