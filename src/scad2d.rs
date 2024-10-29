@@ -143,6 +143,18 @@ impl D2 {
         D2::Rectangle(xy.into())
     }
 
+    /// Create a rectangle with lower left corner at the origin.
+    pub fn dwedge<IR: Into<X>, IX: Into<X>>(ir: IR, ix: IX) -> D2 {
+        let r = ir.into();
+        let x = ix.into();
+        let base = D2::Circle(2*r);
+        if x.0 <= 90. {
+            base.and(D2::Square(x).and(D2::Square(x).rotate(x-90)))
+        } else {
+            base.and(D2::Square(x).add(D2::Square(x).rotate(x-90)))
+        }
+    }
+
     pub fn text(letters: String) -> D2 {
         D2::Text(letters)
     }
