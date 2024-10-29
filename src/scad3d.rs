@@ -1,4 +1,3 @@
-use core::ops::*;
 use crate::*;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {

@@ -3,8 +3,8 @@ use flowscad::*;
 use std::f32::consts::PI;
 
 fn main() {
-    let theta: f32 = (-1.0_f32/3.).acos()*180.0/PI;
-    let phi: f32 = 90. - (theta/2.);
+    let theta = (-1.0_f32/3.).acos()*180.0/PI;
+    let phi: f32 = 90. - (theta.0/2.);
     let l_edge = 50.;
     let dot = D3::truncated_octahedron(0.4);
     let center = dot.clone()

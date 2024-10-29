@@ -276,6 +276,13 @@ impl XY {
         let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
         XY(self.0 * cos_theta - self.1 * sin_theta, self.0 * sin_theta + self.1 * cos_theta)
     }
+
+    pub fn rotate<IX: Into<X>>(self, i_theta: IX) -> Self {
+        let theta = i_theta.into();
+        let cos_theta = (theta.0*std::f32::consts::PI/180.0).cos();
+        let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
+        XY(self.0 * theta.0.cos() - self.1 * theta.0.sin(), self.0 * theta.0.sin() + self.1 * theta.0.cos())
+    }
 }
 
 impl std::fmt::Display for XY {
@@ -309,6 +316,18 @@ impl From<[f64; 2]> for XY {
 impl From<[f32; 2]> for XY {
     fn from(xy: [f32; 2]) -> Self {
         Self(xy[0], xy[1])
+    }
+}
+
+impl From<[i32; 2]> for XY {
+    fn from(xy: [i32; 2]) -> Self {
+        Self(xy[0] as f32, xy[1] as f32)
+    }
+}
+
+impl From<[X; 2]> for XY {
+    fn from(xy: [X; 2]) -> Self {
+        Self(xy[0].0, xy[1].0)
     }
 }
 

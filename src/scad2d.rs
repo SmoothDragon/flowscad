@@ -64,6 +64,17 @@ impl BitAnd<D2> for D2 {
     }
 }
 
+impl AddAssign for D2 {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.clone() + other;
+    }
+}
+
+impl SubAssign for D2 {
+    fn sub_assign(&mut self, other: Self) {
+        *self = self.clone() - other;
+    }
+}
 #[derive(Clone, Debug)]
 pub enum Aim {
     N, S, E, W,
@@ -276,6 +287,10 @@ impl D2 {
     }
 
     pub fn intersection(self, other: D2) -> D2 {
+        self & other
+    }
+
+    pub fn and(self, other: D2) -> D2 {
         self & other
     }
 
