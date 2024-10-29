@@ -26,6 +26,7 @@ pub enum D3 {
     Cuboid(XYZ),
     Color(ColorEnum, Box<D3>),
     Cylinder(X, X),
+    Frustum(X, X, X),
     Sphere{radius: X},
     Polyhedron(Box<Vec<XYZ>>, Box<Vec<Vec<u32>>>),
     Translate(XYZ, Box<D3>),
@@ -116,6 +117,7 @@ impl SCAD for D3 {
             D3::Cuboid(xyz) => format!("cube(size = [{}, {}, {}]);", xyz.0, xyz.1, xyz.2),
             D3::Sphere{radius} => format!("sphere(r = {});", radius),
             D3::Cylinder(h, d) => format!("cylinder(h = {}, d = {});", h, d),
+            D3::Frustum(h, d1, d2) => format!("cylinder(h = {}, d1 = {}, d2 = {});", h, d1, d2),
             D3::Polyhedron(points, faces) => format!("polyhedron(points = [{}], faces = {:?});", 
                 points.iter().map(|xyz| format!("{}", xyz)).collect::<Vec<_>>().join(", "),
                 faces),
@@ -326,6 +328,11 @@ impl D3 {
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
     pub fn cylinder_r<H: Into<X>, R: Into<X>>(h: H, r:R) -> D3 {
         D3::Cylinder(h.into(), 2*r.into())
+    }
+
+    /// Create a frustum of height `h` with starting radius `r0` and ending radius `r1` centered above the XY plane.
+    pub fn frustum_r<H: Into<X>, R0: Into<X>, R1: Into<X>>(h: H, r0: R0, r1: R1) -> D3 {
+        D3::Frustum(h.into(), 2*r0.into(), 2*r1.into())
     }
 
     /// Chamfered cylinder
