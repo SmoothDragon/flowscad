@@ -50,6 +50,12 @@ pub enum Aim {
     // Angle(X),
 }
 
+#[derive(Default, Debug)]
+pub struct Circle2{radius: f64}
+
+pub fn circle2() -> Circle2 {
+    Circle2{radius: 1.0}
+}
 
 #[derive(Clone, Debug)]
 pub enum D2 {
@@ -82,6 +88,20 @@ pub enum D2 {
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace('\n', "\n  ")
 }
+
+pub trait Radius {
+    fn r(self, radius: f64) -> Self;
+}
+
+impl Radius for Circle2 {
+    fn r(self, radius: f64) -> Self {
+        Self {
+            radius: radius,
+            ..self
+        }
+    }
+}
+
 impl D2 {
     /// Create a circle using variable inputs centered at the origin.
     // pub fn circle<T: Into<X>>(diameter: T) -> D2 {
