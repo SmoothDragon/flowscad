@@ -26,22 +26,55 @@ impl<T: Iterator<Item=D2>> DIterator<D2> for T {
     }
 }
 
-impl std::ops::Add<D2> for D2 {
+impl Add<D2> for D2 {
     type Output = D2;
 
     fn add(self, other: D2) -> D2 {
-        self.add(other)
+        match self { // Combine Unions if possible
+            D2::Join("union", vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Join("union", vec)
+                },
+            _ => D2::Join("union", Box::new(vec![self, other])),
+        }
     }
 }
 
-impl std::ops::Sub<D2> for D2 {
+impl Sub<D2> for D2 {
     type Output = D2;
 
     fn sub(self, other: D2) -> D2 {
-        self.difference(other)
+        D2::Difference(Box::new(self), Box::new(other))
     }
 }
 
+impl BitAnd<D2> for D2 {
+    type Output = D2;
+
+    fn bitand(self, other: D2) -> D2 {
+        match self { // Combine intersections if possible
+            D2::Join("intersection", vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D2::Join("intersection", vec)
+                },
+            _ => D2::Join("intersection", Box::new(vec![self, other])),
+        }
+    }
+}
+
+impl AddAssign for D2 {
+    fn add_assign(&mut self, other: Self) {
+        *self = self.clone() + other;
+    }
+}
+
+impl SubAssign for D2 {
+    fn sub_assign(&mut self, other: Self) {
+        *self = self.clone() - other;
+    }
+}
 #[derive(Clone, Debug)]
 pub enum Aim {
     N, S, E, W,
@@ -84,6 +117,18 @@ pub enum D2 {
     Svg(String),
     Difference(Box<D2>, Box<D2>),
 }
+
+// impl<Borrowed: ?Sized> std::borrow::Borrow<Borrowed> for D2 {  
+    // fn borrow(&self) -> &Self {
+        // self
+    // }
+// }
+
+// impl<'a> Borrow<MyTrait + 'a> for MyStruct {
+    // fn borrow(&self) -> &(MyTrait + 'a) {
+        // self
+    // }
+// }
 
 pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace('\n', "\n  ")
@@ -152,7 +197,7 @@ impl D2 {
         let angle = if x0 == x1 {
             X(90.)
         } else {
-            X(((y1-y0)/(x1-x0)).atan()*180.0/3.1415926)
+            ((y1-y0)/(x1-x0)).atan()*180.0/PI
         };
         let length = ((x1-x0).powf(2.0) + (y1-y0).powf(2.0)).powf(0.5);
         D2::rectangle( (length, w) )
@@ -233,29 +278,8 @@ impl D2 {
         D2::OffsetChamfer(ix.into(), Box::new(self))
     }
 
-
-    pub fn add(self, other: D2) -> D2 {
-        match self { // Combine Unions if possible
-            D2::Join("union", vec) => {
-                let mut vec = vec;
-                vec.push(other);
-                D2::Join("union", vec)
-                },
-            _ => D2::Join("union", Box::new(vec![self, other])),
-        }
-    }
-
     pub fn difference(self, other: D2) -> D2 {
-        D2::Difference(Box::new(self), Box::new(other))
-    }
-
-    #[allow(clippy::should_implement_trait)]
-    pub fn sub(self, other: D2) -> D2 {
-        D2::Difference(Box::new(self), Box::new(other))
-    }
-
-    pub fn and(self, other: D2) -> D2 {
-        D2::intersection(self, other)
+        self - other
     }
 
     pub fn half_plane(aim: Aim) -> D2 {
@@ -282,14 +306,11 @@ impl D2 {
     }
 
     pub fn intersection(self, other: D2) -> D2 {
-        match self { // Combine intersections if possible
-            D2::Join("intersection", vec) => {
-                let mut vec = vec;
-                vec.push(other);
-                D2::Join("intersection", vec)
-                },
-            _ => D2::Join("intersection", Box::new(vec![self, other])),
-        }
+        self & other
+    }
+
+    pub fn and(self, other: D2) -> D2 {
+        self & other
     }
 
     pub fn minkowski(self, other: D2) -> D2 {
@@ -444,12 +465,15 @@ impl D2 {
         self.scale_xy( (1, y) )
     }
 
-    pub fn linear_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
-        D3::LinearExtrude{height: x.into(), twist: X(0.), slices: 0, center: false, shape: Box::new(self.clone())}
+    pub fn linear_extrude<IX: Into<X>>(&self, i_height: IX) -> D3 {
+        let height = i_height.into();
+        D3::LinearExtrude{height, twist: X(0.), slices: 0, center: false, shape: Box::new(self.clone())}
     }
 
-    pub fn linear_extrude_extra<IX: Into<X>, IT: Into<X>>(&self, height: IX, twist: IT, slices: u32) -> D3 {
-        D3::LinearExtrude{height: height.into(), twist: twist.into(), slices: slices, center: false, shape: Box::new(self.clone())}
+    pub fn linear_extrude_extra<IX: Into<X>, IT: Into<X>>(&self, i_height: IX, i_twist: IT, slices: u32) -> D3 {
+        let height = i_height.into();
+        let twist = i_twist.into();
+        D3::LinearExtrude{height, twist, slices, center: false, shape: Box::new(self.clone())}
     }
 
     pub fn rotate_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
@@ -566,7 +590,7 @@ mod test {
     #[test]
     fn test_line() {
         assert_eq!(D2::line( (0,0), (1,1), 1 ).scad(),
-            "translate(v = [0, 0]) {\n  rotate(45.000004) {\n    translate(v = [0, -0.5]) {\n      square(size = [1.4142135, 1]);\n    }\n  }\n}"
+            "translate(v = [0, 0]) {\n  rotate(45) {\n    translate(v = [0, -0.5]) {\n      square(size = [1.4142135, 1]);\n    }\n  }\n}"
           );
     }
 

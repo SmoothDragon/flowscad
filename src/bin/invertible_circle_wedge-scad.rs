@@ -6,6 +6,8 @@ fn main() -> Result<()> {
     let theta = 2*PI - (1 + PI - (1 + PI*PI).sqrt());
     let result = D2::circle_r(1)
         .add(D2::sector(1 + theta, theta*180/PI))
+        .scale(10)
+        .linear_extrude(10)
          ;
     println!("$fn=256;\n{}", &result);
 

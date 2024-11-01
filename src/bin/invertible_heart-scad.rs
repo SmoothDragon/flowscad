@@ -2,7 +2,7 @@ use anyhow::Result;
 use flowscad::*;
 
 fn invertible_heart(r: X) -> Result<D2> {
-    let theta = (2.0/PI).atan()*180./PI;
+    let theta = (2.0_f32/PI).atan()*180./PI;
     Ok(D2::circle_r(0.5*r)
         .translate(v2(0., r*PI/4.))
         .rotate(theta)
