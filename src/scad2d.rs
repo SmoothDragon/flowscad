@@ -83,13 +83,6 @@ pub enum Aim {
     // Angle(X),
 }
 
-#[derive(Default, Debug)]
-pub struct Circle2{radius: f64}
-
-pub fn circle2() -> Circle2 {
-    Circle2{radius: 1.0}
-}
-
 #[derive(Clone, Debug)]
 pub enum D2 {
     Circle(X),
@@ -138,6 +131,10 @@ pub trait Radius {
     fn r(self, radius: f64) -> Self;
 }
 
+pub trait Diameter {
+    fn d(self, diameter: f64) -> Self;
+}
+
 impl Radius for Circle2 {
     fn r(self, radius: f64) -> Self {
         Self {
@@ -146,6 +143,40 @@ impl Radius for Circle2 {
         }
     }
 }
+
+impl Diameter for Circle2 {
+    fn d(self, diameter: f64) -> Self {
+        Self {
+            radius: diameter/2.,
+            ..self
+        }
+    }
+}
+
+#[derive(Default, Debug)]
+pub struct Circle2{radius: f64}
+
+pub fn circle2() -> Circle2 {
+    Circle2{radius: 1.0}
+}
+
+
+/** TODO
+pub fn sector2(r: f64, theta: f64) -> D2 {
+    if r < 180.0 {
+        D2::half_plane(Aim::S)
+            .rotate(theta)
+            .intersection(D2::half_plane(Aim::N))
+            .intersection(circle2().r(r))
+    } else {
+        D2::half_plane(Aim::S)
+            .rotate(theta)
+            .add(D2::half_plane(Aim::N))
+            .intersection(circle2().r(r))
+    }
+}
+*/
+
 
 impl D2 {
     /// Create a circle using variable inputs centered at the origin.
@@ -161,6 +192,14 @@ impl D2 {
     /// Create a circle of `radius` centered at the origin.
     pub fn circle_r<IX: Into<X>>(radius: IX) -> D2 {
         D2::Circle(2*radius.into())
+    }
+
+    pub fn chamfered_circle_r<IX: Into<X>>(r: IX) -> D2 {
+        let r: X = r.into();
+        D2::square(r)
+            .rotate(-135)
+            .intersection(D2::rectangle( (4.*r, 2.*r) ).center())
+            .add(D2::circle_r(r))
     }
 
     /// Create a square with side length `side` with lower left corner at the origin.
@@ -296,6 +335,10 @@ impl D2 {
 
     pub fn add_map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
         self.clone().add(f(self))
+    }
+
+    pub fn map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
+        f(self)
     }
 
     pub fn hull(self) -> D2 {
