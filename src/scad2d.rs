@@ -201,6 +201,23 @@ impl D2 {
             .intersection(D2::rectangle( (4.*r, 2.*r) ).center())
             .add(D2::circle_r(r))
     }
+    
+    pub fn circle_chain(n: u32) -> D2 {
+        let chain = D2::circle_d(2.)
+            .iter_translate([3.0_f32.sqrt()/2., 0.], n)
+            .union()
+            .offset_radius(-0.5)
+            ;
+        let gap_fill = D2::circle_d(1.5)
+            .difference(D2::circle_d(1))
+            .intersection(D2::square(2.).rotate(45))
+            .translate( (3.0_f32.sqrt()/4., -1.75) )
+            .iter_translate([3.0_f32.sqrt()/2., 0.], n-1)
+            .union()
+            // .mirror( (0,1) )
+            ;
+        chain
+    }
 
     /// Create a square with side length `side` with lower left corner at the origin.
     pub fn square<T: Into<X>>(side: T) -> D2 {
@@ -337,6 +354,14 @@ impl D2 {
         self.clone().add(f(self))
     }
 
+    pub fn repeat_map<F>(self, n:u32, f: F) -> D2 where F: Fn(D2) -> D2 {
+        let mut result = self;
+        for _ in 0..n {
+            result = f(result);
+        }
+        result
+    }
+
     pub fn map<F>(self, f: F) -> D2 where F: Fn(D2) -> D2 {
         f(self)
     }
@@ -396,12 +421,29 @@ impl D2 {
 
     pub fn regular_polygon<IX: Into<X>>(num_sides: u32, i_radius: IX) -> D2 {
         let r: XY = v2(i_radius.into(), 0);
-        let theta: X = 360 / Into::<X>::into(num_sides);
+        let theta: X = 360. / Into::<X>::into(num_sides);
         D2::convex_hull(
             (0..num_sides)
             .map(|ii| Into::<[f32; 2]>::into(r.rotate_deg(ii * theta)))
             .collect::<Vec<[f32; 2]>>()
             )
+    }
+
+    pub fn hexagram<IX: Into<X>>(r: IX) -> D2 {
+        D2::regular_polygon(3, r)
+            .add_map(|x| x.rotate(180))
+    }
+
+    pub fn pentagram<IX: Into<X>>(r: IX) -> D2 {
+        let r: X = r.into();
+        let wedge = D2::square(r);
+        wedge.clone().rotate(18)
+            .and(wedge.clone().rotate(72))
+            .and(wedge.clone().translate_x(-r/2))
+            .translate_y(-r)
+            .rotate(180)
+            .iter_rotate_equal(5)
+            .union()
     }
 
 
@@ -440,8 +482,13 @@ impl D2 {
         D2::Mirror(xy, Box::new(self.clone()))
     }
 
-    pub fn iter_translate(&self, xy: XY, n: u32) -> impl Iterator<Item = D2> + '_ {
-        (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32)))
+    // pub fn iter_translate(&self, xy: XY, n: u32) -> impl Iterator<Item = D2> + '_ {
+        // (0..n).map(move |ii| self.translate(v2(xy.0 * ii as f32, xy.1 * ii as f32)))
+    // }
+
+    pub fn iter_translate<IXY: Into<XY>>(&self, ixy: IXY, n: u32) -> impl Iterator<Item = D2> + '_ {
+        let xy = ixy.into();
+        (0..n).map(move |ii| self.clone().translate(xy * ii))
     }
 
     pub fn rotate<IX: Into<X>>(&self, theta: IX) -> D2 {

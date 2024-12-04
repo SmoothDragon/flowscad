@@ -39,6 +39,11 @@ impl<T: Clone, I: IntoIterator<Item=T>> PairedIterator<T> for I {
     }
 }
 
+pub fn arange(a: f64, b: f64, n: usize) -> impl Iterator<Item = f64> {
+    let step = (b-a) / (n as f64);
+    (0..n).map(move |x| a + (x as f64)*step)
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
