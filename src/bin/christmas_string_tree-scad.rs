@@ -24,6 +24,16 @@ fn triangle(r_triangle: f64, w: f64, h: f64) -> D3 {
         .linear_extrude(h)
 }
 
+fn triangle_gap(r_triangle: f64, w: f64, h: f64, gap: f64) -> D3 {
+    D2::regular_polygon(6, w)
+        .translate( (-r_triangle, r_triangle*3.0_f64.sqrt()/2.0 - 2.0*gap))
+        .add_map(|x| x.translate_y(-r_triangle*3.0_f64.sqrt() + gap))
+        .hull()
+        .iter_rotate_equal(3)
+        .union()
+        .linear_extrude(h)
+}
+
 fn main() -> Result<()> {
     let unit = 5.;
     let layer = 0.1;
@@ -34,9 +44,9 @@ fn main() -> Result<()> {
     let scale = h_tree/h_func;
     let limit = (h_tree/layer) as u64;
     // hex radius needed to achieve width of 0.6mm
-    let r_hex_hole = 0.6*3.0_f64.powf(-0.5);
+    let r_hex_hole = 1.0*3.0_f64.powf(-0.5);
     // hex radius needed to achieve width of 0.4mm
-    let r_hex_bridge = 0.4*3.0_f64.powf(-0.5);
+    let r_hex_bridge = 0.8*3.0_f64.powf(-0.5);
 
     let upper = (0..=limit)
         .map(|ii| ii as f64)
@@ -58,8 +68,8 @@ fn main() -> Result<()> {
         .translate_z(0.5*scale)
         ;
     let bridges = (0..=limit)
-        .filter(|ii| ii%8 < 4)
-        .map(|ii| (ii as f64, if ii%16 < 8 {0} else {60}))
+        .filter(|ii| ii%64 >= 48)
+        .map(|ii| (ii as f64, if ii%64 >=56  {0} else {60}))
         .map(|(ii, theta)| triangle(tree_edge(ii/scale*layer)*scale, r_hex_bridge, layer+0.01)
              .rotate_z(theta)
              .translate_z(ii*layer)
@@ -68,9 +78,9 @@ fn main() -> Result<()> {
         ;
 
     let holes = (0..=limit)
-        .filter(|ii| ii%8 < 4)
-        .map(|ii| (ii as f64, if ii%16 < 8 {0} else {60}))
-        .map(|(ii, theta)| triangle(tree_edge(ii/scale*layer)*scale, r_hex_hole, layer+0.01)
+        .filter(|ii| ii%64 >= 48)
+        .map(|ii| (ii as f64, if ii%64 >=56  {0} else {60}))
+        .map(|(ii, theta)| triangle_gap(tree_edge(ii/scale*layer)*scale, r_hex_hole, layer+0.01, 1.0)
              .rotate_z(theta)
              .translate_z(ii*layer)
              )
