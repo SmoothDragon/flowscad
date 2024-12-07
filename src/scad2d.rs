@@ -1,6 +1,7 @@
 //! Create OpenSCAD files using Rust.
 
 use crate::*;
+use anyhow::Result;
 
 pub const MAX2: f32 = 1000.;
 
@@ -223,6 +224,9 @@ impl D2 {
     pub fn square<T: Into<X>>(side: T) -> D2 {
         D2::Square(side.into())
     }
+
+    // pub fn square(side: f32) -> Option<D2> {
+        // D2::
 
     /// Create a rectangle with lower left corner at the origin.
     pub fn rectangle<IXY: Into<XY>>(xy: IXY) -> D2 {
