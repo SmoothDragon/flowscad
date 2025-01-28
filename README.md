@@ -6,3 +6,4 @@ How to do traits for SCAD structs
 
 For Ubuntu:
 apt install libclang1 clang
+apt install qhull-bin

@@ -8,4 +8,5 @@ pub use crate::cartesian::*;
 pub use crate::scad2d::*;
 pub use crate::scad3d::*;
 pub use crate::common::*;
+pub use crate::common::ScadParameter::*;
 pub use crate::convex_hull::*;

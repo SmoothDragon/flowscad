@@ -68,8 +68,8 @@ fn main() -> Result<()> {
         .translate_z(0.5*scale)
         ;
     let bridges = (0..=limit)
-        .filter(|ii| ii%64 >= 48)
-        .map(|ii| (ii as f64, if ii%64 >=56  {0} else {60}))
+        // .filter(|ii| ii%64 >= 48)
+        .map(|ii| (ii as f64, if ii%4 < 2  {0} else {60}))
         .map(|(ii, theta)| triangle(tree_edge(ii/scale*layer)*scale, r_hex_bridge, layer+0.01)
              .rotate_z(theta)
              .translate_z(ii*layer)
@@ -78,8 +78,8 @@ fn main() -> Result<()> {
         ;
 
     let holes = (0..=limit)
-        .filter(|ii| ii%64 >= 48)
-        .map(|ii| (ii as f64, if ii%64 >=56  {0} else {60}))
+        // .filter(|ii| ii%64 >= 48)
+        .map(|ii| (ii as f64, if ii%4 < 2  {0} else {60}))
         .map(|(ii, theta)| triangle_gap(tree_edge(ii/scale*layer)*scale, r_hex_hole, layer+0.01, 1.0)
              .rotate_z(theta)
              .translate_z(ii*layer)

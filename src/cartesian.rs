@@ -279,8 +279,8 @@ impl XY {
 
     pub fn rotate<IX: Into<X>>(self, i_theta: IX) -> Self {
         let theta = i_theta.into();
-        let cos_theta = (theta.0*std::f32::consts::PI/180.0).cos();
-        let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
+        // let cos_theta = (theta.0*std::f32::consts::PI/180.0).cos();
+        // let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
         XY(self.0 * theta.0.cos() - self.1 * theta.0.sin(), self.0 * theta.0.sin() + self.1 * theta.0.cos())
     }
 }
@@ -422,6 +422,7 @@ impl<IX: Into<X>, IY: Into<X>, IZ: Into<X>> From<(IX, IY, IZ)> for XYZ {
     }
 }
 
+// TODO: Remove
 impl<IX: Into<X>> std::ops::Mul<IX> for XYZ {
     type Output = XYZ;
     fn mul(self, other: IX) -> Self::Output {
@@ -429,6 +430,22 @@ impl<IX: Into<X>> std::ops::Mul<IX> for XYZ {
         XYZ(self.0 * d, self.1 * d, self.2 * d)
     }
 }
+
+// impl std::ops::Mul<f32> for XYZ {
+    // type Output = XYZ;
+    // fn mul(self, other: f32) -> Self::Output {
+        // let d = other;
+        // XYZ(self.0 * d, self.1 * d, self.2 * d)
+    // }
+// }
+
+// impl std::ops::Mul<u32> for XYZ {
+    // type Output = XYZ;
+    // fn mul(self, other: u32) -> Self::Output {
+        // let d = other as f32;
+        // XYZ(self.0 * d, self.1 * d, self.2 * d)
+    // }
+// }
 
 /// Generalized multiplication on the left is not currently possible
 /// Each type must be specified individually

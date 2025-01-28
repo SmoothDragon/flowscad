@@ -10,8 +10,8 @@ fn main() {
         .invert(100.)
         .minkowski(D3::truncated_octahedron(2.0*gap))
         .invert(99.)
-        .add_map(move |x| x.translate(v3(12.0*r_square,0,0)))
-        .add_map(move |x| x.translate(v3(0,12.0*r_square,0)))
+        // .add_map(move |x| x.translate(v3(4.0*r_square,0,0)))
+        // .add_map(move |x| x.translate(v3(0,4.0*r_square,0)))
         ;
     println!("{}", result);
 }

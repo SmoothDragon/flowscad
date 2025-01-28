@@ -16,7 +16,7 @@ fn main() -> Result<()> {
         .linear_extrude(40)
         ;
     let l_edge = r_oct/4.0;
-    let id_hex = l_edge * 3.0_f64.sqrt() / 2.0;
+    let id_hex = l_edge * 3.0_f32.sqrt() / 2.0;
     let target = D3::chamfer_regular_polygon_prism(6, 1, 0.5, 0.25)
         .add_map(|x| x.translate_x(l_edge))
         .hull()

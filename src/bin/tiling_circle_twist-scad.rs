@@ -18,10 +18,9 @@ fn main() -> Result<()> {
         .union()
         .translate_x(-1.)
         ;
-    // let result = half.clone().rotate_z
-        // .add(
     let result = half
         .add_map(|x| x.rotate((90,0,180)))
+        .scale(25)
         ;
     println!("$fn=128;\n{}", &result);
     Ok(())

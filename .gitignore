@@ -1,5 +1,6 @@
 # Vim
 *.sw*
+__pycache__
 
 # Generated files
 *.scad

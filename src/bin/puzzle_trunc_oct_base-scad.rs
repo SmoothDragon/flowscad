@@ -21,7 +21,7 @@ fn main() {
     let l_edge = 6.;
     let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
     // let r_hexagon = 0.75 * 3.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between hexagonal faces
-    // let r_square = 10.;
+    let r_square = 21.5;
     // let to = D3::truncated_octahedron(l_edge);
     // let gap = 0.1;
     let base_hex = D3::truncated_octahedron(2.2*r_square)
@@ -31,12 +31,15 @@ fn main() {
         .add_map(move |x| x.rotate(v3(0,0,60)))
         .translate(v3(0,0,4.0*3.0_f64.powf(-0.5)*r_square+3.9))
         ;
-    let diag_cube = D3::beveled_box(v3(6.0*r_square,6.0*r_square,6.0*r_square), r_square/2.0)
+    let diag_bevel_cube = D3::beveled_box(v3(5.5*r_square,5.5*r_square,5.5*r_square), r_square/2.0)
         .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
         ;
-    let result = diag_cube.clone()
+    let diag_cube = D3::cube(5.5*r_square)
+        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
+        ;
+    let result = diag_bevel_cube.clone()
         .add(base_hex)
-        .difference(diag_cube.translate(v3(0,0,10)))
+        .difference(diag_cube.translate(v3(0,0,20)))
         // .map(move |x| x.clone() - x.translate(v3(0,0,10)))
         // .add_map(move |x| x.translate(v3(0,2.0*r_square,0)))
         // .add_map(move |x| x.translate(v3(2.0*r_square,0,0)))

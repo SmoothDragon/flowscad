@@ -7,7 +7,8 @@ fn main() -> Result<()> {
     let r_face = 0.5*r_oct;
     let text_depth = 0.8;
     let base = D3::octahedron(r_oct)
-        .intersection(D3::sphere_r(0.707*r_oct))
+        .intersection(D3::sphere_r(0.707*r_oct))  // corner edges between faces
+        // .intersection(D3::sphere_r(0.68*r_oct))
         .rotate_z(45)
         .rotate_y(109.47/2.0)
         ;

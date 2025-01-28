@@ -3,6 +3,16 @@ pub use core::ops::*;
 
 pub const MAX: f32 = f32::MAX / 10000.;
 
+pub enum ScadParameter {
+    R, Radius, 
+    IR, InnerRadius,
+    OR, OuterRadius,
+    D, Diameter, 
+    ID, InnerDiameter, 
+    OD, OuterDiameter, 
+    S, Side,
+}
+
 pub trait SCAD {
     fn scad(&self) -> String;
     fn indent(&self) -> String;
@@ -42,6 +52,16 @@ impl<T: Clone, I: IntoIterator<Item=T>> PairedIterator<T> for I {
 pub fn arange(a: f64, b: f64, n: usize) -> impl Iterator<Item = f64> {
     let step = (b-a) / (n as f64);
     (0..n).map(move |x| a + (x as f64)*step)
+}
+
+pub fn linspace_f32(a: f32, b: f32, n: usize) -> impl Iterator<Item = f32> {
+    let step = (b-a) / (n as f32);
+    (0..=n).map(move |x| a + (x as f32)*step)
+}
+
+pub fn linstep_f32(a: f32, b: f32, n: usize) -> impl Iterator<Item = f32> {
+    let step = (b-a) / (n as f32);
+    (0..=n).map(move |x| a + (x as f32)*step)
 }
 
 #[cfg(test)]

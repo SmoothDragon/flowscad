@@ -44,6 +44,7 @@ pub enum D3 {
     Difference(Box<D3>, Box<D3>),
     Join(&'static str, Box<Vec<D3>>),
     // TODO: Join(&'static str, Box<Vec<D3>>),
+    Render(Box<D3>),
 }
 
 
@@ -106,6 +107,21 @@ impl std::iter::Product for D3 {
     }
 }
 
+impl BitAnd<D3> for D3 {
+    type Output = D3;
+
+    fn bitand(self, other: D3) -> D3 {
+        match self { // Combine intersections if possible
+            D3::Join("intersection", vec) => {
+                let mut vec = vec;
+                vec.push(other);
+                D3::Join("intersection", vec)
+                },
+            _ => D3::Join("intersection", Box::new(vec![self, other])),
+        }
+    }
+}
+
 
 impl SCAD for D3 {
     fn scad(&self) -> String {
@@ -144,6 +160,7 @@ impl SCAD for D3 {
             D3::Difference(shape1, shape2) => format!("difference() {{\n  {}\n  {}\n}}", indent_d3(shape1), indent_d3(shape2)),
             D3::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| x.indent().to_string()).collect::<Vec<_>>().join("\n  ")),
+            D3::Render(shape) => format!("render() {{\n  {}\n}}", indent_d3(shape)),
         }
     }
     fn indent(&self) -> String {
@@ -177,6 +194,16 @@ impl D3 {
     #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: D3) -> D3 {
         self + other
+    }
+
+    pub fn and(self, other: D3) -> D3 {
+        self & other
+    }
+
+
+    /// Render an object to reduce memory usage
+    pub fn render(self) -> D3 {
+        D3::Render(Box::new(self))
     }
 
     /// Center an object, if we know how
@@ -481,7 +508,7 @@ impl D3 {
             ]))
     }
 
-    pub fn octahedron(r: f64) -> D3 {
+    pub fn octahedron(r: f32) -> D3 {
         D3::convex_hull([
             [1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]
         ]).scale(r)
