@@ -231,8 +231,8 @@ impl D3 {
     /// Create a polyhedron from convex hull of vertices.
     pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
         let vertices = points.into_iter().map(|w| {
-            let v = w.into(); [v.0 as f64, v.1 as f64, v.2 as f64]
-        }).collect::<Vec<[f64; 3]>>();
+            let v = w.into(); [v.0 as f32, v.1 as f32, v.2 as f32]
+        }).collect::<Vec<[f32; 3]>>();
         let (vert, face) = convex_hull_3d(vertices);
         D3::Polyhedron(
             Box::new(

@@ -129,15 +129,15 @@ pub fn indent(shape: &D2) -> String {
 }
 
 pub trait Radius {
-    fn r(self, radius: f64) -> Self;
+    fn r(self, radius: f32) -> Self;
 }
 
 pub trait Diameter {
-    fn d(self, diameter: f64) -> Self;
+    fn d(self, diameter: f32) -> Self;
 }
 
 impl Radius for Circle2 {
-    fn r(self, radius: f64) -> Self {
+    fn r(self, radius: f32) -> Self {
         Self {
             radius: radius,
             ..self
@@ -146,7 +146,7 @@ impl Radius for Circle2 {
 }
 
 impl Diameter for Circle2 {
-    fn d(self, diameter: f64) -> Self {
+    fn d(self, diameter: f32) -> Self {
         Self {
             radius: diameter/2.,
             ..self
@@ -155,7 +155,7 @@ impl Diameter for Circle2 {
 }
 
 #[derive(Default, Debug)]
-pub struct Circle2{radius: f64}
+pub struct Circle2{radius: f32}
 
 pub fn circle2() -> Circle2 {
     Circle2{radius: 1.0}
@@ -163,7 +163,7 @@ pub fn circle2() -> Circle2 {
 
 
 /** TODO
-pub fn sector2(r: f64, theta: f64) -> D2 {
+pub fn sector2(r: f32, theta: f32) -> D2 {
     if r < 180.0 {
         D2::half_plane(Aim::S)
             .rotate(theta)
@@ -411,8 +411,8 @@ impl D2 {
     /// Create a polygon from convex hull of vertices.
     pub fn convex_hull<T: Into<XY>, I: IntoIterator<Item=T>>(points: I) -> D2 {
         let vertices = points.into_iter().map(|w| {
-            let v = w.into(); [v.0 as f64, v.1 as f64]
-        }).collect::<Vec<[f64; 2]>>();
+            let v = w.into(); [v.0 as f32, v.1 as f32]
+        }).collect::<Vec<[f32; 2]>>();
         let points = convex_hull_2d(vertices);
         D2::Polygon(
             Box::new(

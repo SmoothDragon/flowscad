@@ -71,7 +71,7 @@ Example output for octahedron:
 /// Use Qhull to compute convex hull of given points.
 /// `qhull` is run as a command line program.
 /// The bulk of the work here is creating the format expected and parsing the result.
-pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
+pub fn convex_hull_3d(points: Vec<[f32; 3]>) -> (Vec<[f32; 3]>, Vec<Vec<u32>>) {
     let points_text = points.iter()
         // .map(|v3| format!("{} {} {}\n", v3[0], v3[1], v3[2]))
         // .collect::<String>();
@@ -99,13 +99,13 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
     // Counts for vertices, faces, and edges
     let vfe = binding.split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
 
-    // Vertices have x,y,z coordinates => [f64; 3]
+    // Vertices have x,y,z coordinates => [f32; 3]
     let vertices = (0..vfe[0])
         .map(|_| { let binding = lines.next().unwrap().unwrap();
-            TryInto::<[f64; 3]>::try_into(
+            TryInto::<[f32; 3]>::try_into(
                 binding.split_whitespace()
-                .map(|x| x.parse::<f64>().unwrap())
-                .collect::<Vec<f64>>()
+                .map(|x| x.parse::<f32>().unwrap())
+                .collect::<Vec<f32>>()
             ).unwrap()
         }).collect::<Vec<_>>();
     // # of vertices for a face is >= 3
@@ -118,7 +118,7 @@ pub fn convex_hull_3d(points: Vec<[f64; 3]>) -> (Vec<[f64; 3]>, Vec<Vec<u32>>) {
     (vertices, faces)
 }
 
-pub fn convex_hull_2d(points: Vec<[f64; 2]>) -> Vec<[f64; 2]> {
+pub fn convex_hull_2d(points: Vec<[f32; 2]>) -> Vec<[f32; 2]> {
     let points_text = points.clone().iter()
         .fold(String::new(), |mut output, v2| {
             let _ = writeln!(output, "{} {}", v2[0], v2[1]);
