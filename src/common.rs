@@ -13,6 +13,29 @@ pub enum ScadParameter {
     S, Side,
 }
 
+pub trait Radius {
+    fn r(&self) -> Self;
+}
+
+// pub trait Diameter {
+    // fn d(&self, diameter: f32) -> Self where Self: Sized {
+        // Self {
+            // diameter,
+            // ..self
+        // }
+    // }
+// }
+
+// impl Diameter for Circle2 {
+    // fn d(self, diameter: f32) -> Self {
+        // Self {
+            // radius: diameter/2.,
+            // ..self
+        // }
+    // }
+// }
+
+
 pub trait SCAD {
     fn scad(&self) -> String;
     fn indent(&self) -> String;

@@ -4,17 +4,19 @@ use anyhow::Result;
 
 fn main() -> Result<()> {
     // let id_hex = X(24.75);
-    let or_hex = X(28.5)/2;
-    let id_hex = or_hex * 3.0_f32.sqrt();
-    let id_hex = X(27.25);
+    // let or_hex = X(28.5)/2;
+    // let id_hex = or_hex * 3.0_f32.sqrt();
+    let id_hex = X(26.);
     let or_hex = id_hex / 3.0_f32.sqrt();
-    let d_peg = X(5.91);
+    let d_peg = id_hex/3;
     let d_wall = X(1.0);
-    let h_wall = X(9.0);
+    let h_wall = X(13.0);
+    let gap = X(0.2);
 
     let h_base = X(3.0);
     let h_peg = X(3.0);
-    let center_peg = D3::chamfer_cylinder_d(h_base+h_peg, d_peg, 0.5)
+    // let center_peg = D3::chamfer_cylinder_d(h_base+h_peg, d_peg, 0.5)
+    let center_peg = D3::chamfer_regular_polygon_prism(6, h_base+h_peg, d_peg-2.*gap, 0.5)
         .translate_z(-h_base)
         ;
     let base = D2::regular_polygon(6, or_hex)

@@ -128,38 +128,6 @@ pub fn indent(shape: &D2) -> String {
     format!("{}", shape).replace('\n', "\n  ")
 }
 
-pub trait Radius {
-    fn r(self, radius: f32) -> Self;
-}
-
-pub trait Diameter {
-    fn d(self, diameter: f32) -> Self;
-}
-
-impl Radius for Circle2 {
-    fn r(self, radius: f32) -> Self {
-        Self {
-            radius: radius,
-            ..self
-        }
-    }
-}
-
-impl Diameter for Circle2 {
-    fn d(self, diameter: f32) -> Self {
-        Self {
-            radius: diameter/2.,
-            ..self
-        }
-    }
-}
-
-#[derive(Default, Debug)]
-pub struct Circle2{radius: f32}
-
-pub fn circle2() -> Circle2 {
-    Circle2{radius: 1.0}
-}
 
 
 /** TODO
