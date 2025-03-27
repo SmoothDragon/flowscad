@@ -31,13 +31,13 @@ fn spherical_cow<T: Into<X>>(radius: T) -> D3 {
 }
 
 fn main() -> Result<()> {
-    let r=11;
+    let r=12;
     let cow = spherical_cow(r);
     let result = (1..=6)
         .map(|x| cow.clone()
              .difference((D2::text(x.to_string()))
                  .linear_extrude(5)
-                 .translate( (0, -5, 1.5*r as f32) )
+                 .translate( (0, 0, 1.5*r as f32) )
                  )
              .translate(((x%3-1)*40, (x%2)*30, 0))
              )

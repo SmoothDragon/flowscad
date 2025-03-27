@@ -11,12 +11,12 @@ fn main() -> Result<()> {
     let d_peg = id_hex/3;
     let d_wall = X(1.0);
     let h_wall = X(13.0);
-    let gap = X(0.2);
+    let gap = X(0.4);
 
     let h_base = X(3.0);
     let h_peg = X(3.0);
     // let center_peg = D3::chamfer_cylinder_d(h_base+h_peg, d_peg, 0.5)
-    let center_peg = D3::chamfer_regular_polygon_prism(6, h_base+h_peg, d_peg-2.*gap, 0.5)
+    let center_peg = D3::chamfer_regular_polygon_prism(6, h_base+h_peg, d_peg/2.-gap, 0.5)
         .translate_z(-h_base)
         ;
     let base = D2::regular_polygon(6, or_hex)
@@ -37,18 +37,18 @@ fn main() -> Result<()> {
     let result3 = base.clone() + wall3;
     let result4 = base.clone() + wall4;
     let shift_x = 2.1*or_hex;
-    // let result = result1.translate_x(-2*shift_x)
-        // + result2.translate_x(-1*shift_x)
-        // + result3.translate_x(1*shift_x)
-        // + result4.translate_x(2*shift_x)
-        // ;
-    // let end_result = (0..6)
-        // .map(|x| result.clone()
-             // .translate_y((x-3)*shift_x)
-             // )
-        // .union()
-        // ;
-    let end_result = result1;
+    let result = result1.translate_x(-2*shift_x)
+        + result2.translate_x(-1*shift_x)
+        + result3.translate_x(1*shift_x)
+        + result4.translate_x(2*shift_x)
+        ;
+    let end_result = (0..6)
+        .map(|x| result.clone()
+             .translate_y((x-3)*shift_x)
+             )
+        .union()
+        ;
+    // let end_result = result1;
     println!("$fn=64;\n{}", &end_result);
     Ok(())
 }
