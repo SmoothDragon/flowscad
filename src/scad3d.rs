@@ -493,6 +493,7 @@ impl D3 {
     }
 
     pub fn truncated_octahedron(l_edge: f64) -> D3 {
+        // TODO: deprecate this in favor of troc_d?
         //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
         let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
@@ -507,6 +508,42 @@ impl D3 {
                 .rotate(v3(45, 0, 0)),
             ]))
     }
+
+    pub fn troc() -> D3 {
+        Self::troc_d(20.)
+    }
+
+    pub fn troc_d<T: Into<X>>(diameter: T) -> D3 {
+        let diameter: X = diameter.into();
+        let l_edge = diameter * 2.0_f32.powf(-1.5);
+
+        D3::Hull(Box::new(vec![
+            D3::cuboid(v3(l_edge, l_edge, diameter)).center()
+                .rotate(v3(0., 0., 45.)),
+            D3::cuboid(v3(l_edge, diameter, l_edge)).center()
+                .rotate(v3(0., 45., 0.)),
+            D3::cuboid(v3(diameter, l_edge, l_edge)).center()
+                .rotate(v3(45, 0, 0)),
+            ]))
+    }
+
+    pub fn beveled_truncated_octahedron(l_edge: f32) -> D3 {
+        //* Create a beveled truncated ocatahedron with edge length `l_edge` centered at the origin
+        let bevel = 0.5;
+        let r_square = 2.0_f32.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
+        D3::Hull(Box::new(vec![
+            D3::beveled_box(v3(l_edge, l_edge, 2.0*r_square), bevel)
+                .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
+                .rotate(v3(0., 0., 45.)),
+            D3::beveled_box(v3(l_edge, 2.*r_square, l_edge), bevel)
+                .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
+                .rotate(v3(0., 45., 0.)),
+            D3::beveled_box(v3(2.*r_square, l_edge, l_edge), bevel)
+                .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
+                .rotate(v3(45., 0., 0.)),
+            ]))
+    }
+
 
     pub fn octahedron(r: f32) -> D3 {
         D3::convex_hull([
@@ -560,6 +597,12 @@ mod test {
     fn test_cuboid_center() {
         assert_eq!(D3::cuboid(v3(1,2,3)).center().scad(), 
                    "translate(v = [-0.5, -1, -1.5]) {\n  cube(size = [1, 2, 3]);\n}");
+    }
+
+    #[test]
+    fn test_troc() {
+        assert_eq!(D3::troc().scad(),
+            "hull() {\n  rotate([0, 0, 45]) {\n    translate(v = [-3.535534, -3.535534, -10]) {\n      cube(size = [7.071068, 7.071068, 20]);\n    }\n  }\n  rotate([0, 45, 0]) {\n    translate(v = [-3.535534, -10, -3.535534]) {\n      cube(size = [7.071068, 20, 7.071068]);\n    }\n  }\n  rotate([45, 0, 0]) {\n    translate(v = [-10, -3.535534, -3.535534]) {\n      cube(size = [20, 7.071068, 7.071068]);\n    }\n  }\n}");
     }
 
     #[test]

@@ -1,6 +1,7 @@
 # Vim
 *.sw*
 __pycache__
+.tmux_envrc
 
 # Generated files
 *.scad
