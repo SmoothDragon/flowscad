@@ -1,7 +1,7 @@
 //! Create OpenSCAD files using Rust.
 
 use crate::*;
-use anyhow::Result;
+// use anyhow::Result;
 
 pub const MAX2: f32 = 1000.;
 
@@ -177,7 +177,7 @@ impl D2 {
             .union()
             .offset_radius(-0.5)
             ;
-        let gap_fill = D2::circle_d(1.5)
+        let _gap_fill = D2::circle_d(1.5)
             .difference(D2::circle_d(1))
             .intersection(D2::square(2.).rotate(45))
             .translate( (3.0_f32.sqrt()/4., -1.75) )
