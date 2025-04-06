@@ -125,15 +125,13 @@ impl BitAnd<D3> for D3 {
 
 impl From<BitCube3> for D3 {
     fn from(bc3: BitCube3) -> Self {
-        let block = D3::cube(1.0);
-        (0..27)
-            .filter(|ii| (bc3.0 >> ii) & 1 == 1)
-            .map(|ii| v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| block.clone().translate(xyz))
-            .union()
-            // .translate(v3(-1,-1,-1))
-            .scale(10)
-            .color(ColorEnum::Red)
+        D3::polycube_from_bitcube3(bc3, 17., 1., 0.1)
+    }
+}
+
+impl From<BitCube4> for D3 {
+    fn from(bc4: BitCube4) -> Self {
+        D3::polycube_from_bitcube4(bc4, 15., 1., 0.1)
     }
 }
 
@@ -206,20 +204,18 @@ impl D3 {
     }
 
     /// Create a polycube from BitCube3
+    /// Start with gapped beveled boxes
+    /// Add all adjacent cube links
+    /// Add all 2x2x1 blocks
+    /// Add all 2x2x2 blocks
+    /// TODO: This only works with connected polycubes
     pub fn polycube_from_bitcube3(bc3: BitCube3, edge: f32, bevel: f32, gap: f32) -> Self {
-        /// Start with gapped beveled boxes
-        /// Add all adjacent cube links
-        /// Add all 2x2x1 blocks
-        /// Add all 2x2x2 blocks
-        let block = D3::beveled_box((edge-gap)*v3(1,1,1), bevel);
-        let block211 = D3::beveled_cube_block((2,1,1), edge, bevel, gap);
-        let block221 = D3::beveled_box((edge-gap)*v3(2,2,1), bevel);
-        let block222 = D3::beveled_box((edge-gap)*v3(2,2,2), bevel);
+        // let block = D3::beveled_box((edge-gap)*v3(1,1,1), bevel);
         (0..27)
             .filter(|ii| ii%3 != 2)
-            .filter(|ii| (bc3.0 >> ii) & 0x3 == 0x3)
+            .filter(|ii| (bc3.0 >> ii) & 0o3 == 0o3)
             .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| block211.clone().translate(xyz))
+            .map(|xyz| D3::beveled_cube_block((2,1,1), edge, bevel, gap).translate(xyz))
             .union()
             +
         (0..27)
@@ -255,6 +251,69 @@ impl D3 {
             .filter(|ii| (bc3.0 >> ii) & 0o11011 == 0o11011)
             .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
             .map(|xyz| D3::beveled_cube_block((1,2,2), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii%3 != 2 && (ii/3)%3 !=2 && ii/9 != 2)
+            .filter(|ii| (bc3.0 >> ii) & 0o33033 == 0o33033)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((2,2,2), edge, bevel, gap).translate(xyz))
+            .union()
+    }
+
+    /// Create a polycube from BitCube4
+    /// Start with gapped beveled boxes
+    /// Add all adjacent cube links
+    /// Add all 2x2x1 blocks
+    /// Add all 2x2x2 blocks
+    pub fn polycube_from_bitcube4(bc4: BitCube4, edge: f32, bevel: f32, gap: f32) -> Self {
+        (0..64)
+            .filter(|ii| ii%4 != 3)
+            .filter(|ii| (bc4.0 >> ii) & 0x3 == 0x3)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((2,1,1), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| (ii/4)%4 != 3)
+            .filter(|ii| (bc4.0 >> ii) & 0x11 == 0x11)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((1,2,1), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii/16 != 3)
+            .filter(|ii| (bc4.0 >> ii) & 0x10001 == 0x10001)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((1,1,2), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii%4 != 3 && (ii/4)%4 != 3)
+            .filter(|ii| (bc4.0 >> ii) & 0x33 == 0x33)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((2,2,1), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii%4 != 2 && ii/16 != 2)
+            .filter(|ii| (bc4.0 >> ii) & 0x3003 == 0x3003)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((2,1,2), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| (ii/4)%4 != 3 && ii/16 != 3)
+            .filter(|ii| (bc4.0 >> ii) & 0x110011 == 0x110011)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((1,2,2), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii%4 != 3 && (ii/4)%4 != 3 && ii/16 != 3)
+            .filter(|ii| (bc4.0 >> ii) & 0x330033 == 0x330033)
+            .map(|ii| edge*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| D3::beveled_cube_block((2,2,2), edge, bevel, gap).translate(xyz))
             .union()
     }
 
