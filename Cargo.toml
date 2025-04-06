@@ -25,3 +25,5 @@ rand = "0.8.5"
 rand_distr = "0.4.3"
 typed_floats = "1.0.2"
 
+bitperm = { git = "https://github.com/SmoothDragon/bitperm.git" }
+

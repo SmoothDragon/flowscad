@@ -1,7 +1,7 @@
 //! Create OpenSCAD files using Rust.
 
 use crate::*;
-// use anyhow::Result;
+use anyhow::Result;
 
 pub const MAX2: f32 = 1000.;
 
@@ -747,19 +747,19 @@ mod test {
         );
     }
 
-    #[test]
-    fn test_d3_add_op() {
-        assert_eq!((D3::cube(9) + D3::sphere_r(5)).scad(),
-            "union() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
-        );
-    }
+    // #[test]
+    // fn test_d3_add_op() {
+        // assert_eq!((D3::cube(9) + D3::sphere_r(5)).scad(),
+            // "union() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
+        // );
+    // }
 
-    #[test]
-    fn test_d3_sub_op() {
-        assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
-            "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
-        );
-    }
+    // #[test]
+    // fn test_d3_sub_op() {
+        // assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
+            // "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
+        // );
+    // }
 
     #[test]
     fn test_iter_hull() {

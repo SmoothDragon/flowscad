@@ -1,4 +1,5 @@
 use crate::*;
+// use bitperm::*;
 
 impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     fn hull(self) -> D3 {
@@ -60,7 +61,7 @@ impl std::fmt::Display for D3 {
 
 impl std::iter::Sum for D3 {
     fn sum<I>(iter: I) -> Self
-      where 
+      where
         I: Iterator<Item = Self>
     {
         D3::Union(Box::new(iter.collect::<Vec<Self>>()))
@@ -100,7 +101,7 @@ impl std::ops::Sub<D3> for D3 {
 
 impl std::iter::Product for D3 {
     fn product<I>(iter: I) -> Self
-      where 
+      where
         I: Iterator<Item = Self>
     {
         D3::Intersection(Box::new(iter.collect::<Vec<Self>>()))
@@ -122,6 +123,20 @@ impl BitAnd<D3> for D3 {
     }
 }
 
+impl From<BitCube3> for D3 {
+    fn from(bc3: BitCube3) -> Self {
+        let block = D3::cube(1.0);
+        (0..27)
+            .filter(|ii| (bc3.0 >> ii) & 1 == 1)
+            .map(|ii| v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| block.clone().translate(xyz))
+            .union()
+            // .translate(v3(-1,-1,-1))
+            .scale(10)
+            .color(ColorEnum::Red)
+    }
+}
+
 
 impl SCAD for D3 {
     fn scad(&self) -> String {
@@ -134,10 +149,10 @@ impl SCAD for D3 {
             D3::Sphere{radius} => format!("sphere(r = {});", radius),
             D3::Cylinder(h, d) => format!("cylinder(h = {}, d = {});", h, d),
             D3::Frustum(h, d1, d2) => format!("cylinder(h = {}, d1 = {}, d2 = {});", h, d1, d2),
-            D3::Polyhedron(points, faces) => format!("polyhedron(points = [{}], faces = {:?});", 
+            D3::Polyhedron(points, faces) => format!("polyhedron(points = [{}], faces = {:?});",
                 points.iter().map(|xyz| format!("{}", xyz)).collect::<Vec<_>>().join(", "),
                 faces),
-            D3::Color(color, shape) => format!("color({}) {{\n  {}\n}}", 
+            D3::Color(color, shape) => format!("color({}) {{\n  {}\n}}",
                 match color {
                     ColorEnum::Blue => "\"blue\"",
                     ColorEnum::Green => "\"green\"",
@@ -190,6 +205,59 @@ impl D3 {
         D3::Sphere{radius: diameter.into()/2}
     }
 
+    /// Create a polycube from BitCube3
+    pub fn polycube_from_bitcube3(bc3: BitCube3, edge: f32, bevel: f32, gap: f32) -> Self {
+        /// Start with gapped beveled boxes
+        /// Add all adjacent cube links
+        /// Add all 2x2x1 blocks
+        /// Add all 2x2x2 blocks
+        let block = D3::beveled_box((edge-gap)*v3(1,1,1), bevel);
+        let block211 = D3::beveled_cube_block((2,1,1), edge, bevel, gap);
+        let block221 = D3::beveled_box((edge-gap)*v3(2,2,1), bevel);
+        let block222 = D3::beveled_box((edge-gap)*v3(2,2,2), bevel);
+        (0..27)
+            .filter(|ii| ii%3 != 2)
+            .filter(|ii| (bc3.0 >> ii) & 0x3 == 0x3)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| block211.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (ii/3)%3 != 2)
+            .filter(|ii| (bc3.0 >> ii) & 0o11 == 0o11)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((1,2,1), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii/9 != 2)
+            .filter(|ii| (bc3.0 >> ii) & 0o1001 == 0o1001)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((1,1,2), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii%3 != 2 && (ii/3)%3 !=2 )
+            .filter(|ii| (bc3.0 >> ii) & 0o33 == 0o33)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((2,2,1), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii%3 != 2 && ii/9 !=2 )
+            .filter(|ii| (bc3.0 >> ii) & 0o3003 == 0o3003)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((2,1,2), edge, bevel, gap).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (ii/3)%3 !=2 && ii/9 != 2)
+            .filter(|ii| (bc3.0 >> ii) & 0o11011 == 0o11011)
+            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((1,2,2), edge, bevel, gap).translate(xyz))
+            .union()
+    }
+
     /// Add (union) two objects
     #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: D3) -> D3 {
@@ -212,7 +280,7 @@ impl D3 {
             D3::Cylinder(h, _d) => self.translate(v3(0,0,-h/2)),
             D3::Cube(x) => self.translate(-v3(x,x,x)/2),
             D3::Cuboid(xyz) => self.translate(-xyz/2),
-            D3::LinearExtrude{height: h, twist: t, slices, center: _, shape} 
+            D3::LinearExtrude{height: h, twist: t, slices, center: _, shape}
             => D3::LinearExtrude{height: h, twist: t, slices, center: true, shape},
             _ => self,
         }
@@ -256,12 +324,13 @@ impl D3 {
     }
 
     /// Subtract `self` from a cube centered at the origin with edge length `l_edge`.
-    // pub fn invert<T: Into<X>>(self, l_edge: T) -> D3 { TODO
-    pub fn invert(self, l_edge: f64) -> D3 {
+    pub fn invert<T: Into<X>>(self, l_edge: T) -> D3 {
+    // pub fn invert(self, l_edge: f64) -> D3 {
+        let l_edge: X = l_edge.into();
         let shift = -l_edge/2.0;
         D3::cube(l_edge)
-            .translate(v3(shift,shift,shift)) 
-            // .translate(-0.5*v3(l_edge,l_edge,l_edge)) 
+            .translate(v3(shift,shift,shift))
+            // .translate(-0.5*v3(l_edge,l_edge,l_edge))
             - self
     }
 
@@ -454,7 +523,7 @@ impl D3 {
     }
 
     pub fn beveled_box<T: Into<X>>(xyz: XYZ, bevel_in: T) -> D3 {
-        let x = xyz.0; 
+        let x = xyz.0;
         let y = xyz.1;
         let z = xyz.2;
         let bevel = bevel_in.into();
@@ -466,9 +535,9 @@ impl D3 {
     }
 
     pub fn beveled_cube_block<T0: Into<X>, T1: Into<X>, T2: Into<X>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
-        let cube_side: X = i_cube_side.into(); 
-        let bevel: X = i_bevel.into(); 
-        let gap: X = i_gap.into(); 
+        let cube_side: X = i_cube_side.into();
+        let bevel: X = i_bevel.into();
+        let gap: X = i_gap.into();
         D3::beveled_box(v3(cube_side-2*gap, cube_side-2*gap, cube_side-2*gap), bevel)
             .translate(v3(gap, gap, gap))
             .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0).union()
@@ -481,7 +550,7 @@ impl D3 {
                         )).translate(v3(gap+bevel,gap+bevel,gap+bevel))
                     )
     }
-    
+
     /// Creates a rounded cube
     ///    1) Centered at the origin
     ///    2) Angle of attack is 30 degrees for the transition from cube face to sphere.
@@ -572,7 +641,7 @@ mod test {
 
     #[test]
     fn test_cylinder_center() {
-        assert_eq!(D3::cylinder_d(8.0, 5).center().scad(), 
+        assert_eq!(D3::cylinder_d(8.0, 5).center().scad(),
                    "translate(v = [0, 0, -4]) {\n  cylinder(h = 8, d = 5);\n}");
     }
 
@@ -595,7 +664,7 @@ mod test {
 
     #[test]
     fn test_cuboid_center() {
-        assert_eq!(D3::cuboid(v3(1,2,3)).center().scad(), 
+        assert_eq!(D3::cuboid(v3(1,2,3)).center().scad(),
                    "translate(v = [-0.5, -1, -1.5]) {\n  cube(size = [1, 2, 3]);\n}");
     }
 
@@ -716,13 +785,13 @@ mod test {
 
     #[test]
     fn test_scale() {
-        assert_eq!(D3::cube(9).scale_x(5).scad(), 
+        assert_eq!(D3::cube(9).scale_x(5).scad(),
                    "scale(v = [5, 1, 1]) {\n  cube(size = 9);\n}"
         );
-        assert_eq!(D3::cube(9).scale_y(5).scad(), 
+        assert_eq!(D3::cube(9).scale_y(5).scad(),
                    "scale(v = [1, 5, 1]) {\n  cube(size = 9);\n}"
         );
-        assert_eq!(D3::cube(9).scale_z(5).scad(), 
+        assert_eq!(D3::cube(9).scale_z(5).scad(),
                    "scale(v = [1, 1, 5]) {\n  cube(size = 9);\n}"
         );
     }
@@ -805,5 +874,13 @@ mod test {
             "hull() {\n  translate(v = [10, 20, 30]) {\n    cube(size = 4);\n  }\n  translate(v = [11, 22, 33]) {\n    cube(size = 4);\n  }\n  translate(v = [12, 24, 36]) {\n    cube(size = 4);\n  }\n  translate(v = [13, 26, 39]) {\n    cube(size = 4);\n  }\n}"
         );
     }
+
+    #[test]
+    fn test_from_bitcube3() {
+        assert_eq!(D3::from(BitCube3(0o1037)).scad(),
+        "color(\"red\") {\n  scale(v = 10) {\n    union() {\n      translate(v = [0, 0, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [1, 0, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [2, 0, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [0, 1, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [1, 1, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [0, 0, 1]) {\n        cube(size = 1);\n      }\n    }\n  }\n}"
+        );
+    }
+
 
 }
