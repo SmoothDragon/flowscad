@@ -1018,11 +1018,9 @@ mod test {
     }
 
     #[test]
-    fn test_from_bitcube3() {
-        assert_eq!(D3::from(BitCube3(0o1037)).scad(),
-        "color(\"red\") {\n  scale(v = 10) {\n    union() {\n      translate(v = [0, 0, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [1, 0, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [2, 0, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [0, 1, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [1, 1, 0]) {\n        cube(size = 1);\n      }\n      translate(v = [0, 0, 1]) {\n        cube(size = 1);\n      }\n    }\n  }\n}"
-        );
+    fn test_polycube_from_bitcube3() {
+        assert_eq!(D3::polycube_from_bitcube3(BitCube3(0o3), 17., 0., 0.).scad(),
+            "union() {\n  translate(v = [0, 0, 0]) {\n    union() {\n      translate(v = [0, 0, 0]) {\n        union() {\n          translate(v = [0, 0, 0]) {\n            union() {\n              translate(v = [0, 0, 0]) {\n                hull() {\n                  translate(v = [0, 0, 0]) {\n                    cube(size = [17, 17, 17]);\n                  }\n                  translate(v = [0, 0, 0]) {\n                    cube(size = [17, 17, 17]);\n                  }\n                  translate(v = [0, 0, 0]) {\n                    cube(size = [17, 17, 17]);\n                  }\n                }\n              }\n              translate(v = [17, 0, 0]) {\n                hull() {\n                  translate(v = [0, 0, 0]) {\n                    cube(size = [17, 17, 17]);\n                  }\n                  translate(v = [0, 0, 0]) {\n                    cube(size = [17, 17, 17]);\n                  }\n                  translate(v = [0, 0, 0]) {\n                    cube(size = [17, 17, 17]);\n                  }\n                }\n              }\n            }\n          }\n        }\n      }\n      translate(v = [0, 0, 0]) {\n        cube(size = [34, 17, 17]);\n      }\n    }\n  }\n  union() {\n    \n  }\n  union() {\n    \n  }\n  union() {\n    \n  }\n  union() {\n    \n  }\n  union() {\n    \n  }\n  union() {\n    \n  }\n}"
+            );
     }
-
-
 }
