@@ -17,7 +17,6 @@ exclude = ["/src/bin"]
 
 [dependencies]
 anyhow = "1.0.86"
-bon = "2.3.0"
 derive_more = "0.99.18"
 itertools = "0.12.1"
 qhull = "0.3.1"

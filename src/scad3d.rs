@@ -317,6 +317,89 @@ impl D3 {
             .union()
     }
 
+    pub fn polytroc_from_bittroc4(bt4: BitTroc4, d: f32, gap: f32) -> Self { 
+        let block = D3::troc_d(d-gap);
+        // let s_bridge = D3::cube(d/2.828-gap).center().rotate_x(45).translate_x(-d/2.);
+        let x_bridge = D3::cube((d-2.*gap)/2.828).center().rotate_x(45).translate_x(d/2.);
+        let y_bridge = x_bridge.clone().rotate_z(90);
+        let z_bridge = x_bridge.clone().rotate_y(-90);
+        let d_bridge = Self::chamfer_regular_polygon_prism(6, d, d/3., 0).rotate((-109.47/2.,0,-45));
+        (0..64)
+            .filter(|ii| (bt4.c4.0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| block.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| block.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii%4 != 3)
+            .filter(|ii| (bt4.c4.0 >> ii) & 0x3 == 0x3)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| x_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| (ii/4)%4 != 3)
+            .filter(|ii| (bt4.c4.0 >> ii) & 0x11 == 0x11)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| y_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii/16 != 3)
+            .filter(|ii| (bt4.c4.0 >> ii) & 0x10001 == 0x10001)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| z_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(bt4.c4).0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| d_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>21)).0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| d_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>4)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,1,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>17)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>1)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(1,0,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>20)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+    }
+
     /// Add (union) two objects
     #[allow(clippy::should_implement_trait)]
     pub fn add(self, other: D3) -> D3 {
