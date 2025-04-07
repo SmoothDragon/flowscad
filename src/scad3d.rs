@@ -135,6 +135,12 @@ impl From<BitCube4> for D3 {
     }
 }
 
+impl From<BitTroc4> for D3 {
+    fn from(bc4: BitTroc4) -> Self {
+        D3::polytroc_from_bittroc4(bc4, 15., 0.1)
+    }
+}
+
 
 impl SCAD for D3 {
     fn scad(&self) -> String {
@@ -155,6 +161,12 @@ impl SCAD for D3 {
                     ColorEnum::Blue => "\"blue\"",
                     ColorEnum::Green => "\"green\"",
                     ColorEnum::Red => "\"red\"",
+                    ColorEnum::Black => "\"black\"",
+                    ColorEnum::Yellow => "\"yellow\"",
+                    ColorEnum::Orange => "\"orange\"",
+                    ColorEnum::Lime => "\"lime\"",
+                    ColorEnum::Cyan => "\"cyan\"",
+                    ColorEnum::Pink => "\"pink\"",
                 }
                 , shape.indent()),
             D3::Scale(s, shape) => format!("scale(v = {}) {{\n  {}\n}}", s, shape.indent()),

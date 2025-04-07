@@ -590,6 +590,12 @@ impl SCAD for D2 {
                     ColorEnum::Blue => "\"blue\"",
                     ColorEnum::Green => "\"green\"",
                     ColorEnum::Red => "\"red\"",
+                    ColorEnum::Black => "\"black\"",
+                    ColorEnum::Yellow => "\"yellow\"",
+                    ColorEnum::Orange => "\"orange\"",
+                    ColorEnum::Lime => "\"lime\"",
+                    ColorEnum::Cyan => "\"cyan\"",
+                    ColorEnum::Pink => "\"pink\"",
                 }
                 , indent(shape)),
             D2::Svg(filename) => format!("import(\"{}\", center=true);", filename),

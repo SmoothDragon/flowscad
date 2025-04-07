@@ -54,6 +54,12 @@ pub enum ColorEnum {
     Blue,
     Green,
     Red,
+    Black,
+    Yellow,
+    Orange,
+    Lime,
+    Cyan,
+    Pink,
 }
 
 
