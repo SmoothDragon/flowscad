@@ -152,6 +152,18 @@ impl D2 {
     // pub fn circle<T: Into<X>>(diameter: T) -> D2 {
         // D2::Circle(diameter.into())
     // }
+    
+    /// Set outer diameter of shape
+    pub fn od<T: Into<X>>(self, diameter: T) -> D2 {
+        match self {
+            D2::Circle(_) => D2::Circle(diameter.into()),
+            D2::Square(_) => D2::Square(diameter.into() * 2.0_f32.powf(-0.5)),
+            _ => self,
+        }
+    }
+            // D2::Square(size) => format!("square(size = {});", size),
+            // D2::Rectangle(XY(x,y)) => format!("square(size = [{}, {}]);", x, y),
+            // D2::Text(letters) => format!("text(\"{}\", font=\"Liberation Sans\");", letters),
 
     /// Create a circle of `diameter` centered at the origin.
     pub fn circle_d<T: Into<X>>(diameter: T) -> D2 {
@@ -401,6 +413,16 @@ impl D2 {
             )
     }
 
+    pub fn hexagon<IX: Into<X>>(o_radius: IX) -> D2 {
+        let r: XY = v2(o_radius.into(), 0);
+        let theta = X(60.);
+        D2::convex_hull(
+            (0..6)
+            .map(|ii| Into::<[f32; 2]>::into(r.rotate_deg(ii * theta)))
+            .collect::<Vec<[f32; 2]>>()
+            )
+    }
+
     pub fn hexagram<IX: Into<X>>(r: IX) -> D2 {
         D2::regular_polygon(3, r)
             .add_map(|x| x.rotate(180))
@@ -566,6 +588,7 @@ impl std::fmt::Display for D2 {
         write!(f, "{}", &self.scad())
     }
 }
+
 impl SCAD for D2 {
     fn scad(&self) -> String {
         match &self {
@@ -634,11 +657,13 @@ mod test {
     fn test_circle() {
         assert_eq!(D2::circle_d(5).scad(), "circle(d = 5);");
         assert_eq!(D2::circle_r(5).scad(), "circle(d = 10);");
+        assert_eq!(D2::circle_r(0).od(10).scad(), "circle(d = 10);");
     }
 
     #[test]
     fn test_square() {
         assert_eq!(D2::square(9).scad(), "square(size = 9);");
+        assert_eq!(D2::square(0).od(10.0*2.0_f32.sqrt()).scad(), "square(size = 10);");
     }
 
     #[test]
