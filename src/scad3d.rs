@@ -370,6 +370,27 @@ impl D3 {
             .union()
             +
         (0..27)
+            .filter(|ii| ii%2 != 2)
+            .filter(|ii| (bt4.c3.0 >> ii) & 0o3 == 0o3)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| x_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (ii/3)%3 != 2)
+            .filter(|ii| (bt4.c3.0 >> ii) & 0o11 == 0o11)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| y_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii/9 != 2)
+            .filter(|ii| (bt4.c3.0 >> ii) & 0o1001 == 0o1001)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| z_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
             .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
             .filter(|ii| (BitCube3::from(bt4.c4).0 >> ii) & 1 == 1)
             .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
@@ -410,6 +431,112 @@ impl D3 {
             .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
             .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz+d*0.5*v3(1,1,1)))
             .union()
+    }
+
+    pub fn polyrhombdo_from_bittroc4(bt4: BitTroc4, d: f32, gap: f32) -> Self { 
+        let block = D3::rhombdo();
+        // let x_bridge = D3::cube((d-2.*gap)/2.828).center().rotate_x(45).translate_x(d/2.);
+        // let y_bridge = x_bridge.clone().rotate_z(90);
+        // let z_bridge = x_bridge.clone().rotate_y(-90);
+        // let d_bridge = Self::chamfer_regular_polygon_prism(6, d, d/3., 0).rotate((-109.47/2.,0,-45));
+        let d = 4;
+        (0..64)
+            .filter(|ii| (bt4.c4.0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| block.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| block.clone().translate(xyz+2*v3(1,0,1)))
+            .union()
+            /*
+            +
+        (0..64)
+            .filter(|ii| ii%4 != 3)
+            .filter(|ii| (bt4.c4.0 >> ii) & 0x3 == 0x3)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| x_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| (ii/4)%4 != 3)
+            .filter(|ii| (bt4.c4.0 >> ii) & 0x11 == 0x11)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| y_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..64)
+            .filter(|ii| ii/16 != 3)
+            .filter(|ii| (bt4.c4.0 >> ii) & 0x10001 == 0x10001)
+            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|xyz| z_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii%2 != 2)
+            .filter(|ii| (bt4.c3.0 >> ii) & 0o3 == 0o3)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| x_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (ii/3)%3 != 2)
+            .filter(|ii| (bt4.c3.0 >> ii) & 0o11 == 0o11)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| y_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| ii/9 != 2)
+            .filter(|ii| (bt4.c3.0 >> ii) & 0o1001 == 0o1001)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| z_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(bt4.c4).0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| d_bridge.clone().translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>21)).0 >> ii) & 1 == 1)
+            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|xyz| d_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>4)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,1,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>17)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>1)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(1,0,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz))
+            .union()
+            +
+        (0..27)
+            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>20)).0 >> ii) & 1 == 1)
+            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
+            .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz+d*0.5*v3(1,1,1)))
+            .union()
+            */
     }
 
     /// Add (union) two objects
@@ -688,6 +815,10 @@ impl D3 {
             ]))
     }
 
+    /// Creates a block of connected beveled cubes.
+    /// Each block is centered inside a cube with i_cube_side length.
+    /// Each of the six sides are i_gap away from each cube face.
+    /// Each cube in the block is connected to make up for this gap.
     pub fn beveled_cube_block<T0: Into<X>, T1: Into<X>, T2: Into<X>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
         let cube_side: X = i_cube_side.into();
         let bevel: X = i_bevel.into();
@@ -749,6 +880,28 @@ impl D3 {
                 .rotate(v3(45, 0, 0)),
             ]))
     }
+
+    /// Construct a rhombic dodecahedron with integer coordinates
+    /// and an edge length of sqrt(3).
+    pub fn rhombdo() -> D3 {
+        D3::convex_hull(vec![
+            [1.,1.,1.], 
+            [1.,1.,-1.], 
+            [1.,-1.,1.], 
+            [1.,-1.,-1.], 
+            [-1.,1.,1.], 
+            [-1.,1.,-1.], 
+            [-1.,-1.,1.], 
+            [-1.,-1.,-1.], 
+            [2.,0.,0.],
+            [-2.,0.,0.],
+            [0.,2.,0.],
+            [0.,-2.,0.],
+            [0.,0.,2.],
+            [0.,0.,-2.],
+        ])
+    }
+
 
     pub fn beveled_truncated_octahedron(l_edge: f32) -> D3 {
         //* Create a beveled truncated ocatahedron with edge length `l_edge` centered at the origin

@@ -225,6 +225,19 @@ impl D2 {
         }
     }
 
+    /// Create an egg shape from one variable.
+    ///     r = radius of semicircle on one side
+    ///     2r = radius of transition curve
+    ///     smaller radius end cap
+    pub fn egg<IR: Into<X>>(ir: IR) -> D2 {
+        let r: X = ir.into();
+        let r2 = (2.0-2.0_f32.sqrt())*r;
+        D2::circle_r(r)
+            + D2::sector(2*r, 45).translate_x(-r)
+            + D2::sector(2*r, 45).translate_x(-r).mirror(XY(1.,0.))
+            + D2::circle_r(r2).translate_y(r)
+    }
+
     pub fn text(letters: String) -> D2 {
         D2::Text(letters)
     }
