@@ -234,7 +234,7 @@ impl D2 {
         let r2 = (2.0-2.0_f32.sqrt())*r;
         D2::circle_r(r)
             + D2::sector(2*r, 45).translate_x(-r)
-            + D2::sector(2*r, 45).translate_x(-r).mirror(XY(1.,0.))
+            + D2::sector(2*r, 45).translate_x(-r).mirror((1,0))
             + D2::circle_r(r2).translate_y(r)
     }
 
@@ -337,12 +337,12 @@ impl D2 {
 
     pub fn half_plane(aim: Aim) -> D2 {
         match aim {
-            Aim::N => D2::square(MAX2).translate(v2(-MAX2/2., 0.)),
-            Aim::S => D2::square(MAX2).translate(v2(-MAX2/2., -MAX2)),
-            Aim::E => D2::square(MAX2).translate(v2(0., -MAX2/2.)),
-            Aim::W => D2::square(MAX2).translate(v2(-MAX2, -MAX2/2.)),
-            Aim::U => D2::square(MAX2).translate(v2(-MAX2/2., 0.)),
-            Aim::D => D2::square(MAX2).translate(v2(-MAX2/2., -MAX2)),
+            Aim::N => D2::square(MAX2).translate( (-MAX2/2., 0) ),
+            Aim::S => D2::square(MAX2).translate( (-MAX2/2., -MAX2) ),
+            Aim::E => D2::square(MAX2).translate( (0, -MAX2/2.) ),
+            Aim::W => D2::square(MAX2).translate( (-MAX2, -MAX2/2.) ),
+            Aim::U => D2::square(MAX2).translate( (-MAX2/2., 0) ),
+            Aim::D => D2::square(MAX2).translate( (-MAX2/2., -MAX2) ),
             // Aim::Angle(theta) => D2::Square(StrictlyPositiveFinite(MAX2)).translate(XY(0., -MAX2/2.)).rotate(*theta),
             }
     }
@@ -389,11 +389,7 @@ impl D2 {
         }
     }
 
-    pub fn triangle(xy0: XY, xy1: XY, xy2: XY) -> D2 {
-        D2::Polygon(Box::new(vec![xy0, xy1, xy2]))
-    }
-
-    pub fn triangle2<P1: Into<XY>, P2: Into<XY>, P3: Into<XY>>(xy0: P1, xy1: P2, xy2: P3) -> D2 {
+    pub fn triangle<P1: Into<XY>, P2: Into<XY>, P3: Into<XY>>(xy0: P1, xy1: P2, xy2: P3) -> D2 {
         D2::Polygon(Box::new(vec![xy0.into(), xy1.into(), xy2.into()]))
     }
 
@@ -485,8 +481,8 @@ impl D2 {
     }
 
 
-    pub fn mirror(&self, xy: XY) -> D2 {
-        D2::Mirror(xy, Box::new(self.clone()))
+    pub fn mirror<IXY: Into<XY>>(&self, xy: IXY) -> D2 {
+        D2::Mirror(xy.into(), Box::new(self.clone()))
     }
 
     // pub fn iter_translate(&self, xy: XY, n: u32) -> impl Iterator<Item = D2> + '_ {
@@ -870,15 +866,11 @@ mod test {
 
     #[test]
     fn test_triangle() {
-        assert_eq!(D2::triangle(v2(0.,0.), v2(1., 0.), v2(0., 1.)).scad(),
+        assert_eq!(D2::triangle((0.,0.), (1., 0.), (0., 1.)).scad(),
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
-    }
-
-    #[test]
-    fn test_triangle2() {
-        assert_eq!(D2::triangle2((0.,0.), (1., 0.), (0., 1.)).scad(),
+        assert_eq!(D2::triangle((0,0), v2(1., 0.), (0, 1.)).scad(),
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
-        assert_eq!(D2::triangle2((0,0), v2(1., 0.), (0, 1.)).scad(),
+        assert_eq!(D2::triangle((0,0), [1., 0.], [0, 1]).scad(),
             "polygon(points = [ [0, 0], [1, 0], [0, 1] ]);");
     }
 

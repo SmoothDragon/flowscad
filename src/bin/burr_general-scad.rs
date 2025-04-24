@@ -28,7 +28,7 @@ fn main() -> Result<()> {
         .add(D3::beveled_cuboid_offset( (3,1,3), (-2.5,0.5,-3.5), h, bevel, bgap))
         .add(D3::beveled_cuboid_offset( (3,1,3), (-2.5,-1.5,-3.5), h, bevel, bgap))
         .color(ColorEnum::Red)
-        .and(egg.clone())
+        // .and(egg.clone())
         ;
 
     let piece2 = D3::beveled_cuboid_offset( (1,9,1), (0.5,-4.5,-0.5), h, bevel, bgap)
@@ -41,7 +41,7 @@ fn main() -> Result<()> {
         .add(D3::beveled_cuboid_offset( (3,3,4), (-1.5,-4.5,-0.5), h, bevel, bgap))
         .add(D3::beveled_cuboid_offset( (3,3,4), (-1.5,1.5,-0.5), h, bevel, bgap))
         .color(ColorEnum::Cyan)
-        .and(egg.clone())
+        // .and(egg.clone())
         ;
 
     let piece3 = D3::beveled_cuboid_offset( (9,1,1), (-4.5,-0.5,-1.5), h, bevel, bgap)
@@ -58,7 +58,7 @@ fn main() -> Result<()> {
         ;
 
     let result = piece1
-        +piece2
+        // +piece2
         +piece3
         ;
 

@@ -836,6 +836,30 @@ impl D3 {
                     )
     }
 
+    /// Creates a block of connected beveled cubes, offset in the lattice.
+    /// Each block is centered inside a cube with i_cube_side length.
+    /// Each of the six sides are i_gap away from each cube face.
+    /// Each cube in the block is connected to make up for this gap.
+    // pub fn beveled_cuboid_offset<XYZI: <Into<XYZ>, T0: Into<X>, T1: Into<X>, T2: Into<X>>(xyz_dim: (u32, u32, u32), offset: (f32, f32, f32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
+    pub fn beveled_cuboid_offset<IXYZ: Into<XYZ>, T0: Into<X>, T1: Into<X>, T2: Into<X>>(ixyz: IXYZ, offset: (f32, f32, f32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
+        let cube_side: X = i_cube_side.into();
+        let bevel: X = i_bevel.into();
+        let gap: X = i_gap.into();
+        let xyz_dim: XYZ = ixyz.into();
+        D3::beveled_box(v3(cube_side-2*gap, cube_side-2*gap, cube_side-2*gap), bevel)
+            .translate(v3(gap, gap, gap))
+            .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0.round() as u32).union()
+            .iter_translate(v3(0, cube_side.0, 0.), xyz_dim.1.round() as u32).union()
+            .iter_translate(v3(0, 0, cube_side.0), xyz_dim.2.round() as u32).union()
+            .add(D3::cuboid(v3(
+                        cube_side*xyz_dim.0 - 2*(gap + bevel),
+                        cube_side*xyz_dim.1 - 2*(gap + bevel),
+                        cube_side*xyz_dim.2 - 2*(gap + bevel)
+                        )).translate(v3(gap+bevel,gap+bevel,gap+bevel))
+                    )
+            .translate(v3(offset.0, offset.1, offset.2)*cube_side)
+    }
+
     /// Creates a rounded cube
     ///    1) Centered at the origin
     ///    2) Angle of attack is 30 degrees for the transition from cube face to sphere.

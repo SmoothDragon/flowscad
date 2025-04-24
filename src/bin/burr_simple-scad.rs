@@ -45,7 +45,7 @@ fn main() -> Result<()> {
         +piece2
         .rotate_z(-90)
         +piece3
-        .rotate_x(90)
+        .rotate_x(-90)
         ;
     println!("$fn=128;\n{}", &result);
     Ok(())
