@@ -712,6 +712,11 @@ impl D3 {
         D3::Frustum(h.into(), 2*r0.into(), 2*r1.into())
     }
 
+    /// Create a frustum of height `h` with starting diameter `d0` and ending diameter `d1` centered above the XY plane.
+    pub fn frustum_d<H: Into<X>, D0: Into<X>, D1: Into<X>>(h: H, d0: D0, d1: D1) -> D3 {
+        D3::Frustum(h.into(), d0.into(), d1.into())
+    }
+
     /// Chamfered cylinder
     pub fn chamfer_cylinder_d<H: Into<X>, D: Into<X>, C: Into<X>>(ih: H, id:D, ic:C) -> D3 {
         let h = ih.into();
@@ -803,10 +808,11 @@ impl D3 {
         }
     }
 
-    pub fn beveled_box<T: Into<X>>(xyz: XYZ, bevel_in: T) -> D3 {
-        let x = xyz.0;
-        let y = xyz.1;
-        let z = xyz.2;
+    pub fn beveled_box<IXYZ: Into<XYZ>, T: Into<X>>(ixyz: IXYZ, bevel_in: T) -> D3 {
+        let XYZ(x,y,z) = ixyz.into();
+        // let x = xyz.0;
+        // let y = xyz.1;
+        // let z = xyz.2;
         let bevel = bevel_in.into();
         D3::Hull(Box::new(vec![
             D3::cuboid(v3(x,y-bevel*2.,z-bevel*2.)).translate(v3(0.,bevel,bevel)),

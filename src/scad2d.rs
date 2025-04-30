@@ -437,6 +437,19 @@ impl D2 {
             .add_map(|x| x.rotate(180))
     }
 
+    pub fn koch_snowflake<IX: Into<X>>(r: IX, iter: u32) -> D2 {
+        let r = r.into();
+        D2::hexagram(r) 
+            .rotate(90)
+            .repeat_map(iter, |x| x.add_map(|y|
+                y.scale(1./3.)
+                .translate_y(2.*r/3.)
+                .iter_rotate_equal(6)
+                .union()
+                )
+            )
+    }
+
     pub fn pentagram<IX: Into<X>>(r: IX) -> D2 {
         let r: X = r.into();
         let wedge = D2::square(r);
