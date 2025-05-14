@@ -6,13 +6,26 @@ use anyhow::Result;
 
 fn main() -> Result<()> {
     let s = X(10.);  // Corner square side length
-    let w = X(78.);  // Inside square side length
+    let w = X(70.);  // Inside square side length
     let h = X(10.);  // Height of square ring
 
     let angle = X(25.);
     let bevel = X(1.);
     let gap = X(0.1);
 
+    let tri_cross = D2::polygon(vec![v2(0,-s/2), v2(1,-s/2), v2(3.0_f32*(s+2)/4,0), v2(1,s/2), v2(0,s/2)])
+        .linear_extrude(1)
+        .translate_x(w/2)
+        .rotate_x(90)
+        .iter_rotate( (0,0,120), 3)
+        .pairs()
+        .map(|(x,y)| (x+y).hull())
+        .union()
+        .translate_x(-0.8*w)
+        .iter_rotate( (0,0,120), 3)
+        .union()
+        ;
+    /*
     let plate_xyz: XYZ = (w,w,h).into();
     // let plate = D3::beveled_box(plate_xyz, bevel).translate(-plate_xyz/2);
     let half_plate = D3::beveled_box((s,w,h), bevel).translate((w/2,-w/2,-s/2))
@@ -42,7 +55,6 @@ fn main() -> Result<()> {
         + join.clone()
         + join.translate_y(1.5*s)
         ;
-    /*
     let half = plate.clone().and(D3::cube(4*w).center().translate_x(-2*w));
 
     let notch_out = D2::polygon(vec![v2(0,-2), v2(0,2), v2(3,2.5), v2(3,-2.5)])
@@ -60,6 +72,8 @@ fn main() -> Result<()> {
         ;
     let result = result.clone() + result.rotate_z(180.).translate_x(10.);
     */
+
+    let result = tri_cross;
 
     println!("$fn=64;\n{}", &result);
     Ok(())

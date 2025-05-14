@@ -145,7 +145,7 @@ impl From<BitTroc4> for D3 {
 impl SCAD for D3 {
     fn scad(&self) -> String {
         match &self {
-            D3::LinearExtrude{height, twist, slices, shape, center} => format!("linear_extrude(height = {}, twist = {}, slices = {}, center = {}) {{\n  {}\n}}", height, twist, slices, center, indent(shape)),
+            D3::LinearExtrude{height, twist, slices, shape, center} => format!("linear_extrude(height = {}, twist = {}, slices = {}, center = {}, convexity=50) {{\n  {}\n}}", height, twist, slices, center, indent(shape)),
             // D3::LinearExtrude{height: height, twist: twist, slices: slices, shape: shape} => format!("linear_extrude(height = {}, twist = {}, slices = {}) {{\n  {}\n}}", height, twist, slices, indent(shape)),
             D3::RotateExtrude(X(angle), shape) => format!("rotate_extrude(angle = {}) {{\n  {}\n}}", angle, indent(shape)),
             D3::Cube(size) => format!("cube(size = {});", size),
@@ -929,6 +929,18 @@ impl D3 {
             [0.,-2.,0.],
             [0.,0.,2.],
             [0.,0.,-2.],
+        ])
+    }
+
+
+    /// Construct a tetrahedron in the unit sphere with lower face parallel
+    /// to xy-plane and an edge length of 2*sqrt(6)/3.
+    pub fn tetrahedron() -> D3 {
+        D3::convex_hull(vec![
+            [(8.0_f32/9.0).sqrt(),0.,-1./3.], 
+            [-(2.0_f32/9.0).sqrt(),(2.0_f32/3.0).sqrt(),-1./3.], 
+            [-(2.0_f32/9.0).sqrt(),-(2.0_f32/3.0).sqrt(),-1./3.], 
+            [0.,0.,1.], 
         ])
     }
 
