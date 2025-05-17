@@ -585,6 +585,49 @@ impl D2 {
     pub fn rotate_extrude<IX: Into<X>>(&self, x: IX) -> D3 {
         D3::RotateExtrude(x.into(), Box::new(self.clone()))
     }
+
+    /// Intended to be transition from print bed.
+    pub fn chamfer45<IX: Into<X>>(&self, h: IX) -> D3 {
+        let h = h.into();
+        let h_layer = X(0.1);
+        let layers = unsafe { (h / h_layer).0.to_int_unchecked::<u32>() };
+        // let layers = h * 10;
+        (0..layers).
+            map(|x| self.clone()
+                .offset_chamfer(-h_layer*x)
+                .linear_extrude(h_layer)
+                .translate_z(h_layer*x)
+                )
+            .union()
+    }
+
+
+    /// Intended to be transition from print bed.
+    /// Start at a 45 angle, and then transition to a circular arc
+    /// at the tangent point.
+    pub fn chamfer45_round<IX: Into<X>>(&self, h: IX) -> D3 {
+        let h: X = h.into();
+        let h_layer = X(0.1);
+        let layers = unsafe { (h / h_layer).0.to_int_unchecked::<u32>() };
+        let layers_arc = unsafe { ((h / h_layer)*0.707).0.to_int_unchecked::<u32>() };
+        (0..layers_arc)
+            .map(|x| X(x as f32))
+            .map(|x| self.clone()
+                .offset_chamfer(-h*(1-(1-(x/layers)*(x/layers)).sqrt()))
+                .linear_extrude(h_layer)
+                .translate_z(h_layer*x)
+                )
+            .union()
+        + (layers_arc..layers)
+            .map(|x| self.clone()
+                .offset_chamfer(-h*((Into::<X>::into(x))/layers as f32 - 0.414))
+                // .offset_chamfer(-h_layer*(layers-x))
+                .linear_extrude(h_layer)
+                .translate_z(h_layer*x)
+                )
+            .union()
+    }
+
 }
 
 impl std::iter::Sum for D2 {
@@ -845,7 +888,7 @@ mod test {
     #[test]
     fn test_linear_extrude() {
         assert_eq!(format!("{}", D2::square(9).iter_rotate(20, 4).intersection().linear_extrude(10)),
-  "linear_extrude(height = 10, twist = 0, slices = 0, center = false) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
+    "linear_extrude(height = 10, twist = 0, slices = 0, center = false, convexity=50) {\n  intersection() {\n    rotate(0) {\n      square(size = 9);\n    }\n    rotate(20) {\n      square(size = 9);\n    }\n    rotate(40) {\n      square(size = 9);\n    }\n    rotate(60) {\n      square(size = 9);\n    }\n  }\n}"
         );
     }
 
