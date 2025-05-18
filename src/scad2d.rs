@@ -590,15 +590,25 @@ impl D2 {
     pub fn chamfer45<IX: Into<X>>(&self, h: IX) -> D3 {
         let h = h.into();
         let h_layer = X(0.1);
-        let layers = unsafe { (h / h_layer).0.to_int_unchecked::<u32>() };
+        let layers = unsafe { (h / h_layer).0.to_int_unchecked::<i32>() };
         // let layers = h * 10;
-        (0..layers).
-            map(|x| self.clone()
-                .offset_chamfer(-h_layer*x)
-                .linear_extrude(h_layer)
-                .translate_z(h_layer*x)
-                )
-            .union()
+        if layers >= 0 {
+            (0..layers).
+                map(|x| self.clone()
+                    .offset_chamfer(-h_layer*x)
+                    .linear_extrude(h_layer)
+                    .translate_z(h_layer*x)
+                    )
+                .union()
+        } else {
+            (0..-layers).
+                map(|x| self.clone()
+                    .offset_chamfer(h_layer*x)
+                    .linear_extrude(h_layer)
+                    .translate_z(h_layer*x)
+                    )
+                .union()
+        }
     }
 
 
@@ -608,24 +618,41 @@ impl D2 {
     pub fn chamfer45_round<IX: Into<X>>(&self, h: IX) -> D3 {
         let h: X = h.into();
         let h_layer = X(0.1);
-        let layers = unsafe { (h / h_layer).0.to_int_unchecked::<u32>() };
-        let layers_arc = unsafe { ((h / h_layer)*0.707).0.to_int_unchecked::<u32>() };
-        (0..layers_arc)
-            .map(|x| X(x as f32))
-            .map(|x| self.clone()
-                .offset_chamfer(-h*(1-(1-(x/layers)*(x/layers)).sqrt()))
-                .linear_extrude(h_layer)
-                .translate_z(h_layer*x)
-                )
-            .union()
-        + (layers_arc..layers)
-            .map(|x| self.clone()
-                .offset_chamfer(-h*((Into::<X>::into(x))/layers as f32 - 0.414))
-                // .offset_chamfer(-h_layer*(layers-x))
-                .linear_extrude(h_layer)
-                .translate_z(h_layer*x)
-                )
-            .union()
+        let layers = unsafe { (h / h_layer).0.to_int_unchecked::<i32>() };
+        let layers_arc = unsafe { ((h / h_layer)*0.707).0.to_int_unchecked::<i32>() };
+        if layers >= 0 {
+            (0..layers_arc)
+                .map(|x| X(x as f32))
+                .map(|x| self.clone()
+                    .offset_chamfer(-h*(1-(1-(x/layers)*(x/layers)).sqrt()))
+                    .linear_extrude(h_layer)
+                    .translate_z(h_layer*x)
+                    )
+                .union()
+            + (layers_arc..layers)
+                .map(|x| self.clone()
+                    .offset_chamfer(-h*((Into::<X>::into(x))/layers as f32 - 0.414))
+                    .linear_extrude(h_layer)
+                    .translate_z(h_layer*x)
+                    )
+                .union()
+        } else {
+            (0..(-layers+layers_arc))
+                .map(|x| self.clone()
+                    .offset_chamfer(h*((Into::<X>::into(x))/layers as f32))
+                    .linear_extrude(h_layer)
+                    .translate_z(h_layer*x)
+                    )
+                .union()
+            + ((-layers+layers_arc)..-layers)
+                .map(|x| X(x as f32))
+                .map(|x| self.clone()
+                    .offset_chamfer(-h*((1-(1+x/layers)*(1+x/layers)).sqrt()-0.414))
+                    .linear_extrude(h_layer)
+                    .translate_z(h_layer*x)
+                    )
+                .union()
+        }
     }
 
 }
