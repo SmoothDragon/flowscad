@@ -8,7 +8,7 @@ fn main() -> Result<()> {
     let cr80_id = (X(54.0), X(85.6));  // CR80 ID card size
     let box_l = X(94.5);  // Corner square side length
     let box_w = X(66.0);  // Inside square side length
-    let box_h = X(11.0);  // Height of square ring
+    let box_h = X(10.0);  // Height of square ring
     let rsa_d = X(9.4);
     let rsa_w = X(20.3);
     let rsa_l = X(58.9);
@@ -93,9 +93,10 @@ fn main() -> Result<()> {
         .sub(D2::rectangle((2*box_w, box_l)).translate((-box_w, 1.9*l)))
         ;
 
+    let id_vert = X(1.0);
     let perimeter_id = perimeter_outline.clone()
         .sub(hid_holder_outline.clone())
-        .linear_extrude(1.5)
+        .linear_extrude(id_vert)
         .translate_z(box_h)
         .sub(rsa_mirror_outline_notch.clone()
             .linear_extrude(20)
@@ -113,7 +114,7 @@ fn main() -> Result<()> {
             .rotate_x(45)
             .translate((-box_w, 1.9*l,0))
         )
-        .translate_z(box_h+1.5)
+        .translate_z(box_h+id_vert)
         .add(D2::rounded_rectangle((8,2),1)
             .center()
             .linear_extrude(box_h+0.75)
