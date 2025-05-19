@@ -14,7 +14,7 @@ fn main() {
     D3::beveled_cube_block( (2, 4, 2), l_cube, bevel, gap).translate(v3(l_cube,0.,0.))
         .add(D3::beveled_cube_block( (3, 3, 2), l_cube, bevel, gap))
         .add(D3::beveled_cube_block( (1, 3, 3), l_cube, bevel, gap))
-        .add(D3::beveled_cube_block( (3, 2, 6), l_cube, bevel, gap))
+        .add(D3::beveled_cube_block( (3, 2, 5), l_cube, bevel, gap))
         .translate(v3(0., 5.0*l_cube, 0.))
         
         ,
