@@ -279,6 +279,10 @@ impl D3 {
     /// Add all 2x2x1 blocks
     /// Add all 2x2x2 blocks
     pub fn polycube_from_bitcube4(bc4: BitCube4, edge: f32, bevel: f32, gap: f32) -> Self {
+        if bc4.count_cubes() == 1 {
+            return D3::beveled_box((edge-2.*gap)*v3(1,1,1), bevel)
+            // .translate(edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
+        } 
         (0..64)
             .filter(|ii| (bc4.0 >> ii) & 0x3 == 0x3)
             .filter(|ii| *ii & 0x3 != 3)

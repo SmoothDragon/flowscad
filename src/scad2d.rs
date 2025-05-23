@@ -288,6 +288,16 @@ impl D2 {
         }
     }
 
+    /// Create a beveled rectangle with lower left corner at the origin.
+    pub fn beveled_rectangle<IX: Into<X>, IXY: Into<XY>>(ixy: IXY, bevel: IX) -> D2 {
+        let XY(x,y) = ixy.into();
+        let bevel = bevel.into();
+        D2::Join("hull", Box::new(vec![
+            D2::rectangle( (x,y-bevel*2.) ).translate( (0.,bevel) ),
+            D2::rectangle( (x-bevel*2., y) ).translate( (bevel, 0.) ),
+        ]))
+    }
+
     pub fn from_svg(filename: &str) -> D2 {
         D2::Svg(filename.to_string())
     }
