@@ -36,6 +36,11 @@ pub enum ScadParameter {
 // }
 
 
+pub trait SVG {
+    fn svg(&self) -> String;
+    fn indent(&self) -> String;
+}
+
 pub trait SCAD {
     fn scad(&self) -> String;
     fn indent(&self) -> String;

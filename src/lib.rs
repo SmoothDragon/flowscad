@@ -1,3 +1,6 @@
+mod scad1d;
+pub use crate::scad1d::*;
+
 mod scad2d;
 pub use crate::scad2d::*;
 
