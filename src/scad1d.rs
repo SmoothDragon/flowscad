@@ -120,7 +120,8 @@ mod test {
     }
     #[test]
     fn test_line_to_svg() {
-        assert_eq!(D1::line((1,5), (4,3)).to_svg(SvgProp::icon()), r#"<line x1="1" y1="5" x2="4" y2="3" stroke="goldenrod" stroke-linecap="round" />"#);
+        assert_eq!(D1::line((1,5), (4,3)).to_svg(SvgProp::icon()), 
+            "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" viewBox=\"0 0 10 10\">\n  <line x1=\"1\" y1=\"5\" x2=\"4\" y2=\"3\" stroke=\"goldenrod\" stroke-linecap=\"round\" />\n</svg>\n");
     }
 }
 
