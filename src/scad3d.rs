@@ -602,6 +602,18 @@ impl D3 {
             )
     }
 
+    /// Create a polyhedron from points and faces.
+    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I, faces: Vec<Vec<u32>>) -> D3 {
+        D3::Polyhedron(
+            Box::new(
+                points.into_iter()
+                .map(Into::<XYZ>::into)
+                .collect::<Vec<XYZ>>()
+                ),
+            Box::new(faces)
+            )
+    }
+
     pub fn half_space(aim: Aim) -> D3 {
         match aim {
             Aim::N => D3::cube(MAX).translate(v3(-MAX/2., 0., -MAX/2.)),

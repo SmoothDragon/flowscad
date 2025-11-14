@@ -109,11 +109,12 @@ pub fn convex_hull_3d(points: Vec<[f32; 3]>) -> (Vec<[f32; 3]>, Vec<Vec<u32>>) {
             ).unwrap()
         }).collect::<Vec<_>>();
     // # of vertices for a face is >= 3
+    // TODO: Check? Even though guaranteed by qhull?
     let faces = (0..vfe[1])
         .map(|_| { let binding = lines.next().unwrap().unwrap();
             binding.split_whitespace().skip(1)
                 .map(|x| x.parse::<u32>().unwrap())
-                .collect::<Vec<u32>>()  // TODO: Check? Even though guaranteed by qhull?
+                .collect::<Vec<u32>>()
         }).collect::<Vec<_>>();
     (vertices, faces)
 }

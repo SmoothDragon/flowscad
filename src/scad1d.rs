@@ -57,7 +57,7 @@ impl D1 {
         let w = prop.width;
         let h = prop.height;
         let viewbox = prop.viewbox.iter().map(|x| x.to_string()).join(" ");
-        let result = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewbox="{viewbox}">"#) +"\n"
+        let result = format!(r#"<svg xmlns="http://www.w3.org/2000/svg" width="{w}" height="{h}" viewBox="{viewbox}">"#) +"\n"
             + "  " + &(self.svg())
             + &"</svg>\n"
             ;
@@ -116,7 +116,7 @@ mod test {
 
     #[test]
     fn test_line() {
-        assert_eq!(D1::line((1,5), (4,3)).svg(), r#"<line x1="1" y1="5" x2="4" y2="3" stroke="goldenrod" stroke-linecap="round" />\n"#);
+        assert_eq!(D1::line((1,5), (4,3)).svg(), r#"<line x1="1" y1="5" x2="4" y2="3" stroke="goldenrod" stroke-linecap="round" />"#.to_owned() + &"\n");
     }
     #[test]
     fn test_line_to_svg() {

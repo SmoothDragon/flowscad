@@ -62,6 +62,10 @@ impl X {
     pub fn sqrt(self) -> Self {
         Self(self.0.sqrt())
     }
+
+    pub fn trunc(self) -> i32 {
+        self.0 as i32
+    }
 }
 
 impl std::fmt::Debug for X {
