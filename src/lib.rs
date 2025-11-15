@@ -17,10 +17,7 @@ pub use crate::common::ScadParameter::*;
 mod convex_hull;
 pub use crate::convex_hull::*;
 
-mod d2_trait;
-pub use crate::d2_trait::*;
-
-mod d2_face;
-pub use crate::d2_face::*;
+mod d2;
+pub use crate::d2::*;
 
 pub use bitperm::*;

@@ -5,9 +5,9 @@ use ndarray::Array1;
 // use ndarray::{concatenate, Axis, s};
 use num_complex::Complex32 as C32;
 
-use crate::Deg;
-use crate::Rad;
-use crate::D2Trait;
+pub use crate::Deg;
+pub use crate::Rad;
+pub use crate::D2Trait;
 
 fn exp_i(theta: f32) -> C32 {
     C32::new(theta.cos(), theta.sin())
@@ -21,7 +21,7 @@ impl From<Vec<C32>> for Face {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Face(Array1<C32>);
+pub struct Face(pub Array1<C32>);
 
 impl D2Trait for Face {
     fn scad(&self) -> String {
@@ -42,16 +42,16 @@ impl D2Trait for Face {
     }
 
     fn xyed(&self) -> Self {
-        let (min_re, min_im) = self.0.iter().fold( (f32::INFINITY, f32::INFINITY),
-            |(min_re, min_im), &z| (min_re.min(z.re), min_im.min(z.im)) );
-        self.translated(C32::new(-min_re, -min_im))
+        let (x_min, y_min) = self.0.iter().fold( (f32::INFINITY, f32::INFINITY),
+            |(x_min, y_min), &z| (x_min.min(z.re), y_min.min(z.im)) );
+        self.translated(C32::new(-x_min, -y_min))
     }
 
 }
 
 // truncates to the closest millionth
 fn truncated(xx: f32) -> f32 {
-    ((xx * 100000.) as i32) as f32 / 100000.
+    ((xx * 100000.).round() as i32) as f32 / 100000.
 }
 
 impl Face {
@@ -89,6 +89,7 @@ mod test {
             C32::new(-1.,0.), 
             C32::new(0.,-1.),
         ]);
+        // Testing equality is hard
         assert_eq!(square.sorted(), square.rotated(Deg(90.)).truncated().sorted());
     }
 
@@ -112,6 +113,14 @@ mod test {
             C32::new(0.,-1.),
         ]);
         assert_eq!(square.scad(), "polygon(points = [ [1, 0], [0, 1], [-1, 0], [0, -1] ]);");
+        let square = Face::from(vec![
+            C32::new(0.,0.), 
+            C32::new(1.,0.), 
+            C32::new(1.,1.), 
+            C32::new(0.,1.), 
+        ]);
+        assert_eq!(square.scad(), "polygon(points = [ [0, 0], [1, 0], [1, 1], [0, 1] ]);");
+
     }
 
 }
