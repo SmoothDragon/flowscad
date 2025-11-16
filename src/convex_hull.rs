@@ -71,7 +71,7 @@ Example output for octahedron:
 /// Use Qhull to compute convex hull of given points.
 /// `qhull` is run as a command line program.
 /// The bulk of the work here is creating the format expected and parsing the result.
-pub fn convex_hull_3d(points: Vec<[f32; 3]>) -> (Vec<[f32; 3]>, Vec<Vec<u32>>) {
+pub fn convex_hull_3d(points: Vec<[f32; 3]>) -> (Vec<[f32; 3]>, Vec<Vec<usize>>) {
     let points_text = points.iter()
         // .map(|v3| format!("{} {} {}\n", v3[0], v3[1], v3[2]))
         // .collect::<String>();
@@ -94,10 +94,10 @@ pub fn convex_hull_3d(points: Vec<[f32; 3]>) -> (Vec<[f32; 3]>, Vec<Vec<u32>>) {
 
     let output = qhull.wait_with_output().expect("Failed to read stdout");
     let mut lines = output.stdout.lines();
-    let _dim: u32 = lines.next().unwrap().unwrap().parse::<u32>().unwrap();
+    let _dim: usize = lines.next().unwrap().unwrap().parse::<usize>().unwrap();
     let binding = lines.next().unwrap().unwrap();
     // Counts for vertices, faces, and edges
-    let vfe = binding.split_whitespace().map(|x| x.parse::<u32>().unwrap()).collect::<Vec<_>>();
+    let vfe = binding.split_whitespace().map(|x| x.parse::<usize>().unwrap()).collect::<Vec<_>>();
 
     // Vertices have x,y,z coordinates => [f32; 3]
     let vertices = (0..vfe[0])
@@ -113,8 +113,8 @@ pub fn convex_hull_3d(points: Vec<[f32; 3]>) -> (Vec<[f32; 3]>, Vec<Vec<u32>>) {
     let faces = (0..vfe[1])
         .map(|_| { let binding = lines.next().unwrap().unwrap();
             binding.split_whitespace().skip(1)
-                .map(|x| x.parse::<u32>().unwrap())
-                .collect::<Vec<u32>>()
+                .map(|x| x.parse::<usize>().unwrap())
+                .collect::<Vec<usize>>()
         }).collect::<Vec<_>>();
     (vertices, faces)
 }

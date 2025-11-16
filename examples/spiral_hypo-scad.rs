@@ -16,7 +16,7 @@ fn main() {
     let r = X(20.);
     let h: X = X(100.);
     let layers: i32 = (h / h_layer).trunc();
-    let layers: u32 = 2;
+    let layers: usize = 2;
     let k = 3.0_f32;  // points of hypocycloid
     let resolution = 16;
 
@@ -61,8 +61,8 @@ fn main() {
         .collect();
 
     // --- Faces ---
-    let n_levels = level.len() as u32;
-    let mut faces: Vec<Vec<u32>> = Vec::new();
+    let n_levels = level.len();
+    let mut faces: Vec<Vec<usize>> = Vec::new();
 
     for i in 0..n_levels - 1 {
         for j in 0..layers {
@@ -85,14 +85,14 @@ fn main() {
     }
 
     // --- Bottom cap ---
-    let bottom: Vec<u32> = (1..layers).rev().collect();
+    let bottom: Vec<usize> = (1..layers).rev().collect();
     faces.push(bottom);
     // if bottom.len() >= 3 {
         // faces.push([bottom[0], bottom[1], bottom[2]]);
     // }
 
     // --- Top cap ---
-    let top: Vec<u32> = ((n_levels - 1) * layers..n_levels * layers).collect();
+    let top: Vec<usize> = ((n_levels - 1) * layers..n_levels * layers).collect();
     faces.push(top);
     // if top.len() >= 3 {
         // faces.push([top[0], top[1], top[2]]);

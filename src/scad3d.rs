@@ -29,7 +29,7 @@ pub enum D3 {
     Cylinder(X, X),
     Frustum(X, X, X),
     Sphere{radius: X},
-    Polyhedron(Box<Vec<XYZ>>, Box<Vec<Vec<u32>>>),
+    Polyhedron(Box<Vec<XYZ>>, Box<Vec<Vec<usize>>>),
     Translate(XYZ, Box<D3>),
     Scale(X, Box<D3>),
     Scale3(XYZ, Box<D3>),
@@ -603,7 +603,7 @@ impl D3 {
     }
 
     /// Create a polyhedron from points and faces.
-    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I, faces: Vec<Vec<u32>>) -> D3 {
+    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I, faces: Vec<Vec<usize>>) -> D3 {
         D3::Polyhedron(
             Box::new(
                 points.into_iter()
