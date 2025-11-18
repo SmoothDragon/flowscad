@@ -33,20 +33,23 @@ impl D2Trait for Face {
         String::new()
     }
 
-    fn rotated<T: Into<Rad>>(&self, theta: T) -> Self {
-        Self(self.0.clone() * exp_i(theta.into().0))
+    fn rotate<T: Into<Rad>>(&mut self, theta: T) {
+        self.0 *= exp_i(theta.into().0);
     }
 
-    fn translated(&self, xy: C32) -> Self {
-        Self(self.0.clone() + xy)
+    fn scale(&mut self, factor: f32) {
+        self.0 *= C32::new(factor, 0.);
     }
 
-    fn xyed(&self) -> Self {
+   fn translate(&mut self, xy: C32) {
+        self.0 += xy;
+    }
+
+   fn xy(&mut self) {
         let (x_min, y_min) = self.0.iter().fold( (f32::INFINITY, f32::INFINITY),
             |(x_min, y_min), &z| (x_min.min(z.re), y_min.min(z.im)) );
-        self.translated(C32::new(-x_min, -y_min))
+        self.translate(C32::new(-x_min, -y_min));
     }
-
 }
 
 // truncates to the closest millionth
@@ -82,7 +85,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_rotate() {
+    fn test_rotated() {
         let square = Face::from(vec![
             C32::new(1.,0.), 
             C32::new(0.,1.), 
