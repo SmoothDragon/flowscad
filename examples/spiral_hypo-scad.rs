@@ -1,12 +1,9 @@
 use ndarray::{Array1, concatenate, Axis, s};
-use num_complex::Complex32;
+// use num_complex::Complex32;
 use std::f32::consts::PI;
 
 use flowscad::*;
 
-fn exp1j(theta: f32) -> Complex32 {
-    Complex32::new(theta.cos(), theta.sin())
-}
 
 fn main() {
     let h_layer = X(0.2);
@@ -21,10 +18,10 @@ fn main() {
     let resolution = 16;
 
     let theta = Array1::linspace(0.0, 2.0 * PI, resolution + 1);
-    let circle = theta.mapv(|t| exp1j(t));
+    let circle = theta.mapv(|t| expi(t));
 
-    let hypo_inner = theta.mapv(|t| (k - 1.0) * exp1j(t) + exp1j((k - 1.0) * t).conj());
-    let hypo_outer = theta.mapv(|t| k * exp1j(t) + exp1j(k * t).conj());
+    let hypo_inner = theta.mapv(|t| (k - 1.0) * expi(t) + expi((k - 1.0) * t).conj());
+    let hypo_outer = theta.mapv(|t| k * expi(t) + expi(k * t).conj());
 
 // step = 8
 
@@ -36,9 +33,9 @@ fn main() {
     // --- Build levels ---
     let step = 8;
 
-    let level: Vec<Array1<Complex32>> = (0..theta.len()).step_by(step)
+    let level: Vec<Array1<C32>> = (0..theta.len()).step_by(step)
         .map(|ii| hypo_inner
-            .mapv(|z| z * exp1j(-theta[ii] / k) + circle[ii])
+            .mapv(|z| z * expi(-theta[ii] / k) + circle[ii])
             .slice(ndarray::s![..-1])
             .to_owned()
         )

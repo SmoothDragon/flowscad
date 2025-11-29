@@ -9,10 +9,10 @@ fn expi(theta: f32) -> Complex32 {
     Complex32::new(theta.cos(), theta.sin())
 }
 
-pub fn hypocycloid(points: u32, steps: usize) -> Face {
-    let theta = Array1::linspace(0.0, 2.0 * PI, steps+1).slice(ndarray::s![..-1]).to_owned();
-    let points: f32 = (points-1) as f32;
-    Face(theta.map(|rads| points * expi(*rads) + expi(points * *rads).conj())
+pub fn hypocycloid(k: usize, edges: usize) -> Face {
+    let theta = Array1::linspace(0.0, 2.0 * PI, edges+1).slice(ndarray::s![..-1]).to_owned();
+    let k: f32 = (k-1) as f32;
+    Face(theta.map(|rads| k * expi(*rads) + expi(k * *rads).conj())
         // .slice(ndarray::s![..-1])
         // .to_owned()
     )

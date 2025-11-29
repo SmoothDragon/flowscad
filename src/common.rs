@@ -2,6 +2,14 @@ pub use itertools::Itertools;
 pub use core::ops::*;
 
 pub const MAX: f32 = f32::MAX / 10000.;
+pub use std::f32::consts::PI;
+pub use num_complex::Complex32 as C32;
+
+
+pub fn expi(theta: f32) -> C32 {
+    C32::new(theta.cos(), theta.sin())
+}
+
 
 pub enum ScadParameter {
     R, Radius, 
