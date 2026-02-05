@@ -7,80 +7,36 @@ use ndarray::Array1;
 // use ndarray::{concatenate, Axis, s};
 use num_complex::Complex32 as C32;
 
-pub use crate::Deg;
-pub use crate::Rad;
-pub use crate::d2::D2Trait;
-pub use crate::*;
+pub use crate::D2Trait;
+use crate::*;
 
-fn circular_shift<T: Clone>(a: &Array1<T>, shift: isize) -> Array1<T> {
-    let n = a.len();
-    if n == 0 {
-        return a.clone();
-    }
-
-    // Normalize shift to [0, n)
-    let k = ((shift % n as isize) + n as isize) % n as isize;
-    let k = k as usize;
-
-    let mut out = a.clone();
-    for i in 0..n {
-        out[(i + k) % n] = a[i].clone();
-    }
-    out
-}
-
-fn exp_i(theta: f32) -> C32 {
-    C32::new(theta.cos(), theta.sin())
-}
-
-impl From<Vec<C32>> for Face {
-    fn from(vector: Vec<C32>) -> Self {
-        let array: Array1<C32> = Array1::from_vec(vector);
-        Self(array)
-    }
-}
-
-impl From<&Face> for D2 {
-    fn from(face: &Face) -> Self {
-        D2::polygon(face.0.iter().map(|xy| XY(xy.re, xy.im)).collect())
-    }
-}
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct Face(pub Array1<C32>);
+pub struct Rect{
+    width: f32,     // width of rectangle
+    height: f32,    // height of rectangle
+    x: f32,         // Default: 0. x pos of top left (SVG) or bottom left (SCAD)
+    y: f32,         // Default: 0. y pos of top left (SVG) or bottom left (SCAD)
+    rx: f32,        // Default: 0. The x radius of the corners of the rectangle.
+    ry: f32,        // Default: 0. The y radius of the corners of the rectangle.
+}
 
-impl Deref for Face {
-    type Target = Array1<C32>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
+impl From<(f32, f32)> for Rect {
+    fn from(xy) -> Rect {
+        Rect{
+            width: xy.0,     // width of rectangle
+            height: xy.1,    // height of rectangle
+            x: 0.,         // Default: 0. x pos of top left (SVG) or bottom left (SCAD)
+            y: 0.,         // Default: 0. y pos of top left (SVG) or bottom left (SCAD)
+            rx: 0.,        // Default: 0. The x radius of the corners of the rectangle.
+            ry: 0.,        // Default: 0. The y radius of the corners of the rectangle.
+        }
     }
 }
 
-impl<'a, 'b> Add<&'b Face> for &'a Face {
-    type Output = Face;
 
-    fn add(self, other: &'b Face) -> Face {
-        Face(self.0.clone() + other.0.clone())
-    }
-}
 
-impl Add<&Face> for Face {
-    type Output = Face;
-
-    fn add(self, other: &Face) -> Face {
-        Face(self.0.clone() + other.0.clone())
-    }
-}
-
-// impl Scad for Face {
-    // pub fn scad(&self) -> String {
-        // format!("polygon(points = [ {} ]);",
-            // self.0.iter().map(|xy| format!("[{}, {}]", xy.re, xy.im)).collect::<Vec<_>>().join(", "))
-    // }
-// }
-
-impl D2Trait for Face {
+impl D2Trait for Rect {
     fn scad(&self) -> String {
         format!("polygon(points = [ {} ]);",
             self.0.iter().map(|xy| format!("[{}, {}]", xy.re, xy.im)).collect::<Vec<_>>().join(", "))
@@ -129,7 +85,7 @@ impl D2Trait for Face {
 
    fn translate(&mut self, xy: C32) {
         self.0 += xy;
-   }
+    }
 
    fn bbox(&self) -> (C32, C32) {
         let (x_min, y_min, x_max, y_max) = self.0.iter().fold( 
@@ -157,10 +113,6 @@ impl Face {
 
     fn translate(&mut self, xy: C32) {
         self.0 += xy;
-    }
-
-    pub fn circular_shift(self, k: isize) -> Face {
-        Face(circular_shift(&self.0, k))
     }
 
     pub fn truncated(&self) -> Self {

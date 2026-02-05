@@ -6,14 +6,13 @@ use anyhow::Result;
 
 fn main() -> Result<()> {
     let h = X(10.);
-    let bevel = X(1.);
     let bevel = X(0.);
     let w: X= 3*h;
-    let l: X = 3*w;
+    let _l: X = 3*w;
     let gap = X(0.1);
     let r = X(22.);
-    let s = X(10.);
-    let gap2 = gap/2;
+    let _s = X(10.);
+    let _gap2 = gap/2;
     let bgap = X(0.1);
 
     let egg = D2::egg(r)

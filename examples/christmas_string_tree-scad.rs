@@ -35,7 +35,7 @@ fn triangle_gap(r_triangle: f64, w: f64, h: f64, gap: f64) -> D3 {
 }
 
 fn main() -> Result<()> {
-    let unit = 5.;
+    let _unit = 5.;
     let layer = 0.1;
     let h_tree = 100.;
     let h_func = 11.;
@@ -64,7 +64,7 @@ fn main() -> Result<()> {
         .add_map(|x| x.rotate_z(60))
         .translate_z(-h_base)
         ;
-    let level = triangle(tree_edge(0.5)*scale, 0.6, 0.4)
+    let _level = triangle(tree_edge(0.5)*scale, 0.6, 0.4)
         .translate_z(0.5*scale)
         ;
     let bridges = (0..=limit)

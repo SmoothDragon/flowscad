@@ -4,7 +4,7 @@ use anyhow::Result;
 fn level_shape(level:u32, total:u32) -> D2 {
     let n = 360;
     let r = X(30.);
-    let h = 10;
+    let _h = 10;
     let shift = X(5.)*level/total;
     let points = (0..n)
         .map(|ii| {let theta = PI/180*ii;

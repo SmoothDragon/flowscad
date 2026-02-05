@@ -3,7 +3,7 @@ use num_complex::Complex32;
 use std::f32::consts::PI;
 
 use crate::Face;
-pub use crate::D2Trait;
+pub use crate::d2::D2Trait;
 
 fn expi(theta: f32) -> Complex32 {
     Complex32::new(theta.cos(), theta.sin())

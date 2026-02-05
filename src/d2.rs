@@ -4,5 +4,11 @@ pub use crate::d2::d2_trait::*;
 mod d2_face;
 pub use crate::d2::d2_face::*;
 
+mod d2_path;
+pub use crate::d2::d2_path::*;
+
 mod d2_hypocycloid;
 pub use crate::d2::d2_hypocycloid::*;
+
+mod d2_circle;
+pub use crate::d2::d2_circle::*;

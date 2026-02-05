@@ -3,6 +3,8 @@ use core::cmp::*;
 
 use derive_more::*;
 
+use num_complex::Complex32 as C32;
+
 pub const PI: X = X(std::f32::consts::PI);
 
 #[derive(Clone, Copy, PartialEq, PartialOrd, Neg)]
@@ -317,6 +319,12 @@ impl From<[f64; 2]> for XY {
     }
 }
 
+impl From<C32> for XY {
+    fn from(xy: C32) -> Self {
+        Self(xy.re, xy.im)
+    }
+}
+
 impl From<[f32; 2]> for XY {
     fn from(xy: [f32; 2]) -> Self {
         Self(xy[0], xy[1])
@@ -422,6 +430,12 @@ impl From<[f64; 3]> for XYZ {
 
 impl From<[f32; 3]> for XYZ {
     fn from(xyz: [f32; 3]) -> XYZ {
+        v3(xyz[0] as f32, xyz[1] as f32, xyz[2] as f32)
+    }
+}
+
+impl From<Vec<f32>> for XYZ {
+    fn from(xyz: Vec<f32>) -> XYZ {
         v3(xyz[0] as f32, xyz[1] as f32, xyz[2] as f32)
     }
 }

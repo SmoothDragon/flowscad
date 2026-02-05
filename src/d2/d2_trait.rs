@@ -7,10 +7,10 @@ use derive_more::*;
 use num_complex::Complex32 as C32;
 
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Neg)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Neg, Mul)]
 pub struct Deg(pub f32);
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Neg)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Neg, Mul)]
 pub struct Rad(pub f32);
 
 impl From<Deg> for Rad {
@@ -19,11 +19,27 @@ impl From<Deg> for Rad {
     }
 }
 
+impl Add<Rad> for Deg {
+    type Output = Deg;
+
+    fn add(self, RHS: Rad) -> Self::Output {
+        self + Deg::from(RHS)
+    }
+}
+
 impl Mul<Deg> for f32 {
     type Output = Deg;
 
     fn mul(self, RHS: Deg) -> Self::Output {
         Deg(self * RHS.0)
+    }
+}
+
+impl Mul<Rad> for f32 {
+    type Output = Rad;
+
+    fn mul(self, RHS: Rad) -> Self::Output {
+        Rad(self * RHS.0)
     }
 }
 
@@ -46,6 +62,9 @@ impl From<Deg> for C32 {
     }
 }
 
+// pub trait Scad: Clone {
+    // fn scad(&self) -> String;
+// }
 
 pub trait D2Trait: Clone {
     fn scad(&self) -> String;

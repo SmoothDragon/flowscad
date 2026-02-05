@@ -52,25 +52,13 @@ fn main() {
     let h_lip = X(5.);
     let h_notch = X(5.);
     let h_front_lip = h_lip + h_notch;
-
-    let lid_profile = D2::beveled_rectangle( (w_outer, h_lid), bevel)
-        ;
-
-    let lid_profile = D2::rectangle( (w_outer-2*bevel, 2*bevel) )
-        .translate_x(bevel)
-        .add(D2::rectangle( (w_outer, 2*bevel) ).translate_y(bevel))
-        .hull()
-        ;
-    let lid_slide = D2::rectangle( (w_outer-2*wall-2*gap, h_notch/3) )
-        .translate_x(-(w_outer-2*wall-2*gap)/2-(w_outer+wall)/2)
-        .translate_y(h_lip)
-        ;
+    let h_lock = X(0.2);
 
     let lid = D3::beveled_box( (w_outer, w_outer, 2*h_front_lip), bevel)
         .sub( D3::cuboid( (3*w_outer, w_outer, h_front_lip) ) 
             .translate( (-w_outer, wall+bevel, h_lip) )
             )
-        .and( D3::cuboid( (w_outer, w_outer, h_front_lip) ) )
+        .and( D3::cuboid( (w_outer, w_outer, h_front_lip+h_lock) ) )
         .sub(D3::beveled_box( (w_inner, w_inner, 2*h_base), bevel)
             .translate( (wall, wall, h_lip) )
             )
@@ -111,24 +99,7 @@ fn main() {
         + lid
         ;
 
-    // let result = D3::cuboid( (w_outer, w_outer, h_base) );
     println!("{}", result);
-
-    // let result = D3::beveled_box( (w_outer, w_outer, 0.8*w_outer), 1.5)
-        // .sub(D3::beveled_box( (w_inner, w_inner, w_outer), 1.5)
-            // .translate( (wall, wall, wall) )
-        // )
-        // .add(D3::beveled_box( (w_outer, w_break, 0.8*w_outer), 1.5)
-            // .translate_y(20+wall)
-        // )
-        // .add(D3::beveled_box( (w_outer, w_break, 0.8*w_outer), 1.5)
-            // .translate_y(30+2*wall)
-        // )
-        ;
-    // let result = D3::polycube_from_bitcube4(BitCube4(0xffff_ffff_ffff_ffff_u64), 11.0, 1.0, 0.1)
-        // + D3::polycube_from_bitcube4(BitCube4(0x1), 22.0, 1.0, 0.1)
-         // .translate((11,0,11))
-        // ;
 
 }
 

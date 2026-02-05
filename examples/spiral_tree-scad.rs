@@ -16,6 +16,7 @@ use flowscad::*;
 /// With a rotation of theta, 1 will move inwards and need to be shifted to the right.
 /// Likewise w^2 will move upwards and need to be shifted down.
 /// These two
+/*
 fn shift_to_square_edges(theta: f32) -> XY {
     let mut t = theta;
     while t > 120. {
@@ -50,6 +51,7 @@ fn shift_to_square_edges2(theta: f32) -> XY {
         _ => XY(0.,0.),
     }
 }
+*/
 
 fn main() -> Result<()> {
     let r = X(20.);
