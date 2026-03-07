@@ -1,7 +1,6 @@
 //! Create OpenSCAD files using Rust.
 
 use crate::*;
-use anyhow::Result;
 
 pub const MAX2: f32 = 1000.;
 

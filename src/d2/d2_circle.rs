@@ -1,6 +1,7 @@
 use ndarray::{Array1, concatenate, Axis, s};
 use num_complex::Complex32;
-use std::f32::consts::PI;
+
+use crate::common::PI;
 
 use crate::Face;
 

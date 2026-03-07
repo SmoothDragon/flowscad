@@ -101,6 +101,12 @@ impl std::ops::SubAssign for X {
 // }
 
 // TODO: Macro to replace all this?
+impl From<usize> for X {
+    fn from(i: usize) -> X {
+        X(i as f32)
+    }
+}
+
 impl From<u32> for X {
     fn from(i: u32) -> X {
         X(i as f32)

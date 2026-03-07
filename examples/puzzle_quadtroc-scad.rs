@@ -9,6 +9,7 @@ fn main() -> Result<()> {
     let duo_troc = D3:: polytroc_from_bittroc4(BitTroc4{c4:BitCube4(0x10001), c3:BitCube3(0o0)}, side, gap);
     let quad_troc = D3:: polytroc_from_bittroc4(BitTroc4{c4:BitCube4(0x33), c3:BitCube3(0o0)}, side, gap);
 
+    /*
     let holder = D3::beveled_box(v3(3.*side+w_wall, 3.*side+2.*w_wall, 3.*side+w_wall), 2.)
         .translate(-v3(1,1,1)*(w_wall+gap))
         ;
@@ -30,6 +31,7 @@ fn main() -> Result<()> {
         .and(holder)
         .translate_z(w_wall)
         ;
+    */
     let holder2 = D3::polytroc_from_bittroc4(
         BitTroc4{c4:BitCube4(0xf11f_f11f_f11f_ffff), c3:BitCube3(0o0)}, 
         side, gap).translate(v3(-1,-1,-1)*1.5*side)

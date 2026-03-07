@@ -22,24 +22,24 @@ impl From<Deg> for Rad {
 impl Add<Rad> for Deg {
     type Output = Deg;
 
-    fn add(self, RHS: Rad) -> Self::Output {
-        self + Deg::from(RHS)
+    fn add(self, rhs: Rad) -> Self::Output {
+        self + Deg::from(rhs)
     }
 }
 
 impl Mul<Deg> for f32 {
     type Output = Deg;
 
-    fn mul(self, RHS: Deg) -> Self::Output {
-        Deg(self * RHS.0)
+    fn mul(self, rhs: Deg) -> Self::Output {
+        Deg(self * rhs.0)
     }
 }
 
 impl Mul<Rad> for f32 {
     type Output = Rad;
 
-    fn mul(self, RHS: Rad) -> Self::Output {
-        Rad(self * RHS.0)
+    fn mul(self, rhs: Rad) -> Self::Output {
+        Rad(self * rhs.0)
     }
 }
 

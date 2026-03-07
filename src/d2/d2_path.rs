@@ -1,4 +1,3 @@
-use std::cmp::Ordering;
 use std::fmt::Write;
 use std::ops::Deref;
 use itertools::Itertools;
@@ -8,7 +7,6 @@ use ndarray::Array1;
 use num_complex::Complex32 as C32;
 use libm::atan2f;
 
-pub use crate::Deg;
 pub use crate::Rad;
 pub use crate::D2Trait;
 use crate::*;
@@ -85,9 +83,9 @@ impl D2Trait for Path {
         }
 
         let mut d = String::new();
-        write!(&mut d, "<path d=\"");
+        let _ = write!(&mut d, "<path d=\"");
         // Move to first point
-        write!(&mut d, "M {} {}", self.pts[0].re, self.pts[0].im).unwrap();
+        let _ = write!(&mut d, "M {} {}", self.pts[0].re, self.pts[0].im).unwrap();
 
         // For each segment, compute control points
         let n = self.pts.len();
@@ -105,7 +103,7 @@ impl D2Trait for Path {
             let c2 = p2 - (p3 - p1) / 6.0;
             write!(&mut d, " C {} {}, {} {}, {} {}", c1.re, -c1.im, c2.re, -c2.im, p2.re, -p2.im).unwrap();
         }
-        write!(&mut d, r#"" stroke="black" fill="none" stroke-width="1"/>"#);
+        let _ = write!(&mut d, r#"" stroke="black" fill="none" stroke-width="1"/>"#);
 
         d
     }

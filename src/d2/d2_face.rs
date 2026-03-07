@@ -93,9 +93,9 @@ impl D2Trait for Face {
         }
 
         let mut d = String::new();
-        write!(&mut d, "<path d=\"");
+        let _ = write!(&mut d, "<path d=\"");
         // Move to first point
-        write!(&mut d, "M {} {}", self.0[0].re, self.0[0].im).unwrap();
+        let _ = write!(&mut d, "M {} {}", self.0[0].re, self.0[0].im).unwrap();
 
         // For each segment, compute control points
         let n = self.0.len();
@@ -111,9 +111,9 @@ impl D2Trait for Face {
             // Catmull-Rom to cubic Bézier formula
             let c1 = p1 + (p2 - p0) / 6.0;
             let c2 = p2 - (p3 - p1) / 6.0;
-            write!(&mut d, " C {} {}, {} {}, {} {}", c1.re, -c1.im, c2.re, -c2.im, p2.re, -p2.im).unwrap();
+            let _ = write!(&mut d, " C {} {}, {} {}, {} {}", c1.re, -c1.im, c2.re, -c2.im, p2.re, -p2.im).unwrap();
         }
-        write!(&mut d, r#"" stroke="black" fill="none" stroke-width="1"/>"#);
+        let _ = write!(&mut d, r#"" stroke="black" fill="none" stroke-width="1"/>"#);
 
         d
     }
