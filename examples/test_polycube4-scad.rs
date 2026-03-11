@@ -1,5 +1,6 @@
 use flowscad::*;
 use anyhow::Result;
+use bitperm::*;
 
 fn main() -> Result<()> {
     let result = D3::polycube_from_bitcube4(BitCube4(0xcc00_ce60_0673_0033), 17., 1., 0.1);

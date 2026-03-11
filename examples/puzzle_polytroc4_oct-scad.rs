@@ -1,5 +1,6 @@
 use flowscad::*;
 use anyhow::Result;
+use bitperm::*;
 
 fn main() -> Result<()> {
     let result = D3::from(BitTroc4{c4:BitCube4(0x27207770272), c3:BitCube3(0o033033)}).color(ColorEnum::Red);

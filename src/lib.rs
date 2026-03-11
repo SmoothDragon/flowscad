@@ -23,4 +23,4 @@ pub use crate::d2::*;
 mod d3;
 pub use crate::d3::*;
 
-pub use bitperm::*;
+use bitperm::*;
