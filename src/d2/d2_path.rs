@@ -24,7 +24,7 @@ fn exp_i(theta: f32) -> C32 {
 pub fn line_segment(xy0: C32, xy1: C32, width: f32) -> D2 {
     let delta = xy1 - xy0;
     let length = delta.norm();
-    let theta = atan2f(delta.im, delta.re) * 180.0 / PI;
+    let theta = atan2f(delta.im, delta.re) * 180.0 / std::f32::consts::PI;
     D2::rectangle( (length, width) )
         .translate_y(-width/2.0)
         .rotate(theta)

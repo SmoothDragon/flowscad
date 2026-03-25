@@ -237,7 +237,7 @@ impl D2 {
         let angle = if x0 == x1 {
             X(90.)
         } else {
-            ((y1-y0)/(x1-x0)).atan()*180.0/PI
+            ((y1-y0)/(x1-x0)).atan()*180.0/crate::cartesian::PI
         };
         let length = ((x1-x0).powf(2.0) + (y1-y0).powf(2.0)).powf(0.5);
         D2::rectangle( (length, w) )
