@@ -33,7 +33,7 @@ fn circle_arc_face(side: f32, ridges: u32) -> D3 {
 fn circle_arc_cube(side: f32, ridges: u32) -> D3 { 
     let face = circle_arc_face(side, ridges)
         .translate([-side/2., side/2., -side/2.])
-        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
+        .rotate(v3(45., -90. + 2.0_f32.sqrt().atan().to_degrees(), 0.))
         .iter_rotate([0.,0.,120.], 3)
         .intersection()
         ;

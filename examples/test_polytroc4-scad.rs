@@ -1,7 +1,7 @@
 use flowscad::*;
 use anyhow::Result;
 
-use bitperm::*;
+use ::bitperm::*;
 
 fn main() -> Result<()> {
     let result = D3::polytroc_from_bittroc4(

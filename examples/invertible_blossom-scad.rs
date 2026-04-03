@@ -7,9 +7,9 @@ fn level_shape(level:u32, total:u32) -> D2 {
     let _h = 10;
     let shift = X(5.)*level/total;
     let points = (0..n)
-        .map(|ii| {let theta = PI/180*ii;
+        .map(|ii| {let theta = PI / 180.0 * ii as f32;
              // v2(r, 0).rotate(theta.0)
-             v2(r+shift*(8.0_f32*theta).sin(), 0).rotate(theta.0)
+             v2(r+shift*(8.0_f32*theta).sin(), 0).rotate(theta)
         })
          .collect::<Vec<XY>>()
          ;

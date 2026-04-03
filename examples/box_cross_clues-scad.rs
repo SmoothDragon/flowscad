@@ -1,5 +1,5 @@
 use flowscad::*;
-use bitperm::*;
+use ::bitperm::*;
 
 
 fn holding_cube_frame<IL: Into<X>, IW: Into<X>, IB: Into<X>, IG: Into<X>>

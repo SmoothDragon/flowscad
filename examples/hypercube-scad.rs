@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         .iter_rotate([90,0,0], 4)
         .union()
         .add(D3::cube(0.333*r).center())
-        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
+        .rotate(v3(45., -90. + 2.0_f32.sqrt().atan().to_degrees(), 0.))
         .intersection(D3::cube(2.*r).center().translate_z(0.5*r))
         // .add_map(|x| x.rotate(180.))
         // .rotate(-45.)

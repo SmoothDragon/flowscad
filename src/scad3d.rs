@@ -1,7 +1,7 @@
 use crate::*;
 // use bitperm::*;
 
-impl<T: Iterator<Item=D3>> DIterator<D3> for T {
+impl<T: Iterator<Item = D3>> DIterator<D3> for T {
     fn hull(self) -> D3 {
         D3::Hull(Box::new(self.collect::<Vec<D3>>()))
         // D2::Join("hull", Box::new(self.collect::<Vec<D2>>()))
@@ -20,7 +20,6 @@ impl<T: Iterator<Item=D3>> DIterator<D3> for T {
     }
 }
 
-
 #[derive(Clone, Debug)]
 pub enum D3 {
     Cube(X),
@@ -28,7 +27,9 @@ pub enum D3 {
     Color(ColorEnum, Box<D3>),
     Cylinder(X, X),
     Frustum(X, X, X),
-    Sphere{radius: X},
+    Sphere {
+        radius: X,
+    },
     Polyhedron(Box<Vec<XYZ>>, Box<Vec<Vec<usize>>>),
     Translate(XYZ, Box<D3>),
     Scale(X, Box<D3>),
@@ -36,7 +37,13 @@ pub enum D3 {
     Rotate(XYZ, Box<D3>),
     Mirror(XYZ, Box<D3>),
     // LinearExtrude(X, Box<D2>),
-    LinearExtrude{height: X, twist: X, slices: u32, center: bool, shape: Box<D2>},
+    LinearExtrude {
+        height: X,
+        twist: X,
+        slices: u32,
+        center: bool,
+        shape: Box<D2>,
+    },
     RotateExtrude(X, Box<D2>),
     Hull(Box<Vec<D3>>),
     Intersection(Box<Vec<D3>>),
@@ -47,7 +54,6 @@ pub enum D3 {
     // TODO: Join(&'static str, Box<Vec<D3>>),
     Render(Box<D3>),
 }
-
 
 pub fn indent_d3(shape: &D3) -> String {
     format!("{}", shape).replace('\n', "\n  ")
@@ -61,8 +67,8 @@ impl std::fmt::Display for D3 {
 
 impl std::iter::Sum for D3 {
     fn sum<I>(iter: I) -> Self
-      where
-        I: Iterator<Item = Self>
+    where
+        I: Iterator<Item = Self>,
     {
         D3::Union(Box::new(iter.collect::<Vec<Self>>()))
         // D3::Join("union", Box::new(iter.collect::<Vec<Self>>()))
@@ -79,17 +85,17 @@ impl core::ops::Add<D3> for D3 {
     type Output = D3;
 
     fn add(self, other: Self) -> Self {
-        match self { // Combine Unions if possible
+        match self {
+            // Combine Unions if possible
             D3::Union(vec) => {
                 let mut vec = vec;
                 vec.push(other);
                 D3::Union(vec)
-                },
+            }
             _ => D3::Union(Box::new(vec![self, other])),
         }
     }
 }
-
 
 impl std::ops::Sub<D3> for D3 {
     type Output = D3;
@@ -101,8 +107,8 @@ impl std::ops::Sub<D3> for D3 {
 
 impl std::iter::Product for D3 {
     fn product<I>(iter: I) -> Self
-      where
-        I: Iterator<Item = Self>
+    where
+        I: Iterator<Item = Self>,
     {
         D3::Intersection(Box::new(iter.collect::<Vec<Self>>()))
     }
@@ -112,12 +118,13 @@ impl BitAnd<D3> for D3 {
     type Output = D3;
 
     fn bitand(self, other: D3) -> D3 {
-        match self { // Combine intersections if possible
+        match self {
+            // Combine intersections if possible
             D3::Join("intersection", vec) => {
                 let mut vec = vec;
                 vec.push(other);
                 D3::Join("intersection", vec)
-                },
+            }
             _ => D3::Join("intersection", Box::new(vec![self, other])),
         }
     }
@@ -140,7 +147,6 @@ impl From<BitTroc4> for D3 {
         D3::polytroc_from_bittroc4(bc4, 15., 0.1)
     }
 }
-
 
 impl SCAD for D3 {
     fn scad(&self) -> String {
@@ -191,7 +197,6 @@ impl SCAD for D3 {
     fn indent(&self) -> String {
         self.scad().replace('\n', "\n  ")
     }
-
 }
 
 impl D3 {
@@ -207,12 +212,26 @@ impl D3 {
 
     /// Create a sphere with `radius` centered at the origin.
     pub fn sphere_r<T: Into<X>>(radius: T) -> D3 {
-        D3::Sphere{radius: radius.into()}
+        D3::Sphere {
+            radius: radius.into(),
+        }
     }
 
     /// Create a sphere with `diameter` centered at the origin.
     pub fn sphere_d<T: Into<X>>(diameter: T) -> D3 {
-        D3::Sphere{radius: diameter.into()/2}
+        D3::Sphere {
+            radius: diameter.into() / 2,
+        }
+    }
+
+    pub fn stack(layers: Vec<D2>, h_layer: f32) -> D3 {
+        (0..layers.len())
+            .map(|ii| {
+                layers[ii]
+                    .linear_extrude(h_layer)
+                    .translate_z(ii as f32 * h_layer)
+            })
+            .union()
     }
 
     /// Create a polycube from BitCube3
@@ -224,53 +243,47 @@ impl D3 {
     pub fn polycube_from_bitcube3(bc3: BitCube3, edge: f32, bevel: f32, gap: f32) -> Self {
         // let block = D3::beveled_box((edge-gap)*v3(1,1,1), bevel);
         (0..27)
-            .filter(|ii| ii%3 != 2)
+            .filter(|ii| ii % 3 != 2)
             .filter(|ii| (bc3.0 >> ii) & 0o3 == 0o3)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((2,1,1), edge, bevel, gap).translate(xyz))
+            .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+            .map(|xyz| D3::beveled_cube_block((2, 1, 1), edge, bevel, gap).translate(xyz))
             .union()
-            +
-        (0..27)
-            .filter(|ii| (ii/3)%3 != 2)
-            .filter(|ii| (bc3.0 >> ii) & 0o11 == 0o11)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((1,2,1), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| ii/9 != 2)
-            .filter(|ii| (bc3.0 >> ii) & 0o1001 == 0o1001)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((1,1,2), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| ii%3 != 2 && (ii/3)%3 !=2 )
-            .filter(|ii| (bc3.0 >> ii) & 0o33 == 0o33)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((2,2,1), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| ii%3 != 2 && ii/9 !=2 )
-            .filter(|ii| (bc3.0 >> ii) & 0o3003 == 0o3003)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((2,1,2), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (ii/3)%3 !=2 && ii/9 != 2)
-            .filter(|ii| (bc3.0 >> ii) & 0o11011 == 0o11011)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((1,2,2), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| ii%3 != 2 && (ii/3)%3 !=2 && ii/9 != 2)
-            .filter(|ii| (bc3.0 >> ii) & 0o33033 == 0o33033)
-            .map(|ii| edge*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| D3::beveled_cube_block((2,2,2), edge, bevel, gap).translate(xyz))
-            .union()
+            + (0..27)
+                .filter(|ii| (ii / 3) % 3 != 2)
+                .filter(|ii| (bc3.0 >> ii) & 0o11 == 0o11)
+                .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| D3::beveled_cube_block((1, 2, 1), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| ii / 9 != 2)
+                .filter(|ii| (bc3.0 >> ii) & 0o1001 == 0o1001)
+                .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| D3::beveled_cube_block((1, 1, 2), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| ii % 3 != 2 && (ii / 3) % 3 != 2)
+                .filter(|ii| (bc3.0 >> ii) & 0o33 == 0o33)
+                .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| D3::beveled_cube_block((2, 2, 1), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| ii % 3 != 2 && ii / 9 != 2)
+                .filter(|ii| (bc3.0 >> ii) & 0o3003 == 0o3003)
+                .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| D3::beveled_cube_block((2, 1, 2), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| (ii / 3) % 3 != 2 && ii / 9 != 2)
+                .filter(|ii| (bc3.0 >> ii) & 0o11011 == 0o11011)
+                .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| D3::beveled_cube_block((1, 2, 2), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| ii % 3 != 2 && (ii / 3) % 3 != 2 && ii / 9 != 2)
+                .filter(|ii| (bc3.0 >> ii) & 0o33033 == 0o33033)
+                .map(|ii| edge * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| D3::beveled_cube_block((2, 2, 2), edge, bevel, gap).translate(xyz))
+                .union()
     }
 
     /// Create a polycube from BitCube4
@@ -280,170 +293,165 @@ impl D3 {
     /// Add all 2x2x2 blocks
     pub fn polycube_from_bitcube4(bc4: BitCube4, edge: f32, bevel: f32, gap: f32) -> Self {
         if bc4.count_cubes() == 1 {
-            return D3::beveled_box((edge-2.*gap)*v3(1,1,1), bevel)
+            return D3::beveled_box((edge - 2. * gap) * v3(1, 1, 1), bevel);
             // .translate(edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-        } 
+        }
         (0..64)
             .filter(|ii| (bc4.0 >> ii) & 0x3 == 0x3)
             .filter(|ii| *ii & 0x3 != 3)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((2,1,1), edge, bevel, gap).translate(xyz))
+            .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+            .map(|xyz| D3::beveled_cube_block((2, 1, 1), edge, bevel, gap).translate(xyz))
             .union()
-            +
-        (0..64)
-            .filter(|ii| (bc4.0 >> ii) & 0x11 == 0x11)
-            .filter(|ii| *ii & 0xc != 0xc)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((1,2,1), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| (bc4.0 >> ii) & 0x10001 == 0x10001)
-            .filter(|ii| *ii & 0x30 != 0x30)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((1,1,2), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| (bc4.0 >> ii) & 0x33 == 0x33)
-            .filter(|ii| *ii & 0x3 != 3)
-            .filter(|ii| *ii & 0xc != 0xc)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((2,2,1), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| (bc4.0 >> ii) & 0x30003 == 0x30003)
-            .filter(|ii| *ii & 0x3 != 3)
-            .filter(|ii| *ii & 0x30 != 0x30)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((2,1,2), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| (bc4.0 >> ii) & 0x110011 == 0x110011)
-            .filter(|ii| *ii & 0xc != 0xc)
-            .filter(|ii| *ii & 0x30 != 0x30)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((1,2,2), edge, bevel, gap).translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| (bc4.0 >> ii) & 0x330033 == 0x330033)
-            .filter(|ii| *ii & 0x3 != 3)
-            .filter(|ii| *ii & 0xc != 0xc)
-            .filter(|ii| *ii & 0x30 != 0x30)
-            .map(|ii| edge*v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4) )
-            .map(|xyz| D3::beveled_cube_block((2,2,2), edge, bevel, gap).translate(xyz))
-            .union()
+            + (0..64)
+                .filter(|ii| (bc4.0 >> ii) & 0x11 == 0x11)
+                .filter(|ii| *ii & 0xc != 0xc)
+                .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+                .map(|xyz| D3::beveled_cube_block((1, 2, 1), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| (bc4.0 >> ii) & 0x10001 == 0x10001)
+                .filter(|ii| *ii & 0x30 != 0x30)
+                .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+                .map(|xyz| D3::beveled_cube_block((1, 1, 2), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| (bc4.0 >> ii) & 0x33 == 0x33)
+                .filter(|ii| *ii & 0x3 != 3)
+                .filter(|ii| *ii & 0xc != 0xc)
+                .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+                .map(|xyz| D3::beveled_cube_block((2, 2, 1), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| (bc4.0 >> ii) & 0x30003 == 0x30003)
+                .filter(|ii| *ii & 0x3 != 3)
+                .filter(|ii| *ii & 0x30 != 0x30)
+                .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+                .map(|xyz| D3::beveled_cube_block((2, 1, 2), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| (bc4.0 >> ii) & 0x110011 == 0x110011)
+                .filter(|ii| *ii & 0xc != 0xc)
+                .filter(|ii| *ii & 0x30 != 0x30)
+                .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+                .map(|xyz| D3::beveled_cube_block((1, 2, 2), edge, bevel, gap).translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| (bc4.0 >> ii) & 0x330033 == 0x330033)
+                .filter(|ii| *ii & 0x3 != 3)
+                .filter(|ii| *ii & 0xc != 0xc)
+                .filter(|ii| *ii & 0x30 != 0x30)
+                .map(|ii| edge * v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
+                .map(|xyz| D3::beveled_cube_block((2, 2, 2), edge, bevel, gap).translate(xyz))
+                .union()
     }
 
-    pub fn polytroc_from_bittroc4(bt4: BitTroc4, d: f32, gap: f32) -> Self { 
-        let block = D3::troc_d(d-gap);
+    pub fn polytroc_from_bittroc4(bt4: BitTroc4, d: f32, gap: f32) -> Self {
+        let block = D3::troc_d(d - gap);
         // let s_bridge = D3::cube(d/2.828-gap).center().rotate_x(45).translate_x(-d/2.);
-        let x_bridge = D3::cube((d-2.*gap)/2.828).center().rotate_x(45).translate_x(d/2.);
+        let x_bridge = D3::cube((d - 2. * gap) / 2.828)
+            .center()
+            .rotate_x(45)
+            .translate_x(d / 2.);
         let y_bridge = x_bridge.clone().rotate_z(90);
         let z_bridge = x_bridge.clone().rotate_y(-90);
-        let d_bridge = Self::chamfer_regular_polygon_prism(6, d, d/3., 0).rotate((-109.47/2.,0,-45));
+        let d_bridge =
+            Self::chamfer_regular_polygon_prism(6, d, d / 3., 0).rotate((-109.47 / 2., 0, -45));
         (0..64)
             .filter(|ii| (bt4.c4.0 >> ii) & 1 == 1)
-            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
+            .map(|ii| d * v3(ii % 4, (ii / 4) % 4, ii / 16))
             .map(|xyz| block.clone().translate(xyz))
             .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| block.clone().translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| ii%4 != 3)
-            .filter(|ii| (bt4.c4.0 >> ii) & 0x3 == 0x3)
-            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
-            .map(|xyz| x_bridge.clone().translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| (ii/4)%4 != 3)
-            .filter(|ii| (bt4.c4.0 >> ii) & 0x11 == 0x11)
-            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
-            .map(|xyz| y_bridge.clone().translate(xyz))
-            .union()
-            +
-        (0..64)
-            .filter(|ii| ii/16 != 3)
-            .filter(|ii| (bt4.c4.0 >> ii) & 0x10001 == 0x10001)
-            .map(|ii| d*v3(ii % 4, (ii/4) % 4, ii / 16))
-            .map(|xyz| z_bridge.clone().translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| ii%2 != 2)
-            .filter(|ii| (bt4.c3.0 >> ii) & 0o3 == 0o3)
-            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| x_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (ii/3)%3 != 2)
-            .filter(|ii| (bt4.c3.0 >> ii) & 0o11 == 0o11)
-            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| y_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| ii/9 != 2)
-            .filter(|ii| (bt4.c3.0 >> ii) & 0o1001 == 0o1001)
-            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| z_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .filter(|ii| (BitCube3::from(bt4.c4).0 >> ii) & 1 == 1)
-            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| d_bridge.clone().translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>21)).0 >> ii) & 1 == 1)
-            .map(|ii| d*v3(ii % 3, (ii/3) % 3, ii / 9))
-            .map(|xyz| d_bridge.clone().translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>4)).0 >> ii) & 1 == 1)
-            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,1,0)))
-            .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>17)).0 >> ii) & 1 == 1)
-            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
-            .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>1)).0 >> ii) & 1 == 1)
-            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(1,0,0)))
-            .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz))
-            .union()
-            +
-        (0..27)
-            .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
-            .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0>>20)).0 >> ii) & 1 == 1)
-            .map(|ii| d*(v3(ii % 3, (ii/3) % 3, ii / 9)+v3(0,0,0)))
-            .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz+d*0.5*v3(1,1,1)))
-            .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .map(|ii| d * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| block.clone().translate(xyz + d * 0.5 * v3(1, 1, 1)))
+                .union()
+            + (0..64)
+                .filter(|ii| ii % 4 != 3)
+                .filter(|ii| (bt4.c4.0 >> ii) & 0x3 == 0x3)
+                .map(|ii| d * v3(ii % 4, (ii / 4) % 4, ii / 16))
+                .map(|xyz| x_bridge.clone().translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| (ii / 4) % 4 != 3)
+                .filter(|ii| (bt4.c4.0 >> ii) & 0x11 == 0x11)
+                .map(|ii| d * v3(ii % 4, (ii / 4) % 4, ii / 16))
+                .map(|xyz| y_bridge.clone().translate(xyz))
+                .union()
+            + (0..64)
+                .filter(|ii| ii / 16 != 3)
+                .filter(|ii| (bt4.c4.0 >> ii) & 0x10001 == 0x10001)
+                .map(|ii| d * v3(ii % 4, (ii / 4) % 4, ii / 16))
+                .map(|xyz| z_bridge.clone().translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| ii % 2 != 2)
+                .filter(|ii| (bt4.c3.0 >> ii) & 0o3 == 0o3)
+                .map(|ii| d * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| x_bridge.clone().translate(xyz + d * 0.5 * v3(1, 1, 1)))
+                .union()
+            + (0..27)
+                .filter(|ii| (ii / 3) % 3 != 2)
+                .filter(|ii| (bt4.c3.0 >> ii) & 0o11 == 0o11)
+                .map(|ii| d * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| y_bridge.clone().translate(xyz + d * 0.5 * v3(1, 1, 1)))
+                .union()
+            + (0..27)
+                .filter(|ii| ii / 9 != 2)
+                .filter(|ii| (bt4.c3.0 >> ii) & 0o1001 == 0o1001)
+                .map(|ii| d * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| z_bridge.clone().translate(xyz + d * 0.5 * v3(1, 1, 1)))
+                .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .filter(|ii| (BitCube3::from(bt4.c4).0 >> ii) & 1 == 1)
+                .map(|ii| d * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| d_bridge.clone().translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0 >> 21)).0 >> ii) & 1 == 1)
+                .map(|ii| d * v3(ii % 3, (ii / 3) % 3, ii / 9))
+                .map(|xyz| d_bridge.clone().translate(xyz + d * 0.5 * v3(1, 1, 1)))
+                .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0 >> 4)).0 >> ii) & 1 == 1)
+                .map(|ii| d * (v3(ii % 3, (ii / 3) % 3, ii / 9) + v3(0, 1, 0)))
+                .map(|xyz| d_bridge.clone().rotate_z(-90).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0 >> 17)).0 >> ii) & 1 == 1)
+                .map(|ii| d * (v3(ii % 3, (ii / 3) % 3, ii / 9) + v3(0, 0, 0)))
+                .map(|xyz| {
+                    d_bridge
+                        .clone()
+                        .rotate_z(-90)
+                        .translate(xyz + d * 0.5 * v3(1, 1, 1))
+                })
+                .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0 >> 1)).0 >> ii) & 1 == 1)
+                .map(|ii| d * (v3(ii % 3, (ii / 3) % 3, ii / 9) + v3(1, 0, 0)))
+                .map(|xyz| d_bridge.clone().rotate_z(90).translate(xyz))
+                .union()
+            + (0..27)
+                .filter(|ii| (bt4.c3.0 >> ii) & 1 == 1)
+                .filter(|ii| (BitCube3::from(BitCube4(bt4.c4.0 >> 20)).0 >> ii) & 1 == 1)
+                .map(|ii| d * (v3(ii % 3, (ii / 3) % 3, ii / 9) + v3(0, 0, 0)))
+                .map(|xyz| {
+                    d_bridge
+                        .clone()
+                        .rotate_z(90)
+                        .translate(xyz + d * 0.5 * v3(1, 1, 1))
+                })
+                .union()
     }
 
     /*
-    pub fn polytroc_from_bittroc4full(bt4: BitTroc4Full, d: f32, gap: f32) -> Self { 
+    pub fn polytroc_from_bittroc4full(bt4: BitTroc4Full, d: f32, gap: f32) -> Self {
         let block = D3::troc_d(d-gap);
         // let s_bridge = D3::cube(d/2.828-gap).center().rotate_x(45).translate_x(-d/2.);
         let x_bridge = D3::cube((d-2.*gap)/2.828).center().rotate_x(45).translate_x(d/2.);
@@ -474,7 +482,6 @@ impl D3 {
         self & other
     }
 
-
     /// Render an object to reduce memory usage
     pub fn render(self) -> D3 {
         D3::Render(Box::new(self))
@@ -483,11 +490,22 @@ impl D3 {
     /// Center an object, if we know how
     pub fn center(self) -> D3 {
         match self {
-            D3::Cylinder(h, _d) => self.translate(v3(0,0,-h/2)),
-            D3::Cube(x) => self.translate(-v3(x,x,x)/2),
-            D3::Cuboid(xyz) => self.translate(-xyz/2),
-            D3::LinearExtrude{height: h, twist: t, slices, center: _, shape}
-            => D3::LinearExtrude{height: h, twist: t, slices, center: true, shape},
+            D3::Cylinder(h, _d) => self.translate(v3(0, 0, -h / 2)),
+            D3::Cube(x) => self.translate(-v3(x, x, x) / 2),
+            D3::Cuboid(xyz) => self.translate(-xyz / 2),
+            D3::LinearExtrude {
+                height: h,
+                twist: t,
+                slices,
+                center: _,
+                shape,
+            } => D3::LinearExtrude {
+                height: h,
+                twist: t,
+                slices,
+                center: true,
+                shape,
+            },
             _ => self,
         }
     }
@@ -503,49 +521,57 @@ impl D3 {
     }
 
     /// Create a polyhedron from convex hull of vertices.
-    pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I) -> D3 {
-        let vertices = points.into_iter().map(|w| {
-            let v = w.into(); [v.0 as f32, v.1 as f32, v.2 as f32]
-        }).collect::<Vec<[f32; 3]>>();
+    pub fn convex_hull<T: Into<XYZ>, I: IntoIterator<Item = T>>(points: I) -> D3 {
+        let vertices = points
+            .into_iter()
+            .map(|w| {
+                let v = w.into();
+                [v.0 as f32, v.1 as f32, v.2 as f32]
+            })
+            .collect::<Vec<[f32; 3]>>();
         let (vert, face) = convex_hull_3d(vertices);
         D3::Polyhedron(
             Box::new(
                 vert.into_iter()
-                .map(Into::<XYZ>::into)
-                .collect::<Vec<XYZ>>()
-                ),
-            Box::new(face)
-            )
+                    .map(Into::<XYZ>::into)
+                    .collect::<Vec<XYZ>>(),
+            ),
+            Box::new(face),
+        )
     }
 
     /// Create a polyhedron from points and faces.
-    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item=T>>(points: I, faces: Vec<Vec<usize>>) -> D3 {
+    pub fn polyhedron<T: Into<XYZ>, I: IntoIterator<Item = T>>(
+        points: I,
+        faces: Vec<Vec<usize>>,
+    ) -> D3 {
         D3::Polyhedron(
             Box::new(
-                points.into_iter()
-                .map(Into::<XYZ>::into)
-                .collect::<Vec<XYZ>>()
-                ),
-            Box::new(faces)
-            )
+                points
+                    .into_iter()
+                    .map(Into::<XYZ>::into)
+                    .collect::<Vec<XYZ>>(),
+            ),
+            Box::new(faces),
+        )
     }
 
     pub fn half_space(aim: Aim) -> D3 {
         match aim {
-            Aim::N => D3::cube(MAX).translate(v3(-MAX/2., 0., -MAX/2.)),
-            Aim::S => D3::cube(MAX).translate(v3(-MAX/2., -MAX, -MAX/2.)),
-            Aim::E => D3::cube(MAX).translate(v3(0., -MAX/2., -MAX/2.)),
-            Aim::W => D3::cube(MAX).translate(v3(-MAX, -MAX/2., -MAX/2.)),
-            Aim::U => D3::cube(MAX).translate(v3(-MAX/2., -MAX/2., 0.)),
-            Aim::D => D3::cube(MAX).translate(v3(-MAX/2., -MAX/2., -MAX)),
-            }
+            Aim::N => D3::cube(MAX).translate(v3(-MAX / 2., 0., -MAX / 2.)),
+            Aim::S => D3::cube(MAX).translate(v3(-MAX / 2., -MAX, -MAX / 2.)),
+            Aim::E => D3::cube(MAX).translate(v3(0., -MAX / 2., -MAX / 2.)),
+            Aim::W => D3::cube(MAX).translate(v3(-MAX, -MAX / 2., -MAX / 2.)),
+            Aim::U => D3::cube(MAX).translate(v3(-MAX / 2., -MAX / 2., 0.)),
+            Aim::D => D3::cube(MAX).translate(v3(-MAX / 2., -MAX / 2., -MAX)),
+        }
     }
 
     /// Subtract `self` from a cube centered at the origin with edge length `l_edge`.
     pub fn invert<T: Into<X>>(self, l_edge: T) -> D3 {
-    // pub fn invert(self, l_edge: f64) -> D3 {
+        // pub fn invert(self, l_edge: f64) -> D3 {
         let l_edge: X = l_edge.into();
-        let shift = -l_edge/2.0;
+        let shift = -l_edge / 2.0;
         D3::cube(l_edge)
             .translate(v3(shift,shift,shift))
             // .translate(-0.5*v3(l_edge,l_edge,l_edge))
@@ -567,15 +593,15 @@ impl D3 {
     }
 
     pub fn scale_x<IX: Into<X>>(&self, scale_factor: IX) -> D3 {
-        self.clone().scale3( (scale_factor,1,1) )
+        self.clone().scale3((scale_factor, 1, 1))
     }
 
     pub fn scale_y<IX: Into<X>>(&self, scale_factor: IX) -> D3 {
-        self.clone().scale3( (1,scale_factor,1) )
+        self.clone().scale3((1, scale_factor, 1))
     }
 
     pub fn scale_z<IX: Into<X>>(&self, scale_factor: IX) -> D3 {
-        self.clone().scale3( (1,1,scale_factor) )
+        self.clone().scale3((1, 1, scale_factor))
     }
 
     /// Scale in `x`, `y` and `z` directions.
@@ -590,63 +616,66 @@ impl D3 {
     pub fn translate<IXYZ: Into<XYZ>>(&self, xyz: IXYZ) -> D3 {
         // TODO: Is clone needed here?
         match self {
-            D3::Translate(v, d3) => D3::Translate(*v+xyz.into(), d3.clone()),
+            D3::Translate(v, d3) => D3::Translate(*v + xyz.into(), d3.clone()),
             _ => D3::Translate(xyz.into(), Box::new(self.clone())),
         }
     }
 
     pub fn translate_x<T: Into<X>>(self, x: T) -> D3 {
-        D3::Translate(v3(x,0,0), Box::new(self))
+        D3::Translate(v3(x, 0, 0), Box::new(self))
     }
 
     pub fn translate_y<T: Into<X>>(self, y: T) -> D3 {
-        D3::Translate(v3(0,y,0), Box::new(self))
+        D3::Translate(v3(0, y, 0), Box::new(self))
     }
 
     pub fn translate_z<T: Into<X>>(self, z: T) -> D3 {
-        D3::Translate(v3(0,0,z), Box::new(self))
+        D3::Translate(v3(0, 0, z), Box::new(self))
     }
 
-    pub fn iter_translate<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
+    pub fn iter_translate<IXYZ: Into<XYZ>>(
+        &self,
+        ixyz: IXYZ,
+        n: u32,
+    ) -> impl Iterator<Item = D3> + '_ {
         let xyz = ixyz.into();
         (0..n).map(move |ii| self.clone().translate(xyz * ii))
     }
 
-
     pub fn rotate<IXYZ: Into<XYZ>>(&self, ixyz: IXYZ) -> D3 {
         D3::Rotate(ixyz.into(), Box::new(self.clone()))
         // match self {
-            // D3::Rotate(xyz, d3) => D3::Rotate(*xyz + ixyz.into(), d3.clone()),
-            // TODO: These don't commute
-            // _ => D3::Rotate(ixyz.into(), Box::new(self.clone())),
+        // D3::Rotate(xyz, d3) => D3::Rotate(*xyz + ixyz.into(), d3.clone()),
+        // TODO: These don't commute
+        // _ => D3::Rotate(ixyz.into(), Box::new(self.clone())),
         // }
     }
 
     pub fn rotate_x<IX: Into<X>>(&self, theta: IX) -> D3 {
-        self.rotate( (theta,0,0) )
+        self.rotate((theta, 0, 0))
     }
 
     pub fn rotate_y<IX: Into<X>>(&self, theta: IX) -> D3 {
-        self.rotate( (0,theta,0) )
+        self.rotate((0, theta, 0))
     }
 
     pub fn rotate_z<IX: Into<X>>(&self, theta: IX) -> D3 {
-        self.rotate( (0,0,theta) )
+        self.rotate((0, 0, theta))
     }
 
     /// Create a cylinder of height `h` and diameter `d` centered above the XY plane.
-    pub fn cylinder_d<H: Into<X>, D: Into<X>>(h: H, d:D) -> D3 {
+    pub fn cylinder_d<H: Into<X>, D: Into<X>>(h: H, d: D) -> D3 {
         D3::Cylinder(h.into(), d.into())
     }
 
     /// Create a cylinder of height `h` and radius `r` centered above the XY plane.
-    pub fn cylinder_r<H: Into<X>, R: Into<X>>(h: H, r:R) -> D3 {
-        D3::Cylinder(h.into(), 2*r.into())
+    pub fn cylinder_r<H: Into<X>, R: Into<X>>(h: H, r: R) -> D3 {
+        D3::Cylinder(h.into(), 2 * r.into())
     }
 
     /// Create a frustum of height `h` with starting radius `r0` and ending radius `r1` centered above the XY plane.
     pub fn frustum_r<H: Into<X>, R0: Into<X>, R1: Into<X>>(h: H, r0: R0, r1: R1) -> D3 {
-        D3::Frustum(h.into(), 2*r0.into(), 2*r1.into())
+        D3::Frustum(h.into(), 2 * r0.into(), 2 * r1.into())
     }
 
     /// Create a frustum of height `h` with starting diameter `d0` and ending diameter `d1` centered above the XY plane.
@@ -655,29 +684,31 @@ impl D3 {
     }
 
     /// Chamfered cylinder
-    pub fn chamfer_cylinder_d<H: Into<X>, D: Into<X>, C: Into<X>>(ih: H, id:D, ic:C) -> D3 {
+    pub fn chamfer_cylinder_d<H: Into<X>, D: Into<X>, C: Into<X>>(ih: H, id: D, ic: C) -> D3 {
         let h = ih.into();
         let d = id.into();
         let c = ic.into();
-        D3::cylinder_d(h-2*c, d)
+        D3::cylinder_d(h - 2 * c, d)
             .translate_z(c)
-            .add(D3::cylinder_d(h, d-2*c))
+            .add(D3::cylinder_d(h, d - 2 * c))
             .hull()
     }
 
     /// Chamfered regular polygon prism
-    pub fn chamfer_regular_polygon_prism<H: Into<X>, D: Into<X>, C: Into<X>>(n: u32, height: H, diameter:D, chamfer:C) -> D3 {
+    pub fn chamfer_regular_polygon_prism<H: Into<X>, D: Into<X>, C: Into<X>>(
+        n: u32,
+        height: H,
+        diameter: D,
+        chamfer: C,
+    ) -> D3 {
         let d = diameter.into();
         let c = chamfer.into();
         let h = height.into();
 
         let outer = D2::regular_polygon(n, d)
-            .linear_extrude(h- 2*c)
-            .translate_z(c)
-            ;
-        let inner = D2::regular_polygon(n, d - 2*c/3.0_f64.sqrt())
-            .linear_extrude(h)
-            ;
+            .linear_extrude(h - 2 * c)
+            .translate_z(c);
+        let inner = D2::regular_polygon(n, d - 2 * c / 3.0_f64.sqrt()).linear_extrude(h);
         (outer + inner).hull()
     }
 
@@ -699,84 +730,119 @@ impl D3 {
         */
     }
 
-    pub fn add_map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
+    pub fn add_map<F>(self, f: F) -> D3
+    where
+        F: Fn(D3) -> D3,
+    {
         self.clone().add(f(self))
     }
 
-    pub fn map<F>(self, f: F) -> D3 where F: Fn(D3) -> D3 {
+    pub fn map<F>(self, f: F) -> D3
+    where
+        F: Fn(D3) -> D3,
+    {
         f(self)
     }
-/*
-    pub fn iter_map<'a, F>(&'a self, f: F, n: u32) -> impl Iterator<Item = D3> + '_ where F: Fn(D3, u32) + 'a -> D3 {
-        (0..n).map(move |ii| f(self.clone(), ii))
-    }
-*/
+    /*
+        pub fn iter_map<'a, F>(&'a self, f: F, n: u32) -> impl Iterator<Item = D3> + '_ where F: Fn(D3, u32) + 'a -> D3 {
+            (0..n).map(move |ii| f(self.clone(), ii))
+        }
+    */
 
-    pub fn iter_rotate<IXYZ: Into<XYZ>>(&self, itheta: IXYZ, n: u32) -> impl Iterator<Item = D3> + '_ {
+    pub fn iter_rotate<IXYZ: Into<XYZ>>(
+        &self,
+        itheta: IXYZ,
+        n: u32,
+    ) -> impl Iterator<Item = D3> + '_ {
         let theta = itheta.into();
-        (0..n).map(move |ii| self.clone().rotate(v3(theta.0 * ii as f32, theta.1 * ii as f32, theta.2 * ii as f32)))
+        (0..n).map(move |ii| {
+            self.clone().rotate(v3(
+                theta.0 * ii as f32,
+                theta.1 * ii as f32,
+                theta.2 * ii as f32,
+            ))
+        })
     }
 
     pub fn hull(self) -> D3 {
         // D3::Hull(Box::new(vec![self]))
-        match self { // Combine Unions if possible
+        match self {
+            // Combine Unions if possible
             D3::Union(vec) => D3::Hull(vec),
             _ => D3::Hull(Box::new(vec![self])),
         }
-    // pub fn hull(self, other: D3) -> D3 {
+        // pub fn hull(self, other: D3) -> D3 {
         // match self { // Combine D3 hulls if possible
-            // D3::Hull(vec) => {
-                // let mut vec = vec;
-                // vec.push(other);
-                // D3::Hull(vec)
-                // },
-            // _ => D3::Hull(Box::new(vec![self, other])),
+        // D3::Hull(vec) => {
+        // let mut vec = vec;
+        // vec.push(other);
+        // D3::Hull(vec)
+        // },
+        // _ => D3::Hull(Box::new(vec![self, other])),
         // }
     }
 
     pub fn intersection(self, other: D3) -> D3 {
-        match self { // Combine intersections if possible
+        match self {
+            // Combine intersections if possible
             D3::Intersection(vec) => {
                 let mut vec = vec;
                 vec.push(other);
                 D3::Intersection(vec)
-                },
+            }
             _ => D3::Intersection(Box::new(vec![self, other])),
         }
     }
 
     pub fn beveled_box<IXYZ: Into<XYZ>, T: Into<X>>(ixyz: IXYZ, bevel_in: T) -> D3 {
-        let XYZ(x,y,z) = ixyz.into();
+        let XYZ(x, y, z) = ixyz.into();
         // let x = xyz.0;
         // let y = xyz.1;
         // let z = xyz.2;
         let bevel = bevel_in.into();
         D3::Hull(Box::new(vec![
-            D3::cuboid(v3(x,y-bevel*2.,z-bevel*2.)).translate(v3(0.,bevel,bevel)),
-            D3::cuboid(v3(x-bevel*2.,y-bevel*2.,z)).translate(v3(bevel,bevel,0.)),
-            D3::cuboid(v3(x-bevel*2.,y,z-bevel*2.)).translate(v3(bevel,0.,bevel)),
-            ]))
+            D3::cuboid(v3(x, y - bevel * 2., z - bevel * 2.)).translate(v3(0., bevel, bevel)),
+            D3::cuboid(v3(x - bevel * 2., y - bevel * 2., z)).translate(v3(bevel, bevel, 0.)),
+            D3::cuboid(v3(x - bevel * 2., y, z - bevel * 2.)).translate(v3(bevel, 0., bevel)),
+        ]))
     }
 
     /// Creates a block of connected beveled cubes.
     /// Each block is centered inside a cube with i_cube_side length.
     /// Each of the six sides are i_gap away from each cube face.
     /// Each cube in the block is connected to make up for this gap.
-    pub fn beveled_cube_block<T0: Into<X>, T1: Into<X>, T2: Into<X>>(xyz_dim: (u32, u32, u32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
+    pub fn beveled_cube_block<T0: Into<X>, T1: Into<X>, T2: Into<X>>(
+        xyz_dim: (u32, u32, u32),
+        i_cube_side: T0,
+        i_bevel: T1,
+        i_gap: T2,
+    ) -> D3 {
         let cube_side: X = i_cube_side.into();
         let bevel: X = i_bevel.into();
         let gap: X = i_gap.into();
-        D3::beveled_box(v3(cube_side-2*gap, cube_side-2*gap, cube_side-2*gap), bevel)
-            .translate(v3(gap, gap, gap))
-            .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0).union()
-            .iter_translate(v3(0, cube_side.0, 0.), xyz_dim.1).union()
-            .iter_translate(v3(0, 0, cube_side.0), xyz_dim.2).union()
-            .add(D3::cuboid(v3(
-                        cube_side*xyz_dim.0 - 2*(gap + bevel),
-                        cube_side*xyz_dim.1 - 2*(gap + bevel),
-                        cube_side*xyz_dim.2 - 2*(gap + bevel)
-                        )).translate(v3(gap+bevel,gap+bevel,gap+bevel))
-                    )
+        D3::beveled_box(
+            v3(
+                cube_side - 2 * gap,
+                cube_side - 2 * gap,
+                cube_side - 2 * gap,
+            ),
+            bevel,
+        )
+        .translate(v3(gap, gap, gap))
+        .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0)
+        .union()
+        .iter_translate(v3(0, cube_side.0, 0.), xyz_dim.1)
+        .union()
+        .iter_translate(v3(0, 0, cube_side.0), xyz_dim.2)
+        .union()
+        .add(
+            D3::cuboid(v3(
+                cube_side * xyz_dim.0 - 2 * (gap + bevel),
+                cube_side * xyz_dim.1 - 2 * (gap + bevel),
+                cube_side * xyz_dim.2 - 2 * (gap + bevel),
+            ))
+            .translate(v3(gap + bevel, gap + bevel, gap + bevel)),
+        )
     }
 
     /// Creates a block of connected beveled cubes, offset in the lattice.
@@ -784,23 +850,41 @@ impl D3 {
     /// Each of the six sides are i_gap away from each cube face.
     /// Each cube in the block is connected to make up for this gap.
     // pub fn beveled_cuboid_offset<XYZI: <Into<XYZ>, T0: Into<X>, T1: Into<X>, T2: Into<X>>(xyz_dim: (u32, u32, u32), offset: (f32, f32, f32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
-    pub fn beveled_cuboid_offset<IXYZ: Into<XYZ>, T0: Into<X>, T1: Into<X>, T2: Into<X>>(ixyz: IXYZ, offset: (f32, f32, f32), i_cube_side: T0, i_bevel: T1, i_gap: T2) -> D3 {
+    pub fn beveled_cuboid_offset<IXYZ: Into<XYZ>, T0: Into<X>, T1: Into<X>, T2: Into<X>>(
+        ixyz: IXYZ,
+        offset: (f32, f32, f32),
+        i_cube_side: T0,
+        i_bevel: T1,
+        i_gap: T2,
+    ) -> D3 {
         let cube_side: X = i_cube_side.into();
         let bevel: X = i_bevel.into();
         let gap: X = i_gap.into();
         let xyz_dim: XYZ = ixyz.into();
-        D3::beveled_box(v3(cube_side-2*gap, cube_side-2*gap, cube_side-2*gap), bevel)
-            .translate(v3(gap, gap, gap))
-            .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0.round() as u32).union()
-            .iter_translate(v3(0, cube_side.0, 0.), xyz_dim.1.round() as u32).union()
-            .iter_translate(v3(0, 0, cube_side.0), xyz_dim.2.round() as u32).union()
-            .add(D3::cuboid(v3(
-                        cube_side*xyz_dim.0 - 2*(gap + bevel),
-                        cube_side*xyz_dim.1 - 2*(gap + bevel),
-                        cube_side*xyz_dim.2 - 2*(gap + bevel)
-                        )).translate(v3(gap+bevel,gap+bevel,gap+bevel))
-                    )
-            .translate(v3(offset.0, offset.1, offset.2)*cube_side)
+        D3::beveled_box(
+            v3(
+                cube_side - 2 * gap,
+                cube_side - 2 * gap,
+                cube_side - 2 * gap,
+            ),
+            bevel,
+        )
+        .translate(v3(gap, gap, gap))
+        .iter_translate(v3(cube_side.0, 0., 0.), xyz_dim.0.round() as u32)
+        .union()
+        .iter_translate(v3(0, cube_side.0, 0.), xyz_dim.1.round() as u32)
+        .union()
+        .iter_translate(v3(0, 0, cube_side.0), xyz_dim.2.round() as u32)
+        .union()
+        .add(
+            D3::cuboid(v3(
+                cube_side * xyz_dim.0 - 2 * (gap + bevel),
+                cube_side * xyz_dim.1 - 2 * (gap + bevel),
+                cube_side * xyz_dim.2 - 2 * (gap + bevel),
+            ))
+            .translate(v3(gap + bevel, gap + bevel, gap + bevel)),
+        )
+        .translate(v3(offset.0, offset.1, offset.2) * cube_side)
     }
 
     /// Creates a rounded cube
@@ -809,25 +893,25 @@ impl D3 {
     pub fn rounded_cube<T: Into<X>>(i_side: T) -> D3 {
         let side: X = i_side.into();
         D3::cube(side)
-            .translate(v3(-side*0.5,-side*0.5,-side*0.5))
-            .intersection(D3::sphere_r(side * (1.0/3.0_f32.sqrt())))
+            .translate(v3(-side * 0.5, -side * 0.5, -side * 0.5))
+            .intersection(D3::sphere_r(side * (1.0 / 3.0_f32.sqrt())))
     }
 
     pub fn truncated_octahedron(l_edge: f64) -> D3 {
         // TODO: deprecate this in favor of troc_d?
         //* Create a truncated ocatahedron with edge length `l_edge` centered at the origin
-        let r_square = 2.0_f64.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
+        let r_square = 2.0_f64.powf(0.5) * l_edge; // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
-            D3::cuboid(v3(l_edge, l_edge, 2.0*r_square))
-                .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
+            D3::cuboid(v3(l_edge, l_edge, 2.0 * r_square))
+                .translate(v3(-l_edge / 2.0, -l_edge / 2.0, -r_square))
                 .rotate(v3(0., 0., 45.)),
-            D3::cuboid(v3(l_edge, 2.*r_square, l_edge))
-                .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
+            D3::cuboid(v3(l_edge, 2. * r_square, l_edge))
+                .translate(v3(-l_edge / 2.0, -r_square, -l_edge / 2.0))
                 .rotate(v3(0., 45., 0.)),
-            D3::cuboid(v3(2.*r_square, l_edge, l_edge))
-                .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
+            D3::cuboid(v3(2. * r_square, l_edge, l_edge))
+                .translate(v3(-r_square, -l_edge / 2.0, -l_edge / 2.0))
                 .rotate(v3(45, 0, 0)),
-            ]))
+        ]))
     }
 
     pub fn troc() -> D3 {
@@ -839,75 +923,79 @@ impl D3 {
         let l_edge = diameter * 2.0_f32.powf(-1.5);
 
         D3::Hull(Box::new(vec![
-            D3::cuboid(v3(l_edge, l_edge, diameter)).center()
+            D3::cuboid(v3(l_edge, l_edge, diameter))
+                .center()
                 .rotate(v3(0., 0., 45.)),
-            D3::cuboid(v3(l_edge, diameter, l_edge)).center()
+            D3::cuboid(v3(l_edge, diameter, l_edge))
+                .center()
                 .rotate(v3(0., 45., 0.)),
-            D3::cuboid(v3(diameter, l_edge, l_edge)).center()
+            D3::cuboid(v3(diameter, l_edge, l_edge))
+                .center()
                 .rotate(v3(45, 0, 0)),
-            ]))
+        ]))
     }
 
     /// Construct a rhombic dodecahedron with integer coordinates
     /// and an edge length of sqrt(3).
     pub fn rhombdo() -> D3 {
         D3::convex_hull(vec![
-            [1.,1.,1.], 
-            [1.,1.,-1.], 
-            [1.,-1.,1.], 
-            [1.,-1.,-1.], 
-            [-1.,1.,1.], 
-            [-1.,1.,-1.], 
-            [-1.,-1.,1.], 
-            [-1.,-1.,-1.], 
-            [2.,0.,0.],
-            [-2.,0.,0.],
-            [0.,2.,0.],
-            [0.,-2.,0.],
-            [0.,0.,2.],
-            [0.,0.,-2.],
+            [1., 1., 1.],
+            [1., 1., -1.],
+            [1., -1., 1.],
+            [1., -1., -1.],
+            [-1., 1., 1.],
+            [-1., 1., -1.],
+            [-1., -1., 1.],
+            [-1., -1., -1.],
+            [2., 0., 0.],
+            [-2., 0., 0.],
+            [0., 2., 0.],
+            [0., -2., 0.],
+            [0., 0., 2.],
+            [0., 0., -2.],
         ])
     }
-
 
     /// Construct a tetrahedron in the unit sphere with lower face parallel
     /// to xy-plane and an edge length of 2*sqrt(6)/3.
     pub fn tetrahedron() -> D3 {
         D3::convex_hull(vec![
-            [(8.0_f32/9.0).sqrt(),0.,-1./3.], 
-            [-(2.0_f32/9.0).sqrt(),(2.0_f32/3.0).sqrt(),-1./3.], 
-            [-(2.0_f32/9.0).sqrt(),-(2.0_f32/3.0).sqrt(),-1./3.], 
-            [0.,0.,1.], 
+            [(8.0_f32 / 9.0).sqrt(), 0., -1. / 3.],
+            [-(2.0_f32 / 9.0).sqrt(), (2.0_f32 / 3.0).sqrt(), -1. / 3.],
+            [-(2.0_f32 / 9.0).sqrt(), -(2.0_f32 / 3.0).sqrt(), -1. / 3.],
+            [0., 0., 1.],
         ])
     }
-
 
     pub fn beveled_truncated_octahedron(l_edge: f32) -> D3 {
         //* Create a beveled truncated ocatahedron with edge length `l_edge` centered at the origin
         let bevel = 0.5;
-        let r_square = 2.0_f32.powf(0.5) * l_edge;  // height of truncated octahedron between square faces
+        let r_square = 2.0_f32.powf(0.5) * l_edge; // height of truncated octahedron between square faces
         D3::Hull(Box::new(vec![
-            D3::beveled_box(v3(l_edge, l_edge, 2.0*r_square), bevel)
-                .translate(v3(-l_edge/2.0, -l_edge/2.0, -r_square))
+            D3::beveled_box(v3(l_edge, l_edge, 2.0 * r_square), bevel)
+                .translate(v3(-l_edge / 2.0, -l_edge / 2.0, -r_square))
                 .rotate(v3(0., 0., 45.)),
-            D3::beveled_box(v3(l_edge, 2.*r_square, l_edge), bevel)
-                .translate(v3(-l_edge/2.0, -r_square, -l_edge/2.0))
+            D3::beveled_box(v3(l_edge, 2. * r_square, l_edge), bevel)
+                .translate(v3(-l_edge / 2.0, -r_square, -l_edge / 2.0))
                 .rotate(v3(0., 45., 0.)),
-            D3::beveled_box(v3(2.*r_square, l_edge, l_edge), bevel)
-                .translate(v3(-r_square, -l_edge/2.0, -l_edge/2.0))
+            D3::beveled_box(v3(2. * r_square, l_edge, l_edge), bevel)
+                .translate(v3(-r_square, -l_edge / 2.0, -l_edge / 2.0))
                 .rotate(v3(45., 0., 0.)),
-            ]))
+        ]))
     }
-
 
     pub fn octahedron(r: f32) -> D3 {
         D3::convex_hull([
-            [1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]
-        ]).scale(r)
+            [1, 0, 0],
+            [-1, 0, 0],
+            [0, 1, 0],
+            [0, -1, 0],
+            [0, 0, 1],
+            [0, 0, -1],
+        ])
+        .scale(r)
     }
-
 }
-
 
 #[cfg(test)]
 mod test {
@@ -927,8 +1015,10 @@ mod test {
 
     #[test]
     fn test_cylinder_center() {
-        assert_eq!(D3::cylinder_d(8.0, 5).center().scad(),
-                   "translate(v = [0, 0, -4]) {\n  cylinder(h = 8, d = 5);\n}");
+        assert_eq!(
+            D3::cylinder_d(8.0, 5).center().scad(),
+            "translate(v = [0, 0, -4]) {\n  cylinder(h = 8, d = 5);\n}"
+        );
     }
 
     #[test]
@@ -938,20 +1028,23 @@ mod test {
 
     #[test]
     fn test_cube_center() {
-        assert_eq!(D3::cube(9).center().scad(), "translate(v = [-4.5, -4.5, -4.5]) {\n  cube(size = 9);\n}");
-
+        assert_eq!(
+            D3::cube(9).center().scad(),
+            "translate(v = [-4.5, -4.5, -4.5]) {\n  cube(size = 9);\n}"
+        );
     }
 
     #[test]
     fn test_cuboid() {
-        assert_eq!(D3::cuboid(v3(1,2,3)).scad(),
-                   "cube(size = [1, 2, 3]);");
+        assert_eq!(D3::cuboid(v3(1, 2, 3)).scad(), "cube(size = [1, 2, 3]);");
     }
 
     #[test]
     fn test_cuboid_center() {
-        assert_eq!(D3::cuboid(v3(1,2,3)).center().scad(),
-                   "translate(v = [-0.5, -1, -1.5]) {\n  cube(size = [1, 2, 3]);\n}");
+        assert_eq!(
+            D3::cuboid(v3(1, 2, 3)).center().scad(),
+            "translate(v = [-0.5, -1, -1.5]) {\n  cube(size = [1, 2, 3]);\n}"
+        );
     }
 
     #[test]
@@ -962,14 +1055,20 @@ mod test {
 
     #[test]
     fn test_add() {
-        assert_eq!(D3::sphere_r(5).add(D3::cube(9)).scad(),
-        "union() {\n  sphere(r = 5);\n  cube(size = 9);\n}");
+        assert_eq!(
+            D3::sphere_r(5).add(D3::cube(9)).scad(),
+            "union() {\n  sphere(r = 5);\n  cube(size = 9);\n}"
+        );
     }
 
     #[test]
     fn test_color() {
-        assert_eq!(D3::sphere_r(7_i32).add(D3::cube(9)).color(ColorEnum::Red).scad(),
-        "color(\"red\") {\n  union() {\n    sphere(r = 7);\n    cube(size = 9);\n  }\n}"
+        assert_eq!(
+            D3::sphere_r(7_i32)
+                .add(D3::cube(9))
+                .color(ColorEnum::Red)
+                .scad(),
+            "color(\"red\") {\n  union() {\n    sphere(r = 7);\n    cube(size = 9);\n  }\n}"
         );
     }
     #[test]
@@ -981,42 +1080,48 @@ mod test {
 
     #[test]
     fn test_rotate_tuple() {
-        assert_eq!(D3::cube(3).rotate((10,20.,30.0)).scad(),
+        assert_eq!(
+            D3::cube(3).rotate((10, 20., 30.0)).scad(),
             "rotate([10, 20, 30]) {\n  cube(size = 3);\n}"
         );
     }
 
     #[test]
     fn test_rotate_array_int() {
-        assert_eq!(D3::cube(3).rotate([10,20,30]).scad(),
+        assert_eq!(
+            D3::cube(3).rotate([10, 20, 30]).scad(),
             "rotate([10, 20, 30]) {\n  cube(size = 3);\n}"
         );
     }
 
     #[test]
     fn test_rotate_array_float() {
-        assert_eq!(D3::cube(3).rotate([10.,20.,30.]).scad(),
+        assert_eq!(
+            D3::cube(3).rotate([10., 20., 30.]).scad(),
             "rotate([10, 20, 30]) {\n  cube(size = 3);\n}"
         );
     }
 
     #[test]
     fn test_rotate_x() {
-        assert_eq!(D3::cube(3).rotate_x(10).scad(),
+        assert_eq!(
+            D3::cube(3).rotate_x(10).scad(),
             "rotate([10, 0, 0]) {\n  cube(size = 3);\n}"
         );
     }
 
     #[test]
     fn test_rotate_y() {
-        assert_eq!(D3::cube(3).rotate_y(20.).scad(),
+        assert_eq!(
+            D3::cube(3).rotate_y(20.).scad(),
             "rotate([0, 20, 0]) {\n  cube(size = 3);\n}"
         );
     }
 
     #[test]
     fn test_rotate_z() {
-        assert_eq!(D3::cube(3).rotate_z(30.0).scad(),
+        assert_eq!(
+            D3::cube(3).rotate_z(30.0).scad(),
             "rotate([0, 0, 30]) {\n  cube(size = 3);\n}"
         );
     }
@@ -1071,14 +1176,17 @@ mod test {
 
     #[test]
     fn test_scale() {
-        assert_eq!(D3::cube(9).scale_x(5).scad(),
-                   "scale(v = [5, 1, 1]) {\n  cube(size = 9);\n}"
+        assert_eq!(
+            D3::cube(9).scale_x(5).scad(),
+            "scale(v = [5, 1, 1]) {\n  cube(size = 9);\n}"
         );
-        assert_eq!(D3::cube(9).scale_y(5).scad(),
-                   "scale(v = [1, 5, 1]) {\n  cube(size = 9);\n}"
+        assert_eq!(
+            D3::cube(9).scale_y(5).scad(),
+            "scale(v = [1, 5, 1]) {\n  cube(size = 9);\n}"
         );
-        assert_eq!(D3::cube(9).scale_z(5).scad(),
-                   "scale(v = [1, 1, 5]) {\n  cube(size = 9);\n}"
+        assert_eq!(
+            D3::cube(9).scale_z(5).scad(),
+            "scale(v = [1, 1, 5]) {\n  cube(size = 9);\n}"
         );
     }
 
@@ -1098,21 +1206,22 @@ mod test {
 
     #[test]
     fn test_d3_add_op() {
-        assert_eq!((D3::cube(9) + D3::sphere_r(5)).scad(),
+        assert_eq!(
+            (D3::cube(9) + D3::sphere_r(5)).scad(),
             "union() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
         );
     }
 
     #[test]
     fn test_d3_sub_op() {
-        assert_eq!((D3::cube(9) - D3::sphere_r(5)).scad(),
+        assert_eq!(
+            (D3::cube(9) - D3::sphere_r(5)).scad(),
             "difference() {\n  cube(size = 9);\n  sphere(r = 5);\n}"
         );
         assert_eq!((D3::cube(9) - D3::spheroid(v3(5,4,3))).scad(),
             "difference() {\n  cube(size = 9);\n  scale(v = [5, 4, 3]) {\n    sphere(r = 1);\n  }\n}"
         );
     }
-
 
     #[test]
     fn test_iter_hull() {
@@ -1141,8 +1250,6 @@ mod test {
             "intersection() {\n  rotate([0, 0, 0]) {\n    cube(size = 4);\n  }\n  rotate([10, 20, 30]) {\n    cube(size = 4);\n  }\n  rotate([20, 40, 60]) {\n    cube(size = 4);\n  }\n  rotate([30, 60, 90]) {\n    cube(size = 4);\n  }\n}"
         );
     }
-
-
 
     #[test]
     fn test_iter_rotate_rotate() {

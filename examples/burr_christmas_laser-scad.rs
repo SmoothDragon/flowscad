@@ -25,7 +25,7 @@ fn main() -> Result<()> {
         .linear_extrude(h)
         .translate_z(-h/2)
         .rotate_x(180)
-        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
+        .rotate(v3(45., -90. + 2.0_f32.sqrt().atan().to_degrees(), 0.))
         .iter_rotate( (0,0,120), 3)
         .union()
         ;

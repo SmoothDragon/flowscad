@@ -25,17 +25,17 @@ fn main() {
     // let to = D3::truncated_octahedron(l_edge);
     // let gap = 0.1;
     let base_hex = D3::truncated_octahedron(2.2*r_square)
-        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 30))
+        .rotate(v3(45., -90. +2.0_f32.sqrt().atan().to_degrees(), 30))
         .add_map(move |x| x.rotate(v3(0,0,60)))
         .add_map(move |x| x.rotate(v3(0,0,60)))
         .add_map(move |x| x.rotate(v3(0,0,60)))
         .translate(v3(0,0,4.0*3.0_f64.powf(-0.5)*r_square+3.9))
         ;
     let diag_bevel_cube = D3::beveled_box(v3(5.5*r_square,5.5*r_square,5.5*r_square), r_square/2.0)
-        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
+        .rotate(v3(45., -90. +2.0_f32.sqrt().atan().to_degrees(), 0))
         ;
     let diag_cube = D3::cube(5.5*r_square)
-        .rotate(v3(45, -90.+2.0_f64.powf(0.5).atan()*180.0/PI, 0))
+        .rotate(v3(45., -90. +2.0_f32.sqrt().atan().to_degrees(), 0))
         ;
     let result = diag_bevel_cube.clone()
         .add(base_hex)

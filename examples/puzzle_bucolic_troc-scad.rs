@@ -1,6 +1,6 @@
 use flowscad::*;
 use anyhow::Result;
-use bitperm::*;
+use ::bitperm::*;
 
 fn main() -> Result<()> {
     let gap = 0.2;

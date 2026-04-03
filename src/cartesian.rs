@@ -1,5 +1,5 @@
-use core::ops::*;
 use core::cmp::*;
+use core::ops::*;
 
 use derive_more::*;
 
@@ -55,7 +55,7 @@ generate_trig_functions_for_x!(atan);
 
 impl X {
     /// Positive X MAX is lower since it is used for super large objects that could be shifted or rotated.
-    pub const MAX: X = X(f32::MAX/1000.0);
+    pub const MAX: X = X(f32::MAX / 1000.0);
 
     pub fn powf<IX: Into<X>>(self, exp: IX) -> Self {
         Self(self.0.powf(exp.into().0))
@@ -95,9 +95,9 @@ impl std::ops::SubAssign for X {
 }
 
 // impl std::ops::BitXor for X {
-    // fn bit_xor(&mut self, other: Self) {
-        // *self = Self(self.0.powf(other.0));
-    // }
+// fn bit_xor(&mut self, other: Self) {
+// *self = Self(self.0.powf(other.0));
+// }
 // }
 
 // TODO: Macro to replace all this?
@@ -145,10 +145,10 @@ impl From<f64> for X {
 
 // TODO: Fix ordering
 // impl<IX: Into<X>> std::cmp::PartialOrd<IX> for X {
-    // type Output = bool;
-    // fn partial_cmp(&self, other: &IX) -> Option<std::cmp::Ordering> {
-        // Some(self.0.cmp(&other.into().0))
-    // }
+// type Output = bool;
+// fn partial_cmp(&self, other: &IX) -> Option<std::cmp::Ordering> {
+// Some(self.0.cmp(&other.into().0))
+// }
 // }
 
 impl<IX: Into<X>> std::ops::Mul<IX> for X {
@@ -277,23 +277,28 @@ impl std::ops::Add<X> for i32 {
     }
 }
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Add, Neg)]
-pub struct XY(pub f32, pub f32); 
+pub struct XY(pub f32, pub f32);
 
 impl XY {
     pub fn rotate_deg<IX: Into<X>>(self, i_theta: IX) -> Self {
         let theta = i_theta.into();
-        let cos_theta = (theta.0*std::f32::consts::PI/180.0).cos();
-        let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
-        XY(self.0 * cos_theta - self.1 * sin_theta, self.0 * sin_theta + self.1 * cos_theta)
+        let cos_theta = (theta.0 * std::f32::consts::PI / 180.0).cos();
+        let sin_theta = (theta.0 * std::f32::consts::PI / 180.0).sin();
+        XY(
+            self.0 * cos_theta - self.1 * sin_theta,
+            self.0 * sin_theta + self.1 * cos_theta,
+        )
     }
 
     pub fn rotate<IX: Into<X>>(self, i_theta: IX) -> Self {
         let theta = i_theta.into();
         // let cos_theta = (theta.0*std::f32::consts::PI/180.0).cos();
         // let sin_theta = (theta.0*std::f32::consts::PI/180.0).sin();
-        XY(self.0 * theta.0.cos() - self.1 * theta.0.sin(), self.0 * theta.0.sin() + self.1 * theta.0.cos())
+        XY(
+            self.0 * theta.0.cos() - self.1 * theta.0.sin(),
+            self.0 * theta.0.sin() + self.1 * theta.0.cos(),
+        )
     }
 }
 
@@ -313,8 +318,8 @@ pub fn v2<IX: Into<X>, IY: Into<X>>(x: IX, y: IY) -> XY {
     XY(x.into().0, y.into().0)
 }
 
-impl<IX: Into<X>, IY: Into<X>> From<(IX,IY)> for XY {
-    fn from(xy: (IX,IY)) -> XY {
+impl<IX: Into<X>, IY: Into<X>> From<(IX, IY)> for XY {
+    fn from(xy: (IX, IY)) -> XY {
         v2(xy.0, xy.1)
     }
 }
@@ -358,6 +363,22 @@ impl<IX: Into<X>> std::ops::Mul<IX> for XY {
     }
 }
 
+impl<IX: Into<X>> std::ops::Add<IX> for XY {
+    type Output = XY;
+    fn add(self, other: IX) -> Self::Output {
+        let y: f32 = other.into().0;
+        v2(self.0 + y, self.1 + y)
+    }
+}
+
+impl<IX: Into<X>> std::ops::Sub<IX> for XY {
+    type Output = XY;
+    fn sub(self, other: IX) -> Self::Output {
+        let y: f32 = other.into().0;
+        v2(self.0 - y, self.1 - y)
+    }
+}
+
 /// Generalized multiplication on the left is not currently possible
 /// Each type must be specified individually
 /// TODO: This should become a macro
@@ -375,6 +396,20 @@ impl std::ops::Mul<XY> for i32 {
     }
 }
 
+impl std::ops::Add<XY> for f32 {
+    type Output = XY;
+    fn add(self, rhs: XY) -> Self::Output {
+        v2(rhs.0 + self, rhs.1 + self)
+    }
+}
+
+impl std::ops::Add<XY> for i32 {
+    type Output = XY;
+    fn add(self, rhs: XY) -> Self::Output {
+        v2(rhs.0 + self as f32, rhs.1 + self as f32)
+    }
+}
+
 impl<IX: Into<X>> std::ops::Div<IX> for XY {
     type Output = XY;
     fn div(self, other: IX) -> Self::Output {
@@ -382,7 +417,6 @@ impl<IX: Into<X>> std::ops::Div<IX> for XY {
         XY(self.0 / d, self.1 / d)
     }
 }
-
 
 impl Sub for XY {
     type Output = Self;
@@ -397,8 +431,10 @@ impl Mul for XY {
     type Output = Self;
 
     fn mul(self, other: Self) -> Self {
-        Self(self.0 * other.0 - self.1 * other.1, 
-             self.0 * other.1 + self.1 * other.0)
+        Self(
+            self.0 * other.0 - self.1 * other.1,
+            self.0 * other.1 + self.1 * other.0,
+        )
     }
 }
 
@@ -462,19 +498,19 @@ impl<IX: Into<X>> std::ops::Mul<IX> for XYZ {
 }
 
 // impl std::ops::Mul<f32> for XYZ {
-    // type Output = XYZ;
-    // fn mul(self, other: f32) -> Self::Output {
-        // let d = other;
-        // XYZ(self.0 * d, self.1 * d, self.2 * d)
-    // }
+// type Output = XYZ;
+// fn mul(self, other: f32) -> Self::Output {
+// let d = other;
+// XYZ(self.0 * d, self.1 * d, self.2 * d)
+// }
 // }
 
 // impl std::ops::Mul<u32> for XYZ {
-    // type Output = XYZ;
-    // fn mul(self, other: u32) -> Self::Output {
-        // let d = other as f32;
-        // XYZ(self.0 * d, self.1 * d, self.2 * d)
-    // }
+// type Output = XYZ;
+// fn mul(self, other: u32) -> Self::Output {
+// let d = other as f32;
+// XYZ(self.0 * d, self.1 * d, self.2 * d)
+// }
 // }
 
 /// Generalized multiplication on the left is not currently possible
@@ -491,7 +527,11 @@ impl std::ops::Mul<XYZ> for f32 {
 impl std::ops::Mul<XYZ> for i32 {
     type Output = XYZ;
     fn mul(self, rhs: XYZ) -> Self::Output {
-        v3(rhs.0 * self as f32, rhs.1 * self as f32, rhs.2 * self as f32)
+        v3(
+            rhs.0 * self as f32,
+            rhs.1 * self as f32,
+            rhs.2 * self as f32,
+        )
     }
 }
 
@@ -509,7 +549,6 @@ impl<IX: Into<X>> std::ops::Div<IX> for XYZ {
         XYZ(self.0 / d, self.1 / d, self.2 / d)
     }
 }
-
 
 #[cfg(test)]
 mod test {
@@ -553,40 +592,38 @@ mod test {
 
     #[test]
     fn test_v2_mul() {
-        assert_eq!(format!("{}", v2(1.,2.)*3.), "[3, 6]");
-        assert_eq!(format!("{}", 3. * v2(1.,2.)), "[3, 6]");
-        assert_eq!(format!("{}", v2(1.,2.)*3), "[3, 6]");
-        assert_eq!(format!("{}", 3 * v2(1.,2.)), "[3, 6]");
+        assert_eq!(format!("{}", v2(1., 2.) * 3.), "[3, 6]");
+        assert_eq!(format!("{}", 3. * v2(1., 2.)), "[3, 6]");
+        assert_eq!(format!("{}", v2(1., 2.) * 3), "[3, 6]");
+        assert_eq!(format!("{}", 3 * v2(1., 2.)), "[3, 6]");
     }
 
     #[test]
     fn test_v2_v2_mul() {
-        assert_eq!(format!("{}", v2(1.,2.)*v2(1, -2)), "[5, 0]");
+        assert_eq!(format!("{}", v2(1., 2.) * v2(1, -2)), "[5, 0]");
     }
 
     #[test]
     fn test_v3_mul() {
-        assert_eq!(format!("{}", v3(1.,2., 4)*3.), "[3, 6, 12]");
-        assert_eq!(format!("{}", 8. * v3(1.,2., 4)), "[8, 16, 32]");
+        assert_eq!(format!("{}", v3(1., 2., 4) * 3.), "[3, 6, 12]");
+        assert_eq!(format!("{}", 8. * v3(1., 2., 4)), "[8, 16, 32]");
     }
 
     #[test]
     fn test_v3_div_x() {
-        assert_eq!(format!("{}", v3(1.,2., 4)/4), "[0.25, 0.5, 1]");
-        assert_eq!(format!("{}", v3(1.,2., 4)/0.5), "[2, 4, 8]");
+        assert_eq!(format!("{}", v3(1., 2., 4) / 4), "[0.25, 0.5, 1]");
+        assert_eq!(format!("{}", v3(1., 2., 4) / 0.5), "[2, 4, 8]");
     }
 
     #[test]
     fn test_into_real2() {
-        assert_eq!(XY::from( (5_i32, 10_i32) ), v2(5., 10.));
-        assert_eq!(XY::from( (5_i32, 10_u64) ), v2(5., 10.));
-        assert_eq!(XY::from( (5.0_f32, 10_u64) ), v2(5., 10.));
+        assert_eq!(XY::from((5_i32, 10_i32)), v2(5., 10.));
+        assert_eq!(XY::from((5_i32, 10_u64)), v2(5., 10.));
+        assert_eq!(XY::from((5.0_f32, 10_u64)), v2(5., 10.));
     }
 
     #[test]
     fn test_rotate_deg() {
-        assert_eq!(v2(1,0).rotate_deg(90), 
-                XY(-4.371139e-8, 1.0));
+        assert_eq!(v2(1, 0).rotate_deg(90), XY(-4.371139e-8, 1.0));
     }
-
 }
