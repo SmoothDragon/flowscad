@@ -110,6 +110,10 @@ pub enum D2 {
     Join(&'static str, Box<Vec<D2>>),
     Svg(String),
     Difference(Box<D2>, Box<D2>),
+    Import {
+        filename: &'static str, 
+        center: bool
+    },
 }
 
 // impl<Borrowed: ?Sized> std::borrow::Borrow<Borrowed> for D2 {  
@@ -725,6 +729,7 @@ impl SCAD for D2 {
                 }
                 , indent(shape)),
             D2::Svg(filename) => format!("import(\"{}\", center=true);", filename),
+            D2::Import{filename, center} => format!("import(\"{}\", center = {});", filename, center),
             D2::Translate(XY(x,y), shape) => format!("translate(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::Mirror(XY(x,y), shape) => format!("mirror(v = [{}, {}]) {{\n  {}\n}}", x, y, indent(shape)),
             D2::OffsetRadius(X(x), shape) => format!("offset(r = {}) {{\n  {}\n}}", x, indent(shape)),

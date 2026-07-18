@@ -53,6 +53,10 @@ pub enum D3 {
     Join(&'static str, Box<Vec<D3>>),
     // TODO: Join(&'static str, Box<Vec<D3>>),
     Render(Box<D3>),
+    Import {
+        filename: &'static str, 
+        center: bool
+    },
 }
 
 pub fn indent_d3(shape: &D3) -> String {
@@ -192,6 +196,7 @@ impl SCAD for D3 {
             D3::Join(name, v) => format!("{}() {{\n  {}\n}}", &name,
                 v.iter().map(|x| x.indent().to_string()).collect::<Vec<_>>().join("\n  ")),
             D3::Render(shape) => format!("render() {{\n  {}\n}}", indent_d3(shape)),
+            D3::Import{filename, center} => format!("import(\"{}\", center = {});", filename, center),
         }
     }
     fn indent(&self) -> String {
