@@ -572,6 +572,30 @@ impl D3 {
         }
     }
 
+    pub fn left(self) -> D3 {
+        self.and(D3::half_space(Aim::W))
+    }
+
+    pub fn right(self) -> D3 {
+        self.and(D3::half_space(Aim::E))
+    }
+
+    pub fn up(self) -> D3 {
+        self.and(D3::half_space(Aim::U))
+    }
+
+    pub fn down(self) -> D3 {
+        self.and(D3::half_space(Aim::D))
+    }
+
+    pub fn back(self) -> D3 {
+        self.and(D3::half_space(Aim::N))
+    }
+
+    pub fn front(self) -> D3 {
+        self.and(D3::half_space(Aim::S))
+    }
+
     /// Subtract `self` from a cube centered at the origin with edge length `l_edge`.
     pub fn invert<T: Into<X>>(self, l_edge: T) -> D3 {
         // pub fn invert(self, l_edge: f64) -> D3 {
