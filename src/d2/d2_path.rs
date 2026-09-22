@@ -135,11 +135,6 @@ impl D2Trait for Path {
     }
 }
 
-// truncates to the closest millionth
-fn truncated(xx: f32) -> f32 {
-    ((xx * 100000.).round() as i32) as f32 / 100000.
-}
-
 impl Path {
     pub fn new(pts: Vec<C32>, width: f32) -> Self {
         Self{ 

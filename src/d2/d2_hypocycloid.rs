@@ -1,9 +1,8 @@
-use ndarray::{Array1, concatenate, Axis, s};
+use ndarray::Array1;
 use num_complex::Complex32;
 use std::f32::consts::PI;
 
 use crate::Face;
-pub use crate::d2::D2Trait;
 
 fn expi(theta: f32) -> Complex32 {
     Complex32::new(theta.cos(), theta.sin())
@@ -21,6 +20,7 @@ pub fn hypocycloid(k: usize, edges: usize) -> Face {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::D2Trait;
 
     #[test]
     fn test_hypocycloid() {

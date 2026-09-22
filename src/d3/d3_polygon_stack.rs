@@ -1,6 +1,5 @@
 // pub use crate::Deg;
 // pub use crate::Rad;
-pub use crate::D2Trait;
 pub use crate::Face;
 pub use crate::*;
 

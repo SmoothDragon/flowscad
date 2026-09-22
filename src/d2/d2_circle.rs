@@ -1,11 +1,10 @@
-use ndarray::{Array1, concatenate, Axis, s};
+use ndarray::Array1;
 use num_complex::Complex32;
 
 use crate::common::PI;
 
 use crate::Face;
 
-use crate::D2Trait;
 
 fn expi(theta: f32) -> Complex32 {
     Complex32::new(theta.cos(), theta.sin())
@@ -19,6 +18,7 @@ pub fn circle(r: f32, edges: usize) -> Face {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::D2Trait;
 
     #[test]
     fn test_circle() {

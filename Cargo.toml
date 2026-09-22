@@ -1,17 +1,17 @@
 [package]
 name = "flowscad"
-version = "0.1.2"
+version = "0.2.0"
 authors = [ "Thomas G. Draper" ]
 edition = "2021"
 rust-version = "1.81"
 description = "2D graphic and 3D object design with a Rustic functional approach. SVG and OpenSCAD output."
 documentation = "https://docs.rs/flowscad"
 readme = "README.md"
-repository = "https://github.com/SmoothDragon/flowscad"
+repository = "https://github.com/SmoothDragon/rust_scad"
 license = "LGPL-3.0-or-later"
 keywords = ["scad", "svg", "graphics", "2D", "3D"]
 categories = ["graphics", "mathematics"]
-exclude = ["/src/bin"]
+exclude = ["/gallery"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -24,7 +24,9 @@ rand = "0.8.5"
 rand_distr = "0.4.3"
 typed_floats = "1.0.2"
 
-bitperm = { git = "https://github.com/SmoothDragon/bitperm.git" }
+# `path` is used locally; `version` is what ends up on crates.io.
+# Requires `bitperm 0.2.0` to be published before `cargo publish` will succeed here.
+bitperm = { path = "../bitperm", version = "0.2.0" }
 ndarray = "0.17.1"
 num-complex = "0.4.6"
 libm = "0.2.15"

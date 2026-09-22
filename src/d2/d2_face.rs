@@ -7,7 +7,6 @@ use ndarray::Array1;
 // use ndarray::{concatenate, Axis, s};
 use num_complex::Complex32 as C32;
 
-pub use crate::Deg;
 pub use crate::Rad;
 pub use crate::d2::D2Trait;
 pub use crate::*;
@@ -151,10 +150,6 @@ fn truncated(xx: f32) -> f32 {
 }
 
 impl Face {
-    fn rotate<T: Into<Rad>>(&mut self, theta: T) {
-        self.0 *= exp_i(theta.into().0);
-    }
-
     fn translate(&mut self, xy: C32) {
         self.0 += xy;
     }

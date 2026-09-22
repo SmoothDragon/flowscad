@@ -1,8 +1,4 @@
-use core::ops::*;
-use core::cmp::*;
-use std::f32::consts::PI;
 
-use derive_more::*;
 
 
 /*
@@ -33,10 +29,4 @@ pub trait D3Trait {
     // fn xyzed(&self) -> Self;  // Align in upper right quadratn
     // fn bounding_box(&self) -> (C32, C32);  // lower left and upper right corners of bounding box
     // fn center(&mut self);  // Center the object
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
 }

@@ -4,8 +4,6 @@
 
 use crate::*;
 
-pub const MAX2: f32 = 1000.;
-
 #[derive(Clone, Debug)]
 pub enum D1 {
     Line(XY, XY),
@@ -41,6 +39,7 @@ impl SVG for D1 {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)] // `unit` is reserved for future SVG rendering wiring
 pub struct SvgProp {
     unit: String,
     width: u32,
@@ -96,6 +95,7 @@ impl SvgProp {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)] // reserved for future SVG stroke customization; currently hardcoded in D1::svg()
 pub struct D1Prop {
     stroke: String,
     stroke_linecap: String,

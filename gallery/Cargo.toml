@@ -1,0 +1,18 @@
+[workspace]
+# Standalone package — do not participate in any parent workspace.
+
+[package]
+name = "flowscad-gallery"
+version = "0.0.0"
+edition = "2021"
+publish = false
+description = "Personal 3D-print models, puzzle pieces, laser cuts, and other one-off designs built with flowscad. Not published; used as a compile-checked gallery of real-world flowscad code."
+
+[dependencies]
+flowscad = { path = ".." }
+anyhow = "1"
+bitperm = { path = "../../bitperm" }
+ndarray = "0.17"
+num-complex = "0.4"
+rand = "0.8"
+rand_distr = "0.4"
