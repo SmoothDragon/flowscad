@@ -5,7 +5,7 @@ fn level_shape(level:u32, total:u32) -> D2 {
     let n = 360;
     let r = X(30.);
     let _h = 10;
-    let shift = X(5.)*level/total;
+    let shift = X(1.)*level/total;
     let points = (0..n)
         .map(|ii| {let theta = PI / 180.0 * ii as f32;
              // v2(r, 0).rotate(theta.0)

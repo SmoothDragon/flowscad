@@ -7,7 +7,7 @@ fn spherical_cow<T: Into<X>>(radius: T) -> D3 {
     let r = radius.into();
     let body = D3::sphere_r(r)
         .translate_z(r*(2.0_f64.powf(-0.5)))
-        .intersection(D3::cube(4*r).center().translate_z(2*r))
+        .intersection(D3::cuboid(v3(4*r, 4*r, 1.6*r)).center().translate_z(0.8*r))
         ;
     let leg = D3::sphere_r(r/4)
         .translate(0.85*r*v3(0.5, 0.5*3.0_f64.powf(0.5), 2.0_f64.powf(-0.5)))
@@ -32,14 +32,15 @@ fn spherical_cow<T: Into<X>>(radius: T) -> D3 {
 
 fn main() -> Result<()> {
     let r=12;
+    let r=16;
     let cow = spherical_cow(r);
     let result = (1..=6)
         .map(|x| cow.clone()
-             .difference((D2::text(x.to_string()))
+             .sub((D2::text(x.to_string()))
                  .linear_extrude(5)
                  .translate( (0, 0, 1.5*r as f32) )
                  )
-             .translate(((x%3-1)*40, (x%2)*30, 0))
+             .translate(((x%3-1)*40, (x%2)*50, 0))
              )
         .union()
         ;
