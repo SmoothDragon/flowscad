@@ -1,66 +1,6 @@
-use core::ops::*;
-use core::cmp::*;
-use std::f32::consts::PI;
-
-use derive_more::*;
-
 use num_complex::Complex32 as C32;
 
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Neg, Mul)]
-pub struct Deg(pub f32);
-
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, Add, Sub, Neg, Mul)]
-pub struct Rad(pub f32);
-
-impl From<Deg> for Rad {
-    fn from(degree: Deg) -> Self {
-        Self(degree.0 * PI / 180.0)
-    }
-}
-
-impl Add<Rad> for Deg {
-    type Output = Deg;
-
-    fn add(self, rhs: Rad) -> Self::Output {
-        self + Deg::from(rhs)
-    }
-}
-
-impl Mul<Deg> for f32 {
-    type Output = Deg;
-
-    fn mul(self, rhs: Deg) -> Self::Output {
-        Deg(self * rhs.0)
-    }
-}
-
-impl Mul<Rad> for f32 {
-    type Output = Rad;
-
-    fn mul(self, rhs: Rad) -> Self::Output {
-        Rad(self * rhs.0)
-    }
-}
-
-impl From<Rad> for Deg {
-    fn from(radian: Rad) -> Self {
-        Self(radian.0 * 180.0 / PI)
-    }
-}
-
-impl From<Rad> for C32 {
-    fn from(radian: Rad) -> Self {
-        Self::new(radian.0.cos(), radian.0.sin())
-    }
-}
-
-impl From<Deg> for C32 {
-    fn from(degree: Deg) -> Self {
-        let radian: Rad = degree.into();
-        Self::new(radian.0.cos(), radian.0.sin())
-    }
-}
+use crate::Rad;
 
 // pub trait Scad: Clone {
     // fn scad(&self) -> String;
@@ -112,43 +52,6 @@ pub trait D2Trait: Clone {
         let mut shape = self.clone();
         shape.translate(xy);
         shape
-    }
-
-}
-
-#[cfg(test)]
-mod test {
-    use super::*;
-
-    #[test]
-    fn test_f32_mul_deg() {
-        assert_eq!(2.0*Deg(10.), Deg(20.));
-    }
-
-    #[test]
-    fn test_deg_from_rad() {
-        assert_eq!(Deg::from(Rad(PI)), Deg(180.));
-    }
-
-    #[test]
-    fn test_rad_from_deg() {
-        assert_eq!(Rad::from(Deg(180.)), Rad(PI));
-    }
-
-    #[test]
-    fn test_c32_from_rad() {
-        assert_eq!(C32::from(Rad(0.)), C32::new(1., 0.));
-        assert_eq!(C32::from(Rad(PI/4.)), C32::new(0.70710677, 0.70710677));
-        assert_eq!(C32::from(Rad(PI/2.)), C32::new(-4.371139e-8, 1.0));
-        assert_eq!(C32::from(Rad(PI)), C32::new(-1., -8.742278e-8));
-    }
-
-    #[test]
-    fn test_c32_from_deg() {
-        assert_eq!(C32::from(Deg(0.)), C32::new(1., 0.));
-        assert_eq!(C32::from(Deg(45.)), C32::new(0.70710677, 0.70710677));
-        assert_eq!(C32::from(Deg(90.)), C32::new(-4.371139e-8, 1.0));
-        assert_eq!(C32::from(Deg(180.)), C32::new(-1., -8.742278e-8));
     }
 
 }

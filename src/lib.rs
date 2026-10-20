@@ -50,4 +50,10 @@ pub use crate::d2::*;
 mod d3;
 pub use crate::d3::*;
 
+pub mod mm;
+pub use crate::mm::Mm;
+
+pub mod angle;
+pub use crate::angle::{Deg, Grad, Rad, Tau};
+
 use ::bitperm::*;
